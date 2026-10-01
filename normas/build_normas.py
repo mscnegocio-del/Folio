@@ -22,7 +22,27 @@ ROOT = Path(__file__).resolve().parent.parent
 MESES = {m: i + 1 for i, m in enumerate("enero febrero marzo abril mayo junio julio agosto setiembre octubre noviembre diciembre".split())}
 MESES["septiembre"] = 9
 
-ART = re.compile(r"^\s*Art[íi]culo\s+(\d+(?:\s*[-–]\s*[A-Z])?)\s*[°º]?\s*\.?\s*[-–—.:]+\s*(.*)$", re.I)
+NUM = r"(\d+(?:\s*[-–]?\s*[A-Z](?![A-Za-záéíóúñ]))?|[IVXL]+(?![A-Za-z]))"
+ART = re.compile(r'^\s*(["“])?\s*Art[íi]culo\s+' + NUM + r'\s*[°º]?\s*(?:\.\s*-?|-|–|—|:)\s*(.*)$')          # Artículo 106.- Texto
+ART2 = re.compile(r'^\s*(["“])?\s*Art[íi]culo\s+' + NUM + r'\s+([^.]{2,140}?)\s*\.\s*-\s*(.*)$')           # Artículo 1 Acción penal.- Texto
+
+
+def match_art(line: str):
+    """Devuelve (entrecomillado, número, título, cuerpo) o None. Ignora referencias sueltas como 'Artículo 69 inciso 2'."""
+    m = ART.match(line)
+    if m:
+        q, n, rest = m.group(1), m.group(2), m.group(3).strip()
+        tit = ""
+        mm = re.match(r"^([^.]{2,140}?)\s*\.\s*-\s*(.*)$", rest)      # "Feminicidio.- El que…"
+        if mm and not re.search(r"\d", mm.group(1)): tit, rest = mm.group(1), mm.group(2)
+    else:
+        m = ART2.match(line)
+        if not m: return None
+        q, n, tit, rest = m.group(1), m.group(2), m.group(3).strip(), m.group(4).strip()
+    n = re.sub(r"\s*[-–]?\s*([A-Z])$", r"-\1", re.sub(r"\s+", " ", n.strip()).upper()) if re.match(r"\d", n) else n.upper()
+    return bool(q), n, unquote(tit), unquote(rest)
+SKIPHDR = re.compile(r"^\s*(CONCORDANCIAS?|JURISPRUDENCIA|PROCESOS CONSTITUCIONALES|DOCTRINA|NOTA DE ACLARACI|FE DE ERRATAS)", re.I)
+FULLMOD = re.compile(r"^\s*\(\*+\)\s*Art[íi]culo\s+(modificad|sustituid|incorporad)", re.I)
 HEAD = re.compile(r"^\s*(LIBRO|SECCI[ÓO]N|T[ÍI]TULO|SUBT[ÍI]TULO|CAP[ÍI]TULO|SUBCAP[ÍI]TULO)\b(.*)$")
 NOTE = re.compile(r"^\s*\(\*+\)")
 CONCORD = re.compile(r"^\s*(CONCORDANCIAS?|JURISPRUDENCIA|PROCESOS CONSTITUCIONALES)\s*:?\s*$", re.I)
@@ -45,6 +65,13 @@ def read_source(path: Path) -> str:
             out.append("".join(parts))
         return "\n".join(out)
     raw = path.read_bytes()
+    if raw.lstrip()[:5].lower() in (b"<html", b"<!doc"):   # el SPIJ exporta HTML con extensión .doc
+        import html as H
+        t = raw.decode("utf-8", errors="replace")
+        t = re.sub(r"(?is)<(script|style|head)\b.*?</\1>", "", t)
+        t = re.sub(r"(?i)<br\s*/?>|</(p|div|li|tr|h\d)>", "\n", t)
+        t = re.sub(r"<[^>]+>", "", t)
+        return "\n".join(re.sub(r"[ \t\u00a0]+", " ", H.unescape(l)).strip() for l in t.splitlines())
     for enc in ("utf-8-sig", "cp1252", "latin-1"):
         try: return raw.decode(enc)
         except UnicodeDecodeError: continue
@@ -82,48 +109,111 @@ def head_fmt(line: str) -> str:
     return " ".join(out)
 
 
+def unquote(line: str) -> str:
+    line = re.sub(r"\(\*+\)|RECTIFICADO POR FE DE ERRATAS", "", line).strip()
+    return line.strip('"“”').strip()
+
+
+def sumilla_like(line: str) -> bool:
+    return (0 < len(line) < 90 and not re.search(r"\d", line) and not line.endswith((".", ":", ";", ","))
+            and line.upper() != line and not line.startswith(("(", '"')) and not SKIPHDR.match(line))
+
+
 def parse(text: str):
-    arts, ctx, cur, skip, pending_head = [], {}, None, False, None
+    """Lee el formato del SPIJ: cada artículo trae su texto original y, debajo, cada modificación como
+    '(*) Artículo modificado por … cuyo texto es el siguiente:' + '"Artículo N.- …"'. Se conserva la última versión.
+    Las modificaciones parciales (un inciso o numeral) se aplican por número y el artículo queda marcado para revisión."""
+    lines = [l.strip().replace("\u00a0", " ") for l in text.splitlines()]
+    lines = [l for l in lines if l]
     order = ["LIBRO", "SECCION", "TITULO", "SUBTITULO", "CAPITULO", "SUBCAPITULO"]
-    for raw in text.splitlines():
-        line = raw.strip().replace(" ", " ")
-        if not line: continue
-        m = ART.match(line)
-        if m:
-            skip = False
-            n = re.sub(r"\s*[-–]\s*", "-", m.group(1).upper())
-            rest = m.group(2).strip()
-            titulo, body = ("", rest)
-            if rest and len(rest) <= 100 and not rest.endswith((".", ":", ";")): titulo, body = rest, ""
+    arts, ctx, cur, skip, pending_head, prev = [], {}, None, False, None, ""
+    expect = None  # None | "full" | "partial"
+    frag, frag_incorp = None, False
+
+    def close_frag():
+        nonlocal frag
+        if cur is None or not frag: frag = None; return
+        body = [unquote(x) for x in frag if unquote(x)]
+        frag = None
+        if not body: return
+        cur["revisar"] = True
+        m = re.match(r"^(\d+|[a-z])[.)]", body[0])
+        if m and not frag_incorp:
+            for i, l in enumerate(cur["lineas"]):
+                if re.match(rf"^{re.escape(m.group(1))}[.)]", l):
+                    j = i + 1
+                    while j < len(cur["lineas"]) and not re.match(r"^(\d+|[a-z])[.)]", cur["lineas"][j]): j += 1
+                    cur["lineas"][i:j] = body; return
+        cur["lineas"].extend(body)
+
+    for line in lines:
+        if arts and re.match(r"^FE DE ERRATAS\b", line): break   # anexo final del SPIJ: no es texto vigente
+        m = match_art(line)
+        if m and m[0] and frag is None and (cur is None or m[1] != cur["n"]):  # artículo incorporado por una ley
+            m = (False,) + m[1:]
+        if m and (not m[0] or (cur and frag is None and m[1] == cur["n"])):
+            close_frag()
+            quoted, n, titulo, body = m
+            if not titulo and body and len(body) <= 100 and not body.endswith((".", ":", ";")) and not re.search(r"\d", body): titulo, body = body, ""
+            if quoted:  # nueva versión completa del mismo artículo
+                cur["lineas"] = [body] if body else []
+                if titulo: cur["titulo"] = titulo
+                expect = None; skip = False; continue
+            if not titulo and sumilla_like(prev):
+                titulo = prev
+                if cur and cur["lineas"] and cur["lineas"][-1] == prev: cur["lineas"].pop()
             cur = {"n": n, "titulo": titulo, "ubicacion": " · ".join(v for k, v in sorted(ctx.items(), key=lambda kv: order.index(kv[0]))),
-                   "lineas": [body] if body else [], "historial": [], "derogado": False}
-            arts.append(cur); continue
+                   "lineas": [body] if body else [], "historial": [], "derogado": False, "revisar": False}
+            arts.append(cur); skip = False; expect = None; prev = line; continue
+        prev = line
         h = HEAD.match(line)
         if h and line.upper() == line:
+            close_frag()
             key = re.sub("[ÓÍ]", lambda x: {"Ó": "O", "Í": "I"}[x.group()], h.group(1).upper())
             lvl = order.index(key)
-            for k in order[lvl:]: ctx.pop(k, None)
+            for k in (order if "PRELIMINAR" in line else order[lvl:]): ctx.pop(k, None)
             ctx[key] = head_fmt(line); pending_head = key; skip = False; continue
         if pending_head and line.upper() == line and len(line) < 160 and not NOTE.match(line):
             ctx[pending_head] += " " + head_fmt(line); pending_head = None; continue
         pending_head = None
-        if CONCORD.match(line): skip = True; continue
-        if cur is None or skip: continue
+        if SKIPHDR.match(line) or re.match(r"^\(VER .*PARTE", line, re.I): close_frag(); skip = True; continue
+        if cur is None: continue
         if NOTE.match(line):
+            close_frag(); skip = False
+            if "conformidad" in line.lower() or "precisa" in line.lower(): skip = True; continue
             note = parse_note(line)
             if note:
                 if note["tipo"].startswith("derogad"): cur["derogado"] = True
                 cur["historial"].append({k: v for k, v in note.items() if k != "tipo" and v})
+                if FULLMOD.match(line): expect = "full" if line.rstrip().endswith(":") else None
+                elif not note["tipo"].startswith("derogad") and line.rstrip().endswith(":"): expect = "partial"; frag_incorp = note["tipo"].startswith("incorporad"); frag = []
             continue
-        cur["lineas"].append(re.sub(r"\(\*+\)", "", line).strip())
+        if skip: continue
+        if frag is not None:
+            frag.append(line)
+            if re.search(r'["”]\s*(\(\*+\))?\s*\.?$', line): close_frag()
+            continue
+        if expect == "full": continue  # texto entre la nota y la nueva versión
+        cur["lineas"].append(unquote(line) if line.startswith('"') or line.endswith(('"', "(*)")) else line)
+    close_frag()
+
+    # El cuerpo empieza en el primer "Artículo I" (Título Preliminar) o, si no hay, en el primer "Artículo 1":
+    # así se descartan notas e índices previos. Si un número se repite, gana la primera aparición.
+    start = next((i for i, a in enumerate(arts) if a["n"] == "I"), None)
+    if start is None: start = next((i for i, a in enumerate(arts) if a["n"] == "1"), 0)
+    by = {}
+    for a in arts[start:]: by.setdefault(a["n"], a)
     out = []
-    for a in arts:
+    for a in by.values():
         texto = "\n".join(l for l in a.pop("lineas") if l).strip()
         if not texto and a["titulo"] and not a["derogado"]: texto, a["titulo"] = a["titulo"], ""
+        a["historial"].sort(key=lambda h: h.get("publicada") or "")   # el SPIJ no siempre las lista en orden
         last = a["historial"][-1] if a["historial"] else None
-        art = {"n": a["n"], "titulo": a["titulo"], "ubicacion": a["ubicacion"], "texto": texto, "derogado": a["derogado"] or texto.lower().startswith("derogado")}
+        art = {"n": a["n"], "titulo": a["titulo"], "ubicacion": a["ubicacion"], "texto": texto,
+               "derogado": a["derogado"] or texto.lower().startswith("derogado")}
         if last and last.get("vigenteDesde"): art["vigenteDesde"] = last["vigenteDesde"]
         if a["historial"]: art["historial"] = a["historial"]
+        if a["revisar"]: art["revisar"] = True
         out.append(art)
     return out
 
@@ -146,8 +236,10 @@ def quality(arts):
         seen[a["n"]] = seen.get(a["n"], 0) + 1
         if not a["texto"] and not a["derogado"]: issues.append(f"artículo {a['n']} sin texto")
     issues += [f"artículo {n} repetido {c} veces" for n, c in seen.items() if c > 1]
-    nums = sorted({int(re.match(r"\d+", a["n"]).group()) for a in arts})
+    nums = sorted({int(re.match(r"\d+", a["n"]).group()) for a in arts if re.match(r"\d", a["n"])})
     gaps = [i for i in range(nums[0], nums[-1] + 1) if i not in set(nums)] if nums else []
+    rev = [a["n"] for a in arts if a.get("revisar")]
+    if rev: issues.append(f"{len(rev)} artículos con modificaciones parciales para revisar a mano: {rev[:15]}{'…' if len(rev) > 15 else ''}")
     return issues, gaps
 
 
@@ -171,10 +263,17 @@ def main():
     prev = json.loads((out / "manifest.json").read_text(encoding="utf-8")) if (out / "manifest.json").exists() else None
     normas, fatal = [], False
     for n in cat["normas"]:
-        src = next((p for p in (Path(a.fuentes) / f"{n['id']}{ext}" for ext in (".docx", ".txt")) if p.exists()), None)
+        # una norma puede venir en partes: CP.doc, CP-2.doc, CP-3.doc… (el SPIJ divide el Código Penal)
+        def part(suffix):
+            return next((p for p in (Path(a.fuentes) / f"{n['id']}{suffix}{ext}" for ext in (".docx", ".doc", ".html", ".txt")) if p.exists()), None)
+        parts = [p for p in [part("")] + [part(f"-{i}") for i in range(2, 10)] if p]
+        src = parts[0] if parts else None
         if not src:
             print(f"·  {n['id']:6} {n['titulo']}: sin fuente todavía (se omite)"); continue
-        arts = parse(read_source(src))
+        arts, seen_n = [], set()
+        for src_part in parts:  # cada parte se lee por separado; si un artículo se repite, gana la primera parte
+            for art in parse(read_source(src_part)):
+                if art["n"] not in seen_n: seen_n.add(art["n"]); arts.append(art)
         nadj = apply_ajustes(arts, Path(a.ajustes) / f"{n['id']}.json")
         issues, gaps = quality(arts)
         data = {"id": n["id"], "titulo": n["titulo"], "corto": n.get("corto", n["id"]), "base": n.get("base", ""), "fuenteOficial": n.get("fuenteOficial", ""),

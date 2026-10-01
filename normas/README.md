@@ -20,7 +20,8 @@ Spec: [`process/specs/biblioteca-legal-peru.md`](../process/specs/biblioteca-leg
 
 ## Agregar o actualizar una norma
 1. En el SPIJ (spij.minjus.gob.pe → Normativa de acceso libre), abre la norma y usa **Descargar Word**.
-2. Guarda el archivo como `normas/fuentes/<ID>.docx` (el ID está en `catalogo.json`).
+2. Guarda el archivo como `normas/fuentes/<ID>.doc` (el SPIJ entrega HTML con extensión .doc; también sirven .docx y .txt).
+   Si el SPIJ divide una norma en partes (el Código Penal tiene "segunda parte"), guárdalas como `<ID>.doc`, `<ID>-2.doc`, etc.
 3. Actualiza `actualizadoAl` de esa norma y el general del catálogo a la fecha de la última edición de El Peruano revisada.
 4. Si una modificación ya se publicó pero rige más adelante, regístrala en `ajustes/<ID>.json`:
    ```json
