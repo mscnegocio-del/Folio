@@ -14,11 +14,11 @@
 <meta property="og:description" content="Cada expediente con su propia memoria. Cifrado en tu equipo, sin servidores, con tu propia cuenta de IA.">
 <meta property="og:url" content="https://mscnegocio-del.github.io/Folio/">
 <meta name="twitter:card" content="summary">
-<meta name="theme-color" content="#5B3FC4">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%235B3FC4'/%3E%3Cpath d='M10 7h12v4H14v4h7v4h-7v6h-4z' fill='%23fff'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234d6bfe'/%3E%3Cpath d='M11 8h11v3.5h-7v3.5h6v3.5h-6V24h-4z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fragment+Mono&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"SoftwareApplication","name":"Folio","applicationCategory":"BusinessApplication","operatingSystem":"Windows, macOS, Linux (navegador web)","softwareVersion":"0.2.0","inLanguage":"es-PE","description":"Agente de IA gratuito y de código abierto para abogados litigantes en el Perú, con memoria por expediente y cifrado local.","offers":{"@type":"Offer","price":"0","priceCurrency":"PEN"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","downloadUrl":"https://github.com/mscnegocio-del/Folio/releases/latest","author":{"@type":"Person","name":"Milton Salcedo Cruz","address":"Huancayo, Perú"}},
@@ -31,173 +31,375 @@
 </script>
 <style>
 :root{
-  --paper:#F1F2EE; --sheet:#FFFFFF; --ink:#1E2230; --graphite:#5A6072; --rule:#DADCD5;
-  --stamp:#5B3FC4; --stamp-ink:#4A31AE; --stamp-soft:#ECE8FB; --manila-soft:#F5EEDC; --manila:#CDB27A;
-  --ui:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif; --type:"Courier Prime","Courier New",monospace;
-  color-scheme:light;
+  --bg:#0a0a0a; --text:#fff; --desc:rgba(255,255,255,.5); --dim:rgba(255,255,255,.8);
+  --card:rgba(255,255,255,.02); --card-bd:rgba(255,255,255,.06);
+  --sec:rgba(255,255,255,.06); --sec-bd:rgba(255,255,255,.15);
+  --win:#161618; --win-side:#1f2023; --win-bd:rgba(255,255,255,.08); --win-text:#f9fafb; --win-mute:#adb2b8;
+  --accent:#4d6bfe;
+  --sans:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --display:Montserrat,"DM Sans",system-ui,sans-serif;
+  --mono:"Fragment Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --paper:#15171D; --sheet:#1D2029; --ink:#E8E9EE; --graphite:#A9AEBD; --rule:#2E3240;
-  --stamp:#A594FF; --stamp-ink:#B9ABFF; --stamp-soft:#2A2548; --manila-soft:#2B2618; --manila:#B99B5E; color-scheme:dark;}}
-:root[data-theme="dark"]{--paper:#15171D; --sheet:#1D2029; --ink:#E8E9EE; --graphite:#A9AEBD; --rule:#2E3240;
-  --stamp:#A594FF; --stamp-ink:#B9ABFF; --stamp-soft:#2A2548; --manila-soft:#2B2618; --manila:#B99B5E; color-scheme:dark;}
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 var(--ui);-webkit-font-smoothing:antialiased}
-a{color:var(--stamp-ink)}
-.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
-header.top{display:flex;justify-content:space-between;align-items:center;padding:20px 0}
-.brand{font:700 22px var(--type);color:var(--ink);text-decoration:none;letter-spacing:-.5px}
-.brand span{color:var(--stamp)}
-nav a{color:var(--graphite);text-decoration:none;margin-left:20px;font-size:15px}
-nav a:hover{color:var(--ink)}
-.hero{padding:56px 0 64px;display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
-.eyebrow{font:700 13px var(--type);text-transform:uppercase;letter-spacing:1.5px;color:var(--stamp)}
-h1{font-size:clamp(34px,5vw,52px);line-height:1.08;margin:12px 0 18px;letter-spacing:-1px}
-.lead{font-size:19px;color:var(--graphite);margin:0 0 28px;max-width:34em}
-.cta{display:flex;gap:12px;flex-wrap:wrap}
-.btn{display:inline-block;padding:13px 22px;border-radius:4px;font-weight:700;text-decoration:none;border:1px solid var(--stamp)}
-.btn.primary{background:var(--stamp);color:#fff}
-.btn.primary:hover{background:var(--stamp-ink)}
-:root[data-theme="dark"] .btn.primary{color:#15171D}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary{color:#15171D}}
-.btn.ghost{color:var(--stamp-ink)}
-.note{font-size:14px;color:var(--graphite);margin-top:14px}
-.folder{background:var(--manila-soft);border:1px solid var(--manila);border-radius:6px;padding:22px;font-family:var(--type);transform:rotate(1deg);box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
-.folder .tab{display:inline-block;background:var(--manila);color:#1E2230;padding:2px 10px;border-radius:4px 4px 0 0;font-size:13px;margin:-22px 0 14px}
-.folder dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
-.folder dt{color:var(--graphite)} .folder dd{margin:0}
-.stamp{display:inline-block;margin-top:16px;border:2px solid var(--stamp);color:var(--stamp);padding:3px 10px;font-weight:700;transform:rotate(-4deg);font-size:13px}
-section{padding:56px 0;border-top:1px solid var(--rule)}
-h2{font-size:30px;margin:0 0 10px;letter-spacing:-.5px}
-.sub{color:var(--graphite);margin:0 0 32px;max-width:40em}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.card{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:20px}
-.card h3{margin:0 0 6px;font-size:18px}
-.card p{margin:0;color:var(--graphite);font-size:15px}
-ol.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:14px}
-ol.steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
-ol.steps li::before{content:counter(s);font:700 20px var(--type);color:var(--stamp);background:var(--stamp-soft);border-radius:4px;text-align:center;line-height:40px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:32px}
-ul.check{padding:0;list-style:none;margin:0}
-ul.check li{padding-left:26px;position:relative;margin-bottom:10px}
-ul.check li::before{content:"✓";position:absolute;left:0;color:var(--stamp);font-weight:700}
-table{width:100%;border-collapse:collapse;font-size:15px;background:var(--sheet);border:1px solid var(--rule)}
-th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
-details{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:14px 18px;margin-bottom:10px}
-summary{cursor:pointer;font-weight:700}
-details p{color:var(--graphite);margin:10px 0 0}
-.warn{background:var(--stamp-soft);border-radius:6px;padding:16px 18px;font-size:15px}
-footer{border-top:1px solid var(--rule);padding:32px 0 48px;color:var(--graphite);font-size:14px}
-@media (max-width:820px){.hero,.two{grid-template-columns:1fr}.grid{grid-template-columns:1fr}nav a:not(.gh){display:none}.folder{transform:none}.table-wrap{overflow-x:auto}}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+.wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+
+/* barra superior */
+.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:rgba(10,10,10,.55);border-bottom:1px solid transparent;transition:border-color .2s}
+.top.scrolled{border-color:var(--card-bd)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+.logo{display:flex;align-items:center;gap:8px;text-decoration:none;font:500 19px var(--display);letter-spacing:-.4px}
+.logo svg{width:24px;height:24px}
+.badge{font:500 9.5px var(--mono);letter-spacing:.6px;text-transform:uppercase;background:#fff;color:#0a0a0a;padding:1px 5px;border-radius:3px;margin-left:2px}
+.top nav{display:flex;align-items:center;gap:8px}
+.top nav .link{color:var(--desc);text-decoration:none;font-size:14px;padding:6px 10px;transition:color .15s}
+.top nav .link:hover{color:#fff}
+
+/* botones píldora */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:100px;font:500 15px var(--sans);text-decoration:none;border:1px solid transparent;padding:11px 22px;transition:background .15s,border-color .15s,transform .15s;white-space:nowrap}
+.btn svg{width:16px;height:16px}
+.btn-primary{background:#fff;color:#0a0a0a}
+.btn-primary:hover{background:#e6e6e6}
+.btn-secondary{background:var(--sec);border-color:var(--sec-bd);color:#fff}
+.btn-secondary:hover{background:rgba(255,255,255,.12)}
+.btn-xs{font-size:14px;padding:6px 14px}
+
+/* portada */
+.hero{position:relative;text-align:center;padding:96px 0 0;isolation:isolate}
+.glow{position:absolute;inset:-64px 0 auto;height:900px;z-index:-1;pointer-events:none;overflow:hidden}
+.glow::before,.glow::after{content:"";position:absolute;border-radius:50%;filter:blur(90px)}
+.glow::before{width:1100px;height:620px;left:50%;top:-80px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(64,104,160,.75),rgba(40,70,120,.35) 60%,transparent)}
+.glow::after{width:520px;height:420px;right:-120px;top:40px;background:radial-gradient(closest-side,rgba(110,130,170,.35),transparent)}
+.glow i{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,var(--bg))}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font:400 12px var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--desc)}
+.eyebrow svg{width:13px;height:13px;opacity:.7}
+h1{font:400 clamp(34px,5vw,48px)/1.25 var(--display);letter-spacing:-.02em;margin:22px 0 26px}
+.hero p{color:var(--desc);margin:0 auto;max-width:720px}
+.hero .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:36px 0 64px}
+
+/* ventana de la app */
+.window{max-width:1000px;margin:0 auto;border-radius:14px;overflow:hidden;background:var(--win);border:1px solid var(--win-bd);box-shadow:0 40px 120px -30px rgba(0,0,0,.9),0 0 0 1px rgba(0,0,0,.4);display:grid;grid-template-columns:230px 1fr;text-align:left;font-family:-apple-system,"Segoe UI",var(--sans);font-size:13.2px;color:var(--win-text)}
+.side{background:var(--win-side);padding:14px 12px;border-right:1px solid var(--win-bd);min-height:440px}
+.dots{display:flex;gap:7px;margin-bottom:20px}
+.dots span{width:11px;height:11px;border-radius:50%;background:#ff5f57}
+.dots span:nth-child(2){background:#febc2e}.dots span:nth-child(3){background:#28c840}
+.side .logo{font-size:15px;margin:0 4px 16px}
+.side .logo svg{width:19px;height:19px}
+.newbtn{display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.08);border-radius:9px;padding:8px;margin-bottom:18px;color:#e6e6e6}
+.side small{display:block;color:var(--win-mute);font-size:11.5px;margin:0 6px 6px}
+.exp{padding:7px 8px;border-radius:7px;color:#d4d6da;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp.on{background:rgba(255,255,255,.07);color:#fff}
+.main{display:flex;flex-direction:column}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-bottom:1px solid var(--win-bd);font-weight:500}
+.bar span{color:var(--win-mute);font-weight:400;font-size:12px}
+.chat{padding:22px 28px;display:flex;flex-direction:column;gap:14px;flex:1}
+.ask{align-self:flex-end;background:#2c2d31;border-radius:16px;padding:8px 14px;max-width:80%}
+.thought{color:var(--win-mute);font-size:12.4px}
+.answer p{margin:0 0 10px}
+.answer ul{margin:0 0 10px;padding-left:20px}
+.answer li{margin-bottom:4px}
+.answer code,.mono{font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:4px}
+.composer{margin:0 22px 18px;border:1px solid var(--win-bd);border-radius:14px;padding:12px 14px;color:var(--win-mute);display:flex;justify-content:space-between;align-items:center}
+.send{width:28px;height:28px;border-radius:50%;background:#fff;display:grid;place-items:center}
+.send svg{width:14px;height:14px}
+
+/* secciones */
+section{padding:140px 0 0}
+.head{text-align:center;margin-bottom:56px}
+h2{font:400 clamp(28px,3.6vw,36px)/1.3 var(--display);letter-spacing:-.02em;margin:0 0 14px}
+.head p{color:var(--desc);margin:0 auto;max-width:640px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card{background:var(--card);border:1px solid var(--card-bd);border-radius:16px;padding:40px 40px 0;overflow:hidden;display:flex;flex-direction:column}
+.card h3{font:400 20px var(--sans);margin:0 0 10px}
+.card > p{color:var(--desc);margin:0 0 32px}
+.preview{margin-top:auto;background:var(--win);border:1px solid var(--win-bd);border-bottom:0;border-radius:12px 12px 0 0;padding:18px 20px 22px;font-family:-apple-system,"Segoe UI",var(--sans);font-size:12.5px;color:var(--win-text);min-height:230px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--win-bd)}
+.row:last-child{border-bottom:0}
+.row span:first-child{color:var(--win-mute)}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs span{padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.05);color:var(--win-mute)}
+.tabs span.on{background:rgba(255,255,255,.1);color:#fff}
+.tl{display:grid;grid-template-columns:78px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid var(--win-bd)}
+.tl:last-child{border:0}
+.tl b{font:400 11.5px var(--mono);color:var(--win-mute)}
+.diff{font:12px/1.75 var(--mono);color:#cfd3d6}
+.diff .lbl{color:var(--win-mute);font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;font-family:var(--sans)}
+.diff mark{background:rgba(77,107,254,.22);color:#c9d3ff;border-radius:3px;padding:0 3px}
+.diff del{background:rgba(255,120,110,.15);color:#ffb3ab;text-decoration:none;border-radius:3px;padding:0 3px}
+.ok{display:inline-flex;align-items:center;gap:6px;margin-top:12px;color:#9be3b4;font-size:12px}
+.log{font:11.5px/1.9 var(--mono);color:#cfd3d6}
+.log span{color:var(--win-mute)}
+
+/* empezar */
+.grid.steps .card{padding:40px}
+.code{display:flex;align-items:center;justify-content:space-between;gap:16px;background:rgba(255,255,255,.04);border:1px solid var(--card-bd);border-radius:10px;padding:14px 16px;font:14px var(--mono);margin-top:12px}
+.code a{text-decoration:none}
+.code .hint{font:12px var(--sans);color:var(--desc)}
+ol.list{margin:0;padding:0;list-style:none;counter-reset:n}
+ol.list li{counter-increment:n;display:grid;grid-template-columns:28px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--card-bd);color:var(--dim)}
+ol.list li:last-child{border:0}
+ol.list li::before{content:counter(n,decimal-leading-zero);font:12px/1.9 var(--mono);color:var(--desc)}
+
+/* proveedores */
+.providers{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.providers .card{padding:28px}
+.providers h3{font-size:17px;margin-bottom:6px}
+.providers p{margin:0;color:var(--desc);font-size:14.5px}
+.tag{display:inline-block;font:11px var(--mono);letter-spacing:.5px;text-transform:uppercase;border:1px solid var(--sec-bd);border-radius:100px;padding:2px 9px;margin-bottom:14px;color:var(--dim)}
+
+/* preguntas */
+.faq{max-width:760px;margin:0 auto}
+details{border-bottom:1px solid var(--card-bd);padding:20px 0}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px;font-size:17px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--desc);font-size:20px;line-height:1;transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--desc);margin:12px 0 0}
+
+/* cierre */
+.final{text-align:center;padding-bottom:140px}
+.final .cta{display:grid;grid-template-columns:repeat(2,198px);gap:12px;justify-content:center;margin-top:36px}
+.final .note{color:var(--desc);font-size:14px;margin-top:28px}
+footer{border-top:1px solid var(--card-bd);padding:28px 0}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+footer p{margin:0;color:var(--desc);font-size:14px}
+footer nav{display:flex;gap:20px;font-size:14px}
+footer nav a{text-decoration:none;color:var(--dim)}
+footer nav a:hover{color:#fff}
+
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+
+@media (max-width:900px){
+  .providers{grid-template-columns:1fr 1fr}
+  .window{grid-template-columns:1fr}.side{display:none}
+}
+@media (max-width:700px){
+  .wrap{padding:0 16px}
+  .top nav .link{display:none}
+  .hero{padding-top:64px}
+  .grid,.providers{grid-template-columns:1fr}
+  .card{padding:28px 22px 0}.grid.steps .card{padding:28px 22px}
+  .chat{padding:18px}
+  section{padding-top:96px}
+  .final .cta{grid-template-columns:1fr}
+  .code{flex-wrap:wrap}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header class="top">
-  <a class="brand" href="./">Folio<span>.</span></a>
-  <nav><a href="#funciones">Funciones</a><a href="#privacidad">Privacidad</a><a href="#preguntas">Preguntas</a><a class="gh" href="https://github.com/mscnegocio-del/Folio">GitHub</a></nav>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mark" viewBox="0 0 24 24"><path d="M5 3.5h9l5 5V20a.5.5 0 0 1-.5.5h-13A.5.5 0 0 1 5 20z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3.5V8.5h5M8.5 12.5h7M8.5 16h4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="dl" viewBox="0 0 16 16"><path d="M8 2v8m0 0L4.8 6.8M8 10l3.2-3.2M2.5 11v1.5c0 .8.7 1.5 1.5 1.5h8c.8 0 1.5-.7 1.5-1.5V11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="gh" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.88.87 2.34.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.66 3.95.29.25.54.73.54 1.48v2.19c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></symbol>
+  <symbol id="spark" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0l1.6 6.4L16 8l-6.4 1.6L8 16l-1.6-6.4L0 8l6.4-1.6z"/></symbol>
+</svg>
+
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="logo" href="./" aria-label="Folio, inicio"><svg><use href="#mark"/></svg>folio<span class="badge">Beta</span></a>
+    <nav>
+      <a class="link" href="#capacidades">Capacidades</a>
+      <a class="link" href="#empezar">Empezar</a>
+      <a class="link" href="#preguntas">Preguntas</a>
+      <a class="btn btn-secondary btn-xs" href="https://github.com/mscnegocio-del/Folio"><svg><use href="#gh"/></svg>GitHub</a>
+      <a class="btn btn-primary btn-xs" href="https://github.com/mscnegocio-del/Folio/releases/latest"><svg><use href="#dl"/></svg>Descargar</a>
+    </nav>
+  </div>
 </header>
 
 <main>
 <div class="hero">
-  <div>
-    <div class="eyebrow">Gratis · código abierto · hecho en Perú</div>
-    <h1>El agente de IA que recuerda cada expediente</h1>
-    <p class="lead">Folio es un asistente de inteligencia artificial para <strong>abogados litigantes en el Perú</strong>. Cada expediente judicial tiene su propia memoria, todo queda cifrado en tu equipo y usas tu propia cuenta de IA.</p>
+  <div class="glow" aria-hidden="true"><i></i></div>
+  <div class="wrap">
+    <span class="eyebrow"><svg><use href="#spark"/></svg>Versión de prueba · v0.2.0</span>
+    <h1>Folio<br>Tu expediente, con memoria.</h1>
+    <p>Consultas, escritos, seguimiento del CEJ: empieza aquí.</p>
+    <p>Folio es un agente de IA gratuito y de código abierto para abogados litigantes en el Perú. Todo queda cifrado en tu equipo y usas tu propia cuenta de IA.</p>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/mscnegocio-del/Folio/releases/latest">Descargar Folio gratis</a>
-      <a class="btn ghost" href="#empezar">Cómo empezar</a>
+      <a class="btn btn-primary" href="https://github.com/mscnegocio-del/Folio/releases/latest"><svg><use href="#dl"/></svg>Descargar folio.html</a>
+      <a class="btn btn-secondary" href="#empezar">Cómo empezar</a>
     </div>
-    <p class="note">Un solo archivo. Sin instalación, sin cuenta, sin servidores. Versión 0.2.0 de prueba.</p>
-  </div>
-  <div class="folder" aria-hidden="true">
-    <span class="tab">EXP. 00123-2026-0-1501-JR-PE-01</span>
-    <dl>
-      <dt>Estado</dt><dd>Etapa intermedia</dd>
-      <dt>Partes</dt><dd>[PERSONA_1] vs. [PERSONA_2]</dd>
-      <dt>Plazo</dt><dd>Absolver traslado · 5 días</dd>
-      <dt>Pendiente</dt><dd>Ofrecer pericia contable</dd>
-      <dt>Documentos</dt><dd>3 PDF · 1 DOCX</dd>
-    </dl>
-    <span class="stamp">CIFRADO EN TU EQUIPO</span>
+
+    <div class="window reveal" role="img" aria-label="Vista de Folio: el agente responde sobre el estado de un expediente">
+      <aside class="side">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="logo"><svg><use href="#mark"/></svg>folio<span class="badge">Beta</span></div>
+        <div class="newbtn">＋ Nuevo expediente</div>
+        <small>Expedientes</small>
+        <div class="exp on">00123-2026 · Etapa intermedia</div>
+        <div class="exp">00987-2025 · Apelación</div>
+        <div class="exp">01544-2026 · Investigación</div>
+        <div class="exp">00311-2026 · Medidas de protección</div>
+      </aside>
+      <div class="main">
+        <div class="bar">Exp. 00123-2026-0-1501-JR-PE-01 <span>Cifrado · local</span></div>
+        <div class="chat">
+          <div class="ask">¿En qué estado está el caso y qué tengo pendiente?</div>
+          <div class="thought">Leyó la memoria del expediente y 3 documentos ›</div>
+          <div class="answer">
+            <p>El proceso de <code>[PERSONA_1]</code> está en <b>etapa intermedia</b>. El último movimiento del CEJ es el traslado del requerimiento acusatorio.</p>
+            <ul>
+              <li>Absolver el traslado: registraste un plazo de 10 días (verifícalo).</li>
+              <li>Ofrecer la pericia contable que anotaste como pendiente.</li>
+              <li>Revisar la declaración de <code>[PERSONA_2]</code> del 14 de agosto.</li>
+            </ul>
+            <p>¿Quieres que prepare un esquema de la absolución?</p>
+          </div>
+        </div>
+        <div class="composer">Pregunta sobre este expediente…<span class="send"><svg viewBox="0 0 16 16"><path d="M8 13V3m0 0L3.5 7.5M8 3l4.5 4.5" fill="none" stroke="#0a0a0a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+      </div>
+    </div>
   </div>
 </div>
 
-<section id="funciones">
-  <h2>Lo que Folio hace por ti</h2>
-  <p class="sub">Deja de repetirle el caso a la IA en cada consulta. Folio lee la memoria del expediente antes de responder.</p>
-  <div class="grid">
-    <div class="card"><h3>Memoria por expediente</h3><p>Estado, resumen, partes, hechos, plazos, pendientes y estrategia, siempre a mano para el agente.</p></div>
-    <div class="card"><h3>Seguimiento del CEJ</h3><p>Pega los movimientos de la Consulta de Expedientes Judiciales y la IA los ordena para que los revises.</p></div>
-    <div class="card"><h3>Lectura de PDF y Word</h3><p>Carga escritos y resoluciones; el texto se extrae en tu equipo y se usa como contexto.</p></div>
-    <div class="card"><h3>Borradores y estrategia</h3><p>Pide resúmenes, esquemas de alegatos o listas de argumentos basados en los hechos del caso.</p></div>
-    <div class="card"><h3>Memoria que se actualiza</h3><p>El agente propone actualizar plazos y pendientes; nada cambia sin tu aprobación.</p></div>
-    <div class="card"><h3>Copia de seguridad</h3><p>Exporta tu bóveda cifrada en un archivo <code>.folio</code> para no perder nada.</p></div>
-  </div>
-</section>
-
-<section id="privacidad">
-  <div class="two">
-    <div>
-      <h2>Privacidad por diseño</h2>
-      <p class="sub">Pensado para el secreto profesional y la Ley N.° 29733 de Protección de Datos Personales.</p>
-      <p class="warn">Folio no tiene servidores. Tus expedientes nunca pasan por el autor y no hay telemetría. El código es público para que cualquiera lo audite.</p>
+<section id="capacidades">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2>Más capacidad. Con tus reglas.</h2>
+      <p>Folio lee la memoria del expediente antes de responder: deja de repetirle el caso a la IA en cada consulta.</p>
     </div>
-    <ul class="check">
-      <li><strong>Cifrado local</strong> AES-GCM de 256 bits con clave derivada de tu contraseña.</li>
-      <li><strong>Seudonimización automática</strong>: nombres, DNI, RUC, teléfonos, correos y direcciones se reemplazan antes de enviar.</li>
-      <li><strong>Revisión previa</strong> del texto exacto que sale de tu equipo.</li>
-      <li><strong>Registro de envíos</strong> exportable a CSV.</li>
-      <li><strong>Modelo de autorización</strong> escrita para tus clientes.</li>
-      <li><strong>DeepSeek solo vía OpenRouter</strong> con proveedores sin retención de datos.</li>
-    </ul>
+    <div class="grid">
+      <article class="card reveal">
+        <h3>Cada expediente, su memoria</h3>
+        <p>Estado, resumen, partes, hechos, plazos, pendientes y estrategia. El agente propone actualizarla y nada cambia sin tu aprobación.</p>
+        <div class="preview">
+          <div class="row"><span>Estado</span><span>Etapa intermedia</span></div>
+          <div class="row"><span>Partes</span><span>[PERSONA_1] · [PERSONA_2]</span></div>
+          <div class="row"><span>Plazo</span><span>Absolver traslado · verificar</span></div>
+          <div class="row"><span>Pendiente</span><span>Ofrecer pericia contable</span></div>
+          <div class="row"><span>Documentos</span><span>3 PDF · 1 DOCX</span></div>
+        </div>
+      </article>
+      <article class="card reveal">
+        <h3>Pegar desde el CEJ</h3>
+        <p>Copia el seguimiento de la Consulta de Expedientes Judiciales, pégalo y la IA lo ordena por fecha para que lo revises.</p>
+        <div class="preview">
+          <div class="tabs"><span class="on">Movimientos</span><span>Documentos</span><span>Memoria</span></div>
+          <div class="tl"><b>02/09/2026</b><span>Traslado del requerimiento acusatorio</span></div>
+          <div class="tl"><b>18/08/2026</b><span>Se dispone formalizar la investigación</span></div>
+          <div class="tl"><b>14/08/2026</b><span>Declaración de [PERSONA_2]</span></div>
+          <div class="tl"><b>30/07/2026</b><span>Ingreso de la denuncia</span></div>
+        </div>
+      </article>
+      <article class="card reveal">
+        <h3>Datos personales protegidos</h3>
+        <p>Nombres, DNI, RUC, teléfonos, correos y direcciones se reemplazan antes de enviar. Ves el texto exacto que sale de tu equipo.</p>
+        <div class="preview diff">
+          <div class="lbl">En tu pantalla</div>
+          <div><del>María Quispe Rojas</del>, DNI <del>40123456</del>, domiciliada en <del>Jr. Puno 345</del>…</div>
+          <div class="lbl" style="margin-top:14px">Lo que recibe la IA</div>
+          <div><mark>[PERSONA_1]</mark>, DNI <mark>[DNI_1]</mark>, domiciliada en <mark>[DIRECCION_1]</mark>…</div>
+          <div class="ok">✓ Revisado por ti antes de enviar</div>
+        </div>
+      </article>
+      <article class="card reveal">
+        <h3>Registro de envíos</h3>
+        <p>Cada consulta queda anotada en tu equipo: qué salió, cuándo y a qué proveedor. Exporta el registro a CSV cuando lo necesites.</p>
+        <div class="preview log">
+          <div><span>2026-09-30 10:42</span> · OpenRouter · 1 840 caracteres</div>
+          <div><span>2026-09-30 10:15</span> · OpenRouter · 3 112 caracteres</div>
+          <div><span>2026-09-29 17:03</span> · Anthropic · 920 caracteres</div>
+          <div><span>2026-09-29 16:48</span> · OpenRouter · 2 405 caracteres</div>
+          <div style="margin-top:10px"><span>Cifrado AES-GCM 256 · sin servidores · sin telemetría</span></div>
+        </div>
+      </article>
+    </div>
   </div>
 </section>
 
 <section id="empezar">
-  <div class="two">
-    <div>
+  <div class="wrap">
+    <div class="head reveal">
       <h2>Empieza en 5 minutos</h2>
-      <p class="sub">Funciona en Chrome, Edge o Firefox actualizados, en Windows, macOS o Linux.</p>
-      <a class="btn primary" href="https://github.com/mscnegocio-del/Folio/releases/latest">Descargar folio.html</a>
+      <p>Un solo archivo. Funciona en Chrome, Edge o Firefox actualizados, en Windows, macOS o Linux.</p>
     </div>
-    <ol class="steps">
-      <li><div><strong>Descarga</strong> <code>folio.html</code> desde la última versión.</div></li>
-      <li><div><strong>Ábrelo con doble clic.</strong> No se instala nada.</div></li>
-      <li><div><strong>Crea tu contraseña</strong> y acepta los avisos de privacidad.</div></li>
-      <li><div><strong>Conecta tu cuenta de IA.</strong> ¿No tienes key? Sigue la <a href="https://github.com/mscnegocio-del/Folio/blob/main/docs/guia-api-keys.md">guía paso a paso</a>.</div></li>
-      <li><div><strong>Prueba con el expediente de ejemplo</strong> antes de usar casos reales.</div></li>
-    </ol>
+    <div class="grid steps">
+      <article class="card reveal">
+        <h3>Descarga y abre con doble clic</h3>
+        <p style="margin-bottom:12px">Sin instalación, sin cuenta y sin servidores.</p>
+        <div class="code"><a href="https://github.com/mscnegocio-del/Folio/releases/latest">↓ folio.html</a><span class="hint">v0.2.0 · 148 KB</span></div>
+        <div class="code"><a href="https://github.com/mscnegocio-del/Folio/blob/main/docs/guia-api-keys.md">→ ¿Cómo obtengo mi key?</a><span class="hint">guía paso a paso</span></div>
+      </article>
+      <article class="card reveal">
+        <h3>Los 5 pasos de bienvenida</h3>
+        <ol class="list">
+          <li>Lee y acepta los avisos de privacidad.</li>
+          <li>Crea la contraseña de tu bóveda cifrada.</li>
+          <li>Elige tu proveedor de IA.</li>
+          <li>Pega tu key; Folio prueba la conexión.</li>
+          <li>Prueba con el expediente de ejemplo.</li>
+        </ol>
+      </article>
+    </div>
   </div>
 </section>
 
 <section>
-  <h2>Proveedores de IA compatibles</h2>
-  <p class="sub">Folio es gratis. Pagas solo el uso de IA directamente a tu proveedor; una consulta normal suele costar centavos.</p>
-  <div class="table-wrap"><table>
-    <tr><th>Proveedor</th><th>Para quién</th></tr>
-    <tr><td><strong>OpenRouter</strong> (recomendado)</td><td>Una sola key para Claude, GPT, Gemini y DeepSeek.</td></tr>
-    <tr><td><strong>OpenAI</strong></td><td>Si ya tienes cuenta de OpenAI.</td></tr>
-    <tr><td><strong>Anthropic (Claude)</strong></td><td>Si prefieres los modelos Claude.</td></tr>
-    <tr><td><strong>Servidor propio</strong></td><td>Estudios con soporte técnico y un servidor compatible con la API de OpenAI.</td></tr>
-  </table></div>
-  <p class="note">Los modelos pertenecen a sus respectivas empresas; Folio solo se conecta a ellos con tu cuenta.</p>
+  <div class="wrap">
+    <div class="head reveal">
+      <h2>Tu cuenta de IA, tu decisión</h2>
+      <p>Folio es gratis. Pagas solo el uso de IA directamente a tu proveedor; una consulta normal suele costar centavos.</p>
+    </div>
+    <div class="providers">
+      <article class="card reveal"><span class="tag">Recomendado</span><h3>OpenRouter</h3><p>Una sola key para Claude, GPT, Gemini y DeepSeek (con proveedores sin retención).</p></article>
+      <article class="card reveal"><span class="tag">Directo</span><h3>OpenAI</h3><p>Si ya tienes una cuenta de OpenAI.</p></article>
+      <article class="card reveal"><span class="tag">Directo</span><h3>Anthropic</h3><p>Si prefieres los modelos Claude.</p></article>
+      <article class="card reveal"><span class="tag">Oficina</span><h3>Servidor propio</h3><p>Compatible con la API de OpenAI; lo instala un técnico.</p></article>
+    </div>
+  </div>
 </section>
 
 <section id="preguntas">
-  <h2>Preguntas frecuentes</h2>
-  <details><summary>¿Folio es gratis?</summary><p>Sí. Es gratuito y de código abierto (AGPL-3.0). Solo pagas el uso de IA a tu proveedor.</p></details>
-  <details><summary>¿Mis expedientes se suben a internet?</summary><p>No. Se guardan cifrados en tu navegador. Solo sale hacia el proveedor de IA el texto de cada consulta, seudonimizado y después de que lo revises.</p></details>
-  <details><summary>¿Se conecta al CEJ o a SINOE?</summary><p>No de forma automática. Copias el seguimiento del CEJ, lo pegas y el agente lo ordena.</p></details>
-  <details><summary>¿Folio reemplaza al abogado?</summary><p>No. Organiza información y propone borradores. Verifica toda cita, norma y plazo antes de usarla.</p></details>
-  <details><summary>¿Qué pasa si borro los datos del navegador?</summary><p>Perderías la bóveda. Descarga periódicamente la copia de seguridad cifrada desde Ajustes.</p></details>
+  <div class="wrap">
+    <div class="head reveal"><h2>Preguntas frecuentes</h2></div>
+    <div class="faq reveal">
+      <details><summary>¿Folio es gratis?</summary><p>Sí. Es gratuito y de código abierto (AGPL-3.0). Solo pagas el uso de IA a tu proveedor.</p></details>
+      <details><summary>¿Mis expedientes se suben a internet?</summary><p>No. Se guardan cifrados en tu navegador. Solo sale hacia el proveedor de IA el texto de cada consulta, seudonimizado y después de que lo revises.</p></details>
+      <details><summary>¿Se conecta al CEJ o a SINOE?</summary><p>No de forma automática. Copias el seguimiento del CEJ, lo pegas y el agente lo ordena.</p></details>
+      <details><summary>¿Folio reemplaza al abogado?</summary><p>No. Organiza información y propone borradores. Verifica toda cita, norma y plazo antes de usarla.</p></details>
+      <details><summary>¿Qué pasa si borro los datos del navegador?</summary><p>Perderías la bóveda. Descarga periódicamente la copia de seguridad cifrada desde Ajustes.</p></details>
+      <details><summary>¿Es legal usar IA con datos de mis clientes?</summary><p>El abogado es el responsable del tratamiento. Folio te da seudonimización, registro de envíos y un modelo de autorización, pero revisa tus obligaciones bajo la Ley N.° 29733 y su reglamento.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap reveal">
+    <h2>Construyamos Folio juntos</h2>
+    <p style="color:var(--desc);max-width:640px;margin:0 auto">Folio está en versión de prueba y evoluciona con lo que piden los abogados. Reporta problemas, propone mejoras o revisa el código.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/mscnegocio-del/Folio"><svg><use href="#gh"/></svg>Ver en GitHub</a>
+      <a class="btn btn-secondary" href="https://github.com/mscnegocio-del/Folio/releases/latest">Descargar</a>
+      <a class="btn btn-secondary" href="https://github.com/mscnegocio-del/Folio/issues">Reportar un problema</a>
+      <a class="btn btn-secondary" href="https://github.com/mscnegocio-del/Folio/blob/main/docs/guia-api-keys.md">Guía de keys</a>
+    </div>
+    <p class="note">Folio no es asesoría legal. Los textos legales incluidos son borradores pendientes de validación.</p>
+  </div>
 </section>
 </main>
 
 <footer>
-  <p><strong>Folio</strong> es un proyecto personal y de código abierto de Milton Salcedo Cruz (Huancayo, Perú) · <a href="mailto:mscnegocio@gmail.com">mscnegocio@gmail.com</a> · <a href="https://github.com/mscnegocio-del/Folio">Código en GitHub</a></p>
-  <p>Versión de prueba. Folio no es asesoría legal. Los textos legales incluidos son borradores pendientes de validación.</p>
+  <div class="wrap">
+    <p>Código abierto · AGPL-3.0 · © 2026 Milton Salcedo Cruz, Huancayo, Perú</p>
+    <nav><a href="mailto:mscnegocio@gmail.com">Contacto</a><a href="https://github.com/mscnegocio-del/Folio">GitHub</a></nav>
+  </div>
 </footer>
-</div>
+
+<script>
+(function(){
+  var top=document.getElementById('top');
+  addEventListener('scroll',function(){top.classList.toggle('scrolled',scrollY>8)},{passive:true});
+  var els=document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+  els.forEach(function(e){io.observe(e)});
+})();
+</script>
 </body>
 </html>
