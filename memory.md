@@ -1,5 +1,5 @@
 # Estado actual — Folio
-> Última actualización: 2026-09-30 · Versión: 0.3.0
+> Última actualización: 2026-10-01 · Versión: 0.3.1
 
 ## ✅ Completado
 - [x] Investigación de mercado (sept. 2026): BYOK existe globalmente; en Perú nadie combina BYOK + memoria por expediente → process/research.md
@@ -42,7 +42,7 @@
 ## 📌 Próximos pasos (próxima sesión)
 1. Registrar el sitio en Google Search Console y enviar sitemap.xml (lo hace el usuario)
 2. Probar con un PDF real (pdf.js por CDN nunca se probó en el entorno de desarrollo) y con OpenAI/Anthropic directos
-3. Publicar la re-aceptación (T-201, ya en `main`) en un Release v0.3.1 cuando el usuario lo indique
+3. Verificar el aviso de nueva versión en la red del PJ (proxy Forcepoint puede bloquear api.github.com; falla en silencio) y probar el traspaso de datos en Firefox
 4. Prueba con 3–5 abogados de confianza; registrar fricciones en process/tasks.md
 5. Prueba ciega de calidad: 20 tareas reales anonimizadas, DeepSeek V4.1 Flash vs Gemini 3.8 Flash vs Sonnet 5.5
 
@@ -51,3 +51,4 @@
 - 2026-09-30: sitio rediseñado con estilo oscuro tipo DeepSeek Harness (Montserrat/DM Sans/Fragment Mono, botones píldora); sin logos ni textos de DeepSeek.
 - 2026-09-30: v0.3.0 — app rediseñada con el sistema del sitio (DM Sans/Montserrat/Fragment Mono, acento azul, píldoras), fuentes en base64 (src/fonts.css), sin Google Fonts; e2e TODO OK.
 - 2026-10-01: T-201 hecho — pantalla de re-aceptación tras desbloquear (POLICY_CHANGES en legal.js, consent.history); e2e TODO OK. Sin Release aún.
+- 2026-10-01: v0.3.1 publicada — re-aceptación de avisos (T-201) + aviso de nueva versión desde GitHub (política 2026-10-01). Los usuarios de v0.3.0 o anteriores deben descargar v0.3.1 a mano una vez; desde ahí la app avisa sola.

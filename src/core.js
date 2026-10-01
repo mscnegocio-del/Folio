@@ -2,7 +2,7 @@
    Folio MVP · núcleo
    Todo corre en el navegador. No hay servidor de Folio.
    ============================================================ */
-const APP = { name: 'Folio', version: '0.3.0', policyVersion: '2026-09-30 r2 (borrador)' };
+const APP = { name: 'Folio', version: '0.3.1', policyVersion: '2026-10-01 (borrador)' };
 const ITER = 310000;
 const te = new TextEncoder(), td = new TextDecoder();
 const $ = (s, el = document) => el.querySelector(s);
@@ -120,7 +120,27 @@ const OR_RECOMMENDED = [
   { id: 'google/gemini-3.8-flash', name: 'Gemini 3.8 Flash', tag: 'Rápido' },
   { id: 'deepseek/deepseek-v4.1-flash', name: 'DeepSeek V4.1 Flash', tag: 'Económico' }
 ];
-const DEFAULT_SETTINGS = { provider: 'openrouter', baseUrl: '', apiKey: '', model: '', zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto', lastExp: null };
+const DEFAULT_SETTINGS = { provider: 'openrouter', baseUrl: '', apiKey: '', model: '', zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto', lastExp: null, updateCheck: true, updateLastCheck: 0, updateKnown: null };
+/* ---------- Aviso de nuevas versiones ----------
+   Una consulta GET pública a GitHub (sin datos del abogado ni de expedientes). Declarada en la política, sección 9.
+   Se desactiva en Ajustes → Actualizaciones. */
+const UPDATE_EVERY_MS = 12 * 3600 * 1000;
+function cmpVersion(a, b) {
+  const pa = String(a).replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0), pb = String(b).replace(/^v/, '').split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0) ? 1 : -1;
+  return 0;
+}
+async function fetchLatestRelease() {
+  const m = /github\.com\/([^/]+)\/([^/#?]+)/.exec(OWNER.repo || ''); if (!m) return null;
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+  try {
+    const r = await fetch(`https://api.github.com/repos/${m[1]}/${m[2].replace(/\.git$/, '')}/releases/latest`, { headers: { accept: 'application/vnd.github+json' }, credentials: 'omit', cache: 'no-store', signal: ctl.signal });
+    if (!r.ok) return null;
+    const j = await r.json(); if (!j.tag_name) return null;
+    const asset = (j.assets || []).find(a => /\.html$/i.test(a.name));
+    return { version: String(j.tag_name).replace(/^v/, ''), page: j.html_url, file: asset ? asset.browser_download_url : j.html_url, publishedAt: j.published_at || '' };
+  } catch { return null; } finally { clearTimeout(t); }
+}
 const provLabel = k => (PROVIDERS[k] || PROVIDERS.custom).label;
 function baseOf(cfg) { const p = PROVIDERS[cfg.provider] || PROVIDERS.custom; return ((cfg.provider === 'custom' || cfg.provider === 'ollama') ? (cfg.baseUrl || p.base) : p.base).replace(/\/+$/, ''); }
 function isReady(cfg) { if (!cfg || !cfg.model) return false; if (cfg.provider === 'custom') return !!cfg.baseUrl; return !!cfg.apiKey; }

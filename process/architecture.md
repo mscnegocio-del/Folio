@@ -84,6 +84,11 @@ folio/
 - Elemento distintivo: sello azul "Guardado solo en este equipo" con animación de estampado única; foliador "Fs. N" en documentos.
 - Responsive: <1180 px el agente pasa a pestaña; <820 px la barra lateral es un cajón. Grillas con `minmax(0,1fr)` para evitar desbordes.
 
+## Aviso de nuevas versiones
+- `fetchLatestRelease()` (core.js) → `GET https://api.github.com/repos/<OWNER.repo>/releases/latest`, sin credenciales, 8 s de tiempo límite; falla en silencio (p. ej., proxy corporativo).
+- `maybeCheckUpdate()` (ui.js) tras entrar a la app, como máximo cada 12 h (`settings.updateLastCheck`); el resultado se guarda cifrado en `settings.updateKnown`.
+- Barra `.update-bar` no bloqueante; "Más tarde" la oculta hasta el próximo desbloqueo. Ajustes → Actualizaciones permite desactivarla (`settings.updateCheck`).
+
 ## Restricciones de entorno
 - Se abre desde `file://` → origen `null`; Chrome/Edge/Firefox lo tratan como contexto seguro (crypto.subtle disponible).
 - Los datos viven en el IndexedDB del navegador: borrar datos de navegación borra la bóveda → copia de seguridad cifrada.

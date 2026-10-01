@@ -18,7 +18,7 @@ SHOTS = Path(__file__).resolve().parent / "shots"
 SHOTS.mkdir(exist_ok=True)
 PASS = "Litigio-Seguro-2026"
 REAL_DATA = ["Rosa Elena", "Huamán", "HUAMÁN", "45879632", "41236598", "964 123 456", "rosa.quispe", "Los Pinos"]
-sent, errors, failures, font_requests = [], [], [], []
+sent, errors, failures, font_requests, update_requests = [], [], [], [], []
 
 
 def check(cond, msg):
@@ -47,6 +47,11 @@ def handle(route, request):
         chunks = ["**MOCK.** [PERSONA_1] demanda alimentos contra [PERSONA_2].\n\n", "- Verifica plazos con tu SINOE.\n"]
         sse = "".join("data: " + json.dumps({"choices": [{"delta": {"content": c}}]}) + "\n\n" for c in chunks) + "data: [DONE]\n\n"
         return route.fulfill(status=200, headers={"content-type": "text/event-stream"}, body=sse)
+    if "api.github.com" in url and url.endswith("/releases/latest"):
+        update_requests.append({"method": request.method, "body": request.post_data})
+        return route.fulfill(status=200, content_type="application/json", body=json.dumps({
+            "tag_name": "v9.9.9", "html_url": "https://github.com/mscnegocio-del/Folio/releases/tag/v9.9.9", "published_at": "2026-10-01T00:00:00Z",
+            "assets": [{"name": "folio.html", "browser_download_url": "https://github.com/mscnegocio-del/Folio/releases/download/v9.9.9/folio.html"}]}))
     if url.endswith("/models"):
         return route.fulfill(status=200, content_type="application/json",
                              body=json.dumps({"data": [{"id": "anthropic/claude-sonnet-5.5"}, {"id": "x/free-model:free"}]}))
@@ -131,6 +136,25 @@ with sync_playwright() as p:
     rp.fill("input[name=pass]", PASS); rp.click("[data-form=unlock] button"); rp.wait_for_selector(".empty", timeout=15000)
     check(rp.query_selector(".reconsent") is None, "re-aceptación: no se vuelve a pedir tras aceptar")
     r.close()
+
+    # Aviso de nueva versión: no bloquea, explica cómo actualizar y se puede posponer
+    u = b.new_context(viewport={"width": 1280, "height": 860}); up = u.new_page()
+    up.on("pageerror", lambda e: errors.append("actualización: " + str(e))); up.route("**/*", handle)
+    onboarding(up, with_provider=False); up.wait_for_selector(".update-bar", timeout=10000)
+    check("9.9.9" in up.inner_text(".update-bar"), "actualización: aviso de nueva versión visible")
+    check(all(r["method"] == "GET" and not r["body"] for r in update_requests), "actualización: consulta GET sin datos")
+    up.click("[data-action=load-sample]"); up.wait_for_selector(".caratula")
+    check(up.query_selector(".update-bar") is not None, "actualización: se puede seguir trabajando con el aviso")
+    up.click("[data-action=update-how]"); up.wait_for_selector(".update-steps")
+    check(up.get_attribute(".update-steps a.btn", "href").endswith("/v9.9.9/folio.html"), "actualización: enlace de descarga al archivo nuevo")
+    up.screenshot(path=str(SHOTS / "06-actualizar.png")); up.click("[data-action=dlg-close]")
+    up.click("[data-action=update-later]"); up.wait_for_timeout(200)
+    check(up.query_selector(".update-bar") is None, "actualización: 'Más tarde' oculta el aviso")
+    n = len(update_requests)
+    up.click(".side [data-action=lock-now]"); up.wait_for_selector(".lock")
+    up.fill("input[name=pass]", PASS); up.click("[data-form=unlock] button"); up.wait_for_selector(".caratula", timeout=15000); up.wait_for_timeout(400)
+    check(len(update_requests) == n and up.query_selector(".update-bar") is not None, "actualización: no repite la consulta en 12 h y recuerda el aviso")
+    u.close()
 
     m = b.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2); mp = m.new_page()
     mp.on("pageerror", lambda e: errors.append("móvil: " + str(e))); mp.route("**/*", handle)

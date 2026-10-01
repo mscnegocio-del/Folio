@@ -1,11 +1,14 @@
 # Changelog — Folio
 
-## [Sin publicar]
+## [0.3.1] — 2026-10-01
 ### Agregado
+- Aviso de nueva versión: al desbloquear, Folio consulta la página pública de versiones en GitHub (máximo dos veces al día) y, si hay una más reciente, muestra una barra que no interrumpe el trabajo, con "Actualizar" (copia de seguridad, descarga y pasos) y "Más tarde".
+- Ajustes → Actualizaciones: activar o desactivar la búsqueda y "Buscar ahora".
+- Política de privacidad (versión "2026-10-01"): declara la consulta a GitHub. Quien venga de una versión anterior verá la pantalla de re-aceptación.
 - Re-aceptación de avisos (T-201): si la política o los términos cambiaron desde la última aceptación, Folio muestra qué cambió al desbloquear y pide aceptarlos para continuar. "Ahora no" bloquea sin borrar nada.
 - Historial de aceptaciones en este equipo; Ajustes indica cuántas aceptaciones anteriores hay.
 ### Pruebas
-- La prueba end-to-end cubre la re-aceptación: botón bloqueado sin casilla, rechazo, aceptación e historial.
+- La prueba end-to-end cubre la re-aceptación (botón bloqueado sin casilla, rechazo, aceptación e historial) y el aviso de nueva versión (consulta GET sin datos, seguir trabajando, enlace de descarga, "Más tarde", límite de 12 h).
 
 ## [0.3.0] — 2026-09-30
 ### Cambiado

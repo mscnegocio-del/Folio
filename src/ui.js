@@ -4,7 +4,7 @@
 const S = {
   screen: 'boot', bootError: '', onb: null, settings: null, draftCfg: null, index: [], exp: null, docTexts: {},
   tab: 'memoria', view: 'exp', sideOpen: false, sending: false, abort: null, audit: [], lastSend: null,
-  stampPress: false, lastActive: Date.now(), filter: '', consent: null
+  stampPress: false, lastActive: Date.now(), filter: '', consent: null, updateHidden: false
 };
 const root = () => $('#root');
 // Logo: el mismo del sitio web (ícono de documento + "folio" + insignia Beta)
@@ -251,7 +251,7 @@ async function doUnlock(pass) {
 }
 function lockNow(msg) {
   if (S.sending && S.abort) S.abort.abort();
-  Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, consent: null, screen: 'lock', view: 'exp' });
+  Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, consent: null, updateHidden: false, screen: 'lock', view: 'exp' });
   closeDialog(); render(); if (msg) toast(msg);
 }
 setInterval(() => {
@@ -299,6 +299,7 @@ async function enterApp() {
   const last = S.settings.lastExp && S.index.find(x => x.id === S.settings.lastExp);
   if (last) await openExp(last.id, true); else { S.exp = null; render(); }
   setTimeout(() => { S.stampPress = false; }, 50);
+  maybeCheckUpdate().catch(() => {});
 }
 function caratulaTitle(e) {
   const cli = e.partes.filter(p => p.esCliente).map(p => p.nombre).join(', ');
@@ -391,10 +392,40 @@ function renderApp() {
     ${sidebarHTML()}
     <div class="main">
       <div class="topbar"><button class="btn ghost sm" data-action="open-side">☰ Expedientes</button><div class="brand" style="font-size:1.1rem">${BRAND}</div></div>
+      ${updateBarHTML()}
       ${main}
     </div></div>`;
   S.stampPress = false;
   scrollMsgs();
+}
+/* ---------- Aviso de nueva versión (no bloquea el trabajo) ---------- */
+function pendingUpdate() { const k = S.settings?.updateKnown; return k && cmpVersion(k.version, APP.version) > 0 ? k : null; }
+function updateBarHTML() {
+  const k = pendingUpdate(); if (!k || S.updateHidden) return '';
+  return `<div class="update-bar" role="status"><span><strong>Hay una nueva versión de Folio: v${esc(k.version)}.</strong> <span class="muted">Puedes seguir trabajando y actualizar cuando quieras; tus expedientes se mantienen.</span></span>
+    <span class="row" style="flex-wrap:nowrap"><button class="btn primary sm" data-action="update-how">Actualizar</button><button class="btn ghost sm" data-action="update-later">Más tarde</button></span></div>`;
+}
+async function maybeCheckUpdate(force = false) {
+  const s = S.settings; if (!s || (!s.updateCheck && !force)) return null;
+  if (!force && Date.now() - (s.updateLastCheck || 0) < UPDATE_EVERY_MS) return pendingUpdate();
+  const rel = await fetchLatestRelease();
+  if (!S.settings) return null; // se bloqueó mientras consultaba
+  S.settings.updateLastCheck = Date.now();
+  if (rel) S.settings.updateKnown = rel;
+  await saveSettings();
+  if (S.screen === 'app' && !S.updateHidden && !!pendingUpdate() !== !!$('.update-bar')) render();
+  return rel;
+}
+function showUpdateHow() {
+  const k = pendingUpdate(); if (!k) return;
+  openDialog({ title: `Actualizar a Folio v${esc(k.version)}`, body: `<p>Tus expedientes no están dentro del archivo: se guardan cifrados en este navegador. Por eso el archivo nuevo los encuentra al abrirlo.</p>
+    <ol class="update-steps">
+      <li><strong>Por precaución, descarga una copia de seguridad.</strong><br><button class="btn sm" data-action="export-backup" style="margin-top:.4rem">Descargar copia de seguridad</button></li>
+      <li><strong>Descarga el nuevo archivo.</strong><br><a class="btn primary sm" style="margin-top:.4rem" href="${esc(k.file)}" target="_blank" rel="noopener noreferrer">Descargar folio.html v${esc(k.version)}</a> <a class="small" href="${esc(k.page)}" target="_blank" rel="noopener noreferrer">Ver novedades</a></li>
+      <li><strong>Cierra esta pestaña y abre el archivo nuevo con doble clic</strong>, en el mismo navegador de siempre. Desbloquéalo con tu contraseña de siempre.</li>
+    </ol>
+    <div class="note"><p>En Chrome y Edge tus expedientes aparecen aunque el archivo nuevo esté en otra carpeta (por ejemplo, Descargas). En Firefox, guarda el archivo nuevo reemplazando el anterior. Si no ves tus expedientes, restaura la copia desde Ajustes → Copia de seguridad.</p></div>`,
+    foot: `<button class="btn" data-action="dlg-close">Seguir trabajando</button>` });
 }
 function emptyHTML() {
   return `<div class="empty"><div class="stamp ${S.stampPress ? 'press' : ''}" style="margin-bottom:2rem"><b>Guardado solo en este equipo</b><span>Bóveda abierta</span></div>
@@ -726,10 +757,20 @@ function settingsHTML() {
       ${S.audit.length ? `<div class="table-wrap"><table class="audit"><thead><tr><th>Fecha</th><th>Acción</th><th>Expediente</th><th>Destino</th><th>Datos reemplazados</th></tr></thead><tbody>${S.audit.slice(0, 50).map(a => `<tr><td class="mono">${esc(fmtDateTime(a.at))}</td><td>${esc(a.kind)}</td><td class="mono">${esc(a.exp)}</td><td>${esc(provLabel(a.provider))}<br><span class="muted">${esc(a.model)}</span></td><td>${a.pseudo ? a.replaced : 'Desactivado'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="small muted">Aún no hay envíos.</p>'}</section>
     <section class="sheet"><h3>Documentos legales</h3><p class="hint" id="consent-line"></p>
       <div class="row"><button class="btn" data-action="show-policy">Política de privacidad</button><button class="btn" data-action="show-terms">Términos de uso</button><button class="btn" data-action="show-clause">Autorización para clientes</button></div></section>
+    <section class="sheet"><h3>Actualizaciones</h3><p class="hint">Estás usando Folio v${esc(APP.version)}.</p>
+      <label class="switch" style="margin-bottom:1rem"><input type="checkbox" data-setting="updateCheck" ${s.updateCheck ? 'checked' : ''}><span><strong>Buscar nuevas versiones al abrir Folio</strong><br><span class="small muted">Consulta la página pública de versiones en GitHub como máximo dos veces al día. No envía datos tuyos ni de tus expedientes; GitHub ve tu dirección IP.</span></span></label>
+      <div class="row"><button class="btn sm" data-action="check-update">Buscar ahora</button><span id="update-result" class="small muted">${pendingUpdate() ? `Hay una nueva versión: v${esc(pendingUpdate().version)}. <a href="#" data-action="update-how">Cómo actualizar</a>` : ''}</span></div></section>
     <section class="sheet"><h3>Apariencia</h3><label class="field" style="max-width:280px"><span>Tema</span><select class="select" data-setting="theme">${[['auto', 'Según el sistema'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([v, l]) => `<option value="${v}" ${s.theme === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label></section>
     <section class="sheet"><h3>Qué no hace esta versión</h3><ul class="small"><li>No se conecta al CEJ ni al SINOE: pegas el seguimiento y el agente lo ordena.</li><li>No lee documentos escaneados como imagen.</li><li>No sincroniza entre equipos ni tiene app móvil.</li><li>No calcula plazos procesales: los registras tú.</li></ul><p class="tiny muted">Folio ${esc(APP.version)}</p></section>
     <section class="sheet" style="border-color:var(--danger)"><h3>Borrar todo</h3><p class="hint">Elimina de este navegador todos los expedientes, documentos, conversaciones, ajustes y el registro de envíos.</p><button class="btn danger" data-action="wipe-all">Borrar todos los datos de este equipo</button></section>
   </div></div>`;
+}
+async function checkUpdateNow() {
+  const out = $('#update-result'); if (out) out.textContent = 'Buscando…';
+  const rel = await maybeCheckUpdate(true); const el = $('#update-result'); if (!el) return;
+  if (!rel) el.innerHTML = '<span style="color:var(--warn)">No se pudo consultar GitHub. Revisa tu conexión o inténtalo más tarde.</span>';
+  else if (pendingUpdate()) { S.updateHidden = false; el.innerHTML = `Hay una nueva versión: v${esc(rel.version)}. <a href="#" data-action="update-how">Cómo actualizar</a>`; }
+  else el.textContent = 'Ya tienes la versión más reciente.';
 }
 async function fillConsentLine() {
   const c = await DB.get('consent'); const el = $('#consent-line');
@@ -832,6 +873,9 @@ document.addEventListener('click', async ev => {
       case 'save-provider': Object.assign(S.settings, pickCfg(S.draftCfg)); await saveSettings(); toast(isReady(S.settings) ? 'Proveedor guardado.' : 'Guardado. Falta la key o el modelo para usar el agente.', !isReady(S.settings)); break;
       case 'lock-now': lockNow(); break;
       case 'reconsent-accept': await acceptReconsent(); break;
+      case 'update-how': showUpdateHow(); break;
+      case 'update-later': S.updateHidden = true; $('.update-bar')?.remove(); toast('Te lo recordaremos la próxima vez que abras Folio.'); break;
+      case 'check-update': await checkUpdateNow(); break;
       case 'reconsent-decline': lockNow('Folio quedó bloqueado. Para usarlo debes aceptar los avisos vigentes.'); break;
       case 'change-pass': await changePassFlow(); break;
       case 'export-backup': await exportBackup(); break;
