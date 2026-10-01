@@ -1,0 +1,9 @@
+.DS_Store
+Thumbs.db
+__pycache__/
+*.folio
+*.csv
+node_modules/
+tests/shots/
+
+*.zip

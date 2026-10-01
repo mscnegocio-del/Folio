@@ -1,0 +1,1758 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Folio · Agente de IA para litigantes</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='6' y='3' width='20' height='26' rx='2' fill='none' stroke='%235B3FC4' stroke-width='3'/%3E%3Cpath d='M11 11h10M11 16h10M11 21h6' stroke='%235B3FC4' stroke-width='2.4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1F2EE; --sheet:#FFFFFF; --sheet-2:#F8F8F5;
+  --ink:#1E2230; --graphite:#5A6072; --faint:#8A8F9C;
+  --rule:#DADCD5; --rule-strong:#B8BCB1;
+  --stamp:#5B3FC4; --stamp-ink:#4A31AE; --stamp-soft:#ECE8FB;
+  --manila:#CDB27A; --manila-soft:#F5EEDC;
+  --danger:#B3302D; --danger-soft:#FAE8E6;
+  --ok:#2C7650; --ok-soft:#E3F1E9;
+  --warn:#8C6200; --warn-soft:#FAF0D6;
+  --ui:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --type:"Courier Prime","Courier New",ui-monospace,monospace;
+  --r-control:4px; --r-sheet:6px;
+  --shadow-sheet:0 1px 0 rgba(30,34,48,.06),0 8px 24px -16px rgba(30,34,48,.25);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#15171D; --sheet:#1D2029; --sheet-2:#232733;
+    --ink:#E8E9EE; --graphite:#A9AEBD; --faint:#7C8192;
+    --rule:#2E3240; --rule-strong:#444A5C;
+    --stamp:#A594FF; --stamp-ink:#B9ABFF; --stamp-soft:#2A2548;
+    --manila:#B99B5E; --manila-soft:#2B2618;
+    --danger:#FF8A80; --danger-soft:#3A1F1F;
+    --ok:#7FD1A3; --ok-soft:#1B3127;
+    --warn:#F2C35B; --warn-soft:#352B14;
+    --shadow-sheet:0 1px 0 rgba(0,0,0,.3),0 12px 28px -18px rgba(0,0,0,.7);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#15171D; --sheet:#1D2029; --sheet-2:#232733;
+  --ink:#E8E9EE; --graphite:#A9AEBD; --faint:#7C8192;
+  --rule:#2E3240; --rule-strong:#444A5C;
+  --stamp:#A594FF; --stamp-ink:#B9ABFF; --stamp-soft:#2A2548;
+  --manila:#B99B5E; --manila-soft:#2B2618;
+  --danger:#FF8A80; --danger-soft:#3A1F1F;
+  --ok:#7FD1A3; --ok-soft:#1B3127;
+  --warn:#F2C35B; --warn-soft:#352B14;
+  --shadow-sheet:0 1px 0 rgba(0,0,0,.3),0 12px 28px -18px rgba(0,0,0,.7);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 var(--ui);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3,h4{line-height:1.2;margin:0;font-weight:700;letter-spacing:-.01em}
+p{margin:0 0 .8em}
+a{color:var(--stamp-ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:var(--type)}
+.muted{color:var(--graphite)}
+.small{font-size:.875rem}
+.tiny{font-size:.8125rem}
+
+/* Controls */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45em;border:1px solid var(--rule-strong);background:var(--sheet);color:var(--ink);padding:.55em 1em;border-radius:var(--r-control);cursor:pointer;font-weight:700;font-size:.9375rem;line-height:1.2;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--stamp);border-color:var(--stamp);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#15171D}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary{color:#15171D}}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--graphite)}
+.btn.ghost:hover{color:var(--ink);background:var(--sheet-2)}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+.btn.sm{padding:.35em .7em;font-size:.8125rem}
+.btn.block{width:100%}
+.field{display:grid;gap:.3em;margin-bottom:1em}
+.field>span{font-size:.875rem;font-weight:700}
+.field small{color:var(--graphite);font-size:.8125rem}
+.input,.select,.textarea{width:100%;border:1px solid var(--rule-strong);background:var(--sheet);border-radius:var(--r-control);padding:.6em .75em;line-height:1.4}
+.textarea{resize:vertical;min-height:5.5em}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--stamp);box-shadow:0 0 0 3px var(--stamp-soft)}
+.input.mono{letter-spacing:.02em}
+.row{display:flex;gap:.6em;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 1em}
+@media (max-width:640px){.grid2{grid-template-columns:1fr}}
+.check{display:grid;grid-template-columns:auto 1fr;gap:.7em;align-items:start;padding:.85em 1em;border:1px solid var(--rule);border-radius:var(--r-control);background:var(--sheet);margin-bottom:.6em;cursor:pointer}
+.check input{width:1.15em;height:1.15em;margin-top:.2em;accent-color:var(--stamp)}
+.check:has(input:checked){border-color:var(--stamp);background:var(--stamp-soft)}
+.switch{display:flex;align-items:flex-start;gap:.75em;cursor:pointer}
+.switch input{appearance:none;flex:none;width:2.4em;height:1.4em;border-radius:1em;background:var(--rule-strong);position:relative;cursor:pointer;margin-top:.1em;transition:background .15s}
+.switch input::after{content:"";position:absolute;top:.2em;left:.2em;width:1em;height:1em;border-radius:50%;background:#fff;transition:transform .15s}
+.switch input:checked{background:var(--stamp)}
+.switch input:checked::after{transform:translateX(1em)}
+.note{border-left:3px solid var(--manila);background:var(--manila-soft);padding:.75em 1em;border-radius:0 var(--r-control) var(--r-control) 0;font-size:.9375rem}
+.note.warn{border-color:var(--warn);background:var(--warn-soft)}
+.note.danger{border-color:var(--danger);background:var(--danger-soft)}
+.note.ok{border-color:var(--ok);background:var(--ok-soft)}
+.note p:last-child{margin:0}
+.chip{display:inline-flex;align-items:center;gap:.35em;font-size:.75rem;font-weight:700;padding:.15em .55em;border-radius:3px;border:1px solid var(--rule-strong);color:var(--graphite);white-space:nowrap}
+.chip.due{border-color:var(--danger);color:var(--danger);background:var(--danger-soft)}
+.chip.soon{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
+.chip.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-soft)}
+
+/* Stamp: the one memorable element */
+.stamp{display:inline-grid;gap:.1em;font-family:var(--type);color:var(--stamp);border:2px solid currentColor;outline:1px solid currentColor;outline-offset:3px;border-radius:9px;padding:.35em .8em;transform:rotate(-2.5deg);line-height:1.15;text-align:center;background:transparent;mix-blend-mode:multiply;user-select:none}
+:root[data-theme="dark"] .stamp{mix-blend-mode:normal}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .stamp{mix-blend-mode:normal}}
+.stamp b{font-size:.95rem;font-weight:700}
+.stamp span{font-size:.7rem;opacity:.85}
+.stamp.big{font-size:1.2rem;padding:.6em 1.2em}
+.stamp.big b{font-size:1.35rem}
+.stamp.big span{font-size:.85rem}
+.stamp.press{animation:press .55s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes press{0%{transform:rotate(-9deg) scale(1.6);opacity:0}60%{transform:rotate(-2deg) scale(.96);opacity:1}100%{transform:rotate(-2.5deg) scale(1)}}
+@media (prefers-reduced-motion:reduce){.stamp.press{animation:none}}
+
+/* Screens */
+.screen-center{min-height:100vh;display:grid;place-items:center;padding:2rem 1rem}
+.lock{width:min(420px,100%);text-align:center}
+.lock .stamp{margin-bottom:2rem}
+.lock h1{font-size:1.75rem;margin-bottom:.4em}
+.lock form{margin-top:1.5rem;text-align:left}
+.brand{font-family:var(--type);font-weight:700;font-size:1.35rem;letter-spacing:-.02em;display:flex;align-items:center;gap:.4em}
+.brand i{display:inline-block;width:.9em;height:1.1em;border:2px solid var(--stamp);border-radius:2px;position:relative;font-style:normal}
+.brand i::after{content:"";position:absolute;right:-2px;top:-2px;width:.4em;height:.4em;background:var(--paper);border-left:2px solid var(--stamp);border-bottom:2px solid var(--stamp)}
+
+/* Onboarding */
+.onb{min-height:100vh;display:grid;grid-template-columns:300px 1fr}
+.onb aside{background:var(--sheet);border-right:1px solid var(--rule);padding:2rem 1.5rem;display:flex;flex-direction:column;gap:2rem}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:.25rem;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:2rem 1fr;align-items:center;padding:.5rem .25rem;color:var(--faint);font-weight:700;font-size:.9375rem}
+.steps li::before{content:counter(s);font-family:var(--type);width:1.6rem;height:1.6rem;display:grid;place-items:center;border:1.5px solid currentColor;border-radius:50%;font-size:.85rem}
+.steps li.done{color:var(--graphite)}
+.steps li.done::before{content:"✓";background:var(--stamp-soft);color:var(--stamp);border-color:var(--stamp)}
+.steps li.now{color:var(--ink)}
+.steps li.now::before{border-color:var(--stamp);background:var(--stamp);color:#fff}
+.onb main{padding:3.5rem clamp(1.25rem,5vw,4rem) 2rem;display:flex;flex-direction:column}
+.onb .content{max-width:640px;width:100%}
+.onb h1{font-size:clamp(1.75rem,3.2vw,2.35rem);margin-bottom:.6em}
+.onb .lead{font-size:1.125rem;color:var(--graphite);margin-bottom:1.6em;max-width:60ch}
+.onb .nav{margin-top:auto;padding-top:2rem;display:flex;justify-content:space-between;gap:1rem;max-width:640px}
+.onb .legal-links{font-size:.875rem;color:var(--graphite);display:grid;gap:.35rem}
+@media (max-width:820px){.onb{grid-template-columns:1fr}.onb aside{border-right:0;border-bottom:1px solid var(--rule);padding:1rem 1.25rem;gap:1rem}.steps{grid-auto-flow:column;overflow-x:auto}.steps li{grid-template-columns:1.9rem auto;font-size:.8125rem;white-space:nowrap;padding-right:.6rem}.onb main{padding-top:1.75rem}.onb .legal-links{display:none}}
+
+/* Flow diagram (onboarding step 1) */
+.flow{display:grid;grid-template-columns:1fr auto 1fr;gap:.75rem;align-items:stretch;margin:1.5rem 0}
+.flow .node{background:var(--sheet);border:1px solid var(--rule-strong);border-radius:var(--r-sheet);padding:1rem 1.1rem;box-shadow:var(--shadow-sheet)}
+.flow .node h3{font-size:1rem;margin-bottom:.4em}
+.flow .node ul{margin:0;padding-left:1.1em;color:var(--graphite);font-size:.9rem}
+.flow .node.you{border:2px solid var(--stamp)}
+.flow .arrow{display:grid;place-items:center;text-align:center;font-size:.8rem;color:var(--graphite);max-width:150px}
+.flow .arrow svg{width:64px;height:20px;color:var(--stamp)}
+.flow .none{grid-column:1/-1;border:1.5px dashed var(--rule-strong);border-radius:var(--r-sheet);padding:.8rem 1rem;color:var(--graphite);font-size:.9375rem;display:flex;gap:.75rem;align-items:center}
+.flow .none s{font-weight:700;color:var(--ink)}
+@media (max-width:640px){.flow{grid-template-columns:1fr}.flow .arrow svg{transform:rotate(90deg)}}
+
+/* App shell */
+.app{height:100vh;height:100dvh;display:grid;grid-template-columns:288px 1fr;grid-template-rows:minmax(0,1fr);overflow:hidden}
+.side{background:var(--sheet);border-right:1px solid var(--rule);display:flex;flex-direction:column;min-height:0}
+.side-top{padding:1rem 1rem .75rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.side .search{margin:0 1rem .75rem}
+.side-section{padding:.25rem 1rem .5rem}
+.side-section h2{font-size:.8125rem;color:var(--graphite);font-weight:700;margin:.5rem 0}
+.deadlines{list-style:none;margin:0;padding:0;display:grid;gap:.35rem}
+.deadlines li button{all:unset;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:.55rem;align-items:start;width:100%;font-size:.8125rem;padding:.3rem .25rem;border-radius:3px}
+.deadlines li button:hover{background:var(--sheet-2)}
+.deadlines li button:focus-visible{outline:2px solid var(--stamp)}
+.deadlines .d{font-family:var(--type);font-weight:700;min-width:3.4em}
+.explist{list-style:none;margin:0;padding:0 .5rem;overflow:auto;flex:1;min-height:0;border-top:1px solid var(--rule)}
+.explist li button{all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;padding:.7rem .6rem .7rem .9rem;border-bottom:1px solid var(--rule);position:relative}
+.explist li button:hover{background:var(--sheet-2)}
+.explist li button:focus-visible{outline:2px solid var(--stamp);outline-offset:-2px}
+.explist li button[aria-current="true"]{background:var(--stamp-soft)}
+.explist li button[aria-current="true"]::before{content:"";position:absolute;left:0;top:.6rem;bottom:.6rem;width:3px;background:var(--stamp);border-radius:2px}
+.explist .num{font-family:var(--type);font-size:.8125rem;font-weight:700;color:var(--ink);display:block;letter-spacing:.01em}
+.explist .tit{display:block;font-size:.9375rem;font-weight:700;margin:.1rem 0}
+.explist .meta{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;color:var(--graphite);font-size:.8125rem}
+.side-bottom{padding:.75rem 1rem;border-top:1px solid var(--rule);display:flex;gap:.5rem;justify-content:space-between}
+
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.topbar{display:none}
+.caratula{background:var(--sheet);border-bottom:1px solid var(--rule);padding:1.1rem 1.5rem 0;display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start}
+.caratula .expnum{font-family:var(--type);font-weight:700;font-size:clamp(1.15rem,2vw,1.5rem);letter-spacing:.01em;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.caratula .expnum button{font-family:var(--ui)}
+.caratula .partes{margin:.35rem 0 .2rem;font-size:1.05rem}
+.caratula .partes .vs{color:var(--graphite);font-weight:400;margin:0 .4em}
+.caratula .org{color:var(--graphite);font-size:.9rem}
+.caratula .stamp-slot{padding-top:.2rem}
+.tabs{grid-column:1/-1;display:flex;gap:.25rem;margin-top:.9rem;overflow-x:auto}
+.tabs button{all:unset;cursor:pointer;padding:.6rem .9rem;font-weight:700;font-size:.9375rem;color:var(--graphite);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button:focus-visible{outline:2px solid var(--stamp);outline-offset:-2px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--stamp)}
+.tabs .agent-tab{display:none}
+.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,42%);grid-template-rows:minmax(0,1fr)}
+.pane{overflow:auto;padding:1.5rem;min-height:0}
+.agent{border-left:1px solid var(--rule);background:var(--sheet);display:flex;flex-direction:column;min-height:0}
+@media (max-width:1180px){
+  .work{grid-template-columns:1fr}
+  .agent{display:none;border-left:0}
+  .tabs .agent-tab{display:block}
+  .work.show-agent .pane{display:none}
+  .work.show-agent .agent{display:flex}
+}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;inset:0 auto 0 0;width:min(320px,88vw);z-index:40;transform:translateX(-105%);transition:transform .2s;box-shadow:var(--shadow-sheet)}
+  .app.side-open .side{transform:none}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;background:var(--sheet);border-bottom:1px solid var(--rule)}
+  .caratula{grid-template-columns:1fr;padding:1rem 1rem 0}
+  .caratula .stamp-slot{display:none}
+  .pane{padding:1rem}
+}
+.scrim{display:none}
+@media (max-width:820px){.app.side-open .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:39}}
+
+/* Sheets inside panes */
+.sheet{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r-sheet);padding:1.1rem 1.25rem;margin-bottom:1.1rem}
+.sheet h3{font-size:1.05rem;margin-bottom:.2em}
+.sheet .hint{color:var(--graphite);font-size:.875rem;margin-bottom:.8em}
+.sheet-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.6rem}
+.memgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 1.1rem}
+.memgrid .span{grid-column:1/-1}
+@media (max-width:980px){.memgrid{grid-template-columns:1fr}}
+.list{list-style:none;margin:0;padding:0}
+.list li{display:grid;grid-template-columns:auto 1fr auto;gap:.6rem;align-items:start;padding:.5rem 0;border-bottom:1px dashed var(--rule)}
+.list li:last-child{border-bottom:0}
+.list input[type=checkbox]{width:1.05em;height:1.05em;margin-top:.25em;accent-color:var(--stamp)}
+.list .done{text-decoration:line-through;color:var(--faint)}
+.list .date{font-family:var(--type);font-weight:700;font-size:.875rem}
+.iconbtn{all:unset;cursor:pointer;color:var(--faint);padding:.15rem .35rem;border-radius:3px;font-size:.875rem;line-height:1}
+.iconbtn:hover{color:var(--danger);background:var(--danger-soft)}
+.iconbtn:focus-visible{outline:2px solid var(--stamp)}
+.addrow{display:flex;gap:.5rem;margin-top:.6rem}
+.addrow .input{flex:1}
+.partes-table{width:100%;border-collapse:collapse;font-size:.9375rem}
+.partes-table th{text-align:left;font-size:.8125rem;color:var(--graphite);font-weight:700;padding:.3rem .4rem;border-bottom:1px solid var(--rule)}
+.partes-table td{padding:.45rem .4rem;border-bottom:1px dashed var(--rule);vertical-align:top}
+.partes-table .tok{font-family:var(--type);font-size:.8125rem;color:var(--stamp-ink);background:var(--stamp-soft);padding:.05em .4em;border-radius:3px}
+.table-wrap{overflow-x:auto}
+
+/* Timeline */
+.timeline{list-style:none;margin:0;padding:0 0 0 1.1rem;border-left:2px solid var(--rule-strong)}
+.timeline li{position:relative;padding:.1rem 0 1.1rem 1rem}
+.timeline li::before{content:"";position:absolute;left:calc(-1.1rem - 6px);top:.45rem;width:10px;height:10px;border-radius:50%;background:var(--sheet);border:2px solid var(--stamp)}
+.timeline .when{font-family:var(--type);font-weight:700;font-size:.875rem}
+.timeline .acto{font-weight:700}
+.timeline .sum{color:var(--graphite);font-size:.9375rem}
+
+/* Documents with foliador */
+.docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+.doc{position:relative;background:var(--sheet);border:1px solid var(--rule);border-radius:3px;padding:1.9rem 1rem 1rem;min-height:140px;box-shadow:var(--shadow-sheet);display:flex;flex-direction:column;gap:.4rem}
+.doc::after{content:"";position:absolute;left:10px;right:10px;bottom:-5px;height:5px;border:1px solid var(--rule);border-top:0;border-radius:0 0 3px 3px;background:var(--sheet-2);z-index:-1}
+.folio{position:absolute;top:.5rem;right:.65rem;font-family:var(--type);font-weight:700;color:var(--stamp);font-size:.9rem;transform:rotate(3deg);border:1.5px solid currentColor;padding:0 .35em;border-radius:3px;opacity:.9}
+.doc .name{font-weight:700;word-break:break-word}
+.doc .actions{margin-top:auto;display:flex;gap:.35rem}
+.dropzone{border:2px dashed var(--rule-strong);border-radius:var(--r-sheet);padding:1.5rem;text-align:center;color:var(--graphite);margin-bottom:1rem;cursor:pointer;background:var(--sheet)}
+.dropzone.over{border-color:var(--stamp);background:var(--stamp-soft)}
+
+/* Agent */
+.agent-head{padding:.9rem 1.1rem;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.agent-head h2{font-size:1rem}
+.agent-head .prov{font-size:.8125rem;color:var(--graphite)}
+.msgs{flex:1;overflow:auto;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:1rem;min-height:0}
+.msg{max-width:100%}
+.msg.user{align-self:flex-end;background:var(--stamp-soft);border:1px solid color-mix(in srgb,var(--stamp) 25%,transparent);padding:.6rem .85rem;border-radius:10px 10px 2px 10px;max-width:88%;white-space:pre-wrap}
+.msg.assistant{font-size:.96875rem}
+.msg.assistant h1,.msg.assistant h2,.msg.assistant h3,.msg.assistant h4{font-size:1rem;margin:.9em 0 .35em}
+.msg.assistant ul,.msg.assistant ol{padding-left:1.25em;margin:.3em 0 .7em}
+.msg.assistant code{font-family:var(--type);background:var(--sheet-2);padding:0 .25em;border-radius:3px}
+.msg .foot{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.4rem;font-size:.75rem;color:var(--faint)}
+.msg.error{border-left:3px solid var(--danger);padding:.5rem .8rem;background:var(--danger-soft);font-size:.9rem}
+.typing{display:inline-flex;gap:4px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--graphite);animation:blink 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+.quick{display:flex;gap:.4rem;flex-wrap:wrap;padding:0 1.1rem .6rem}
+.quick button{all:unset;cursor:pointer;font-size:.8125rem;border:1px solid var(--rule-strong);padding:.3em .7em;border-radius:3px;color:var(--graphite)}
+.quick button:hover{color:var(--ink);border-color:var(--ink)}
+.quick button:focus-visible{outline:2px solid var(--stamp)}
+.composer{border-top:1px solid var(--rule);padding:.75rem 1.1rem 1rem}
+.composer .textarea{min-height:3.2em;max-height:12em}
+.composer .row{justify-content:space-between;margin-top:.5rem}
+.privacy-line{font-size:.75rem;color:var(--graphite);display:flex;gap:.35rem;align-items:center}
+.privacy-line .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.privacy-line .dot.off{background:var(--warn)}
+.empty-agent{margin:auto;text-align:center;color:var(--graphite);max-width:32ch;font-size:.9375rem}
+
+/* Empty state */
+.empty{margin:auto;max-width:560px;padding:3rem 1.5rem}
+.empty h1{font-size:clamp(1.6rem,3vw,2.1rem);margin-bottom:.5em}
+.empty .lead{color:var(--graphite);font-size:1.0625rem}
+.empty .row{margin-top:1.4rem}
+
+/* Settings */
+.settings{overflow:auto;padding:1.5rem;flex:1}
+.settings .wrap{max-width:760px}
+.settings h1{font-size:1.6rem;margin-bottom:1rem}
+.audit{width:100%;border-collapse:collapse;font-size:.8125rem}
+.audit th,.audit td{text-align:left;padding:.35rem .4rem;border-bottom:1px solid var(--rule)}
+.audit th{color:var(--graphite)}
+.audit td.mono{white-space:nowrap}
+
+/* Dialog */
+dialog{border:0;padding:0;border-radius:var(--r-sheet);background:var(--sheet);color:var(--ink);width:min(680px,94vw);max-height:88vh;box-shadow:0 24px 60px -20px rgba(0,0,0,.45)}
+dialog::backdrop{background:rgba(20,22,30,.45)}
+dialog .dlg{display:flex;flex-direction:column;max-height:88vh}
+dialog .dlg-head{padding:1rem 1.25rem;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;gap:1rem}
+dialog .dlg-head h2{font-size:1.15rem}
+dialog .dlg-body{padding:1.1rem 1.25rem;overflow:auto}
+dialog .dlg-foot{padding:.85rem 1.25rem;border-top:1px solid var(--rule);display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap}
+dialog.wide{width:min(900px,96vw)}
+.legal{font-size:.9375rem;line-height:1.62}
+.legal h3{font-size:1rem;margin:1.2em 0 .4em}
+.legal ol,.legal ul{padding-left:1.25em}
+.draft-banner{background:var(--warn-soft);border:1px solid var(--warn);color:var(--ink);padding:.6rem .9rem;border-radius:var(--r-control);font-size:.875rem;margin-bottom:1rem}
+.payload{font-family:var(--type);font-size:.8125rem;background:var(--sheet-2);border:1px solid var(--rule);border-radius:var(--r-control);padding:.8rem;white-space:pre-wrap;word-break:break-word;max-height:48vh;overflow:auto}
+.payload mark{background:var(--stamp-soft);color:var(--stamp-ink);padding:0 .15em;border-radius:2px}
+.proposal{list-style:none;padding:0;margin:0}
+.proposal li{margin-bottom:.5rem}
+
+/* Toast */
+.toasts{position:fixed;left:1rem;bottom:calc(1rem + env(safe-area-inset-bottom,0px));display:grid;gap:.5rem;z-index:100}
+.toast{background:var(--ink);color:var(--paper);padding:.6rem 1rem;border-radius:var(--r-control);font-size:.9rem;box-shadow:var(--shadow-sheet);max-width:min(420px,90vw)}
+.toast.err{background:var(--danger);color:#fff}
+
+/* Ajustes tras revisión visual */
+.onb h1:focus{outline:none}
+.flow .arrow{align-content:center;gap:.5rem}
+.addrow{flex-wrap:wrap}
+.addrow .input{flex:1 1 9em;min-width:0}
+.addrow input[type=date]{flex:0 0 10.5em}
+.toasts{left:50%;right:auto;top:calc(1rem + env(safe-area-inset-top,0px));bottom:auto;transform:translateX(-50%);justify-items:center}
+.stamp span{max-width:30ch;white-space:normal}
+.caratula .stamp-slot{max-width:300px}
+.agent-head>div:first-child{min-width:0}
+.agent-head .prov{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agent-head .row{flex-wrap:nowrap}
+.deadlines .muted.mono{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+details.instr{margin-top:.8rem;border:1px solid var(--rule);border-radius:var(--r-control);padding:.5rem .8rem}
+details.instr summary{cursor:pointer;font-weight:700;font-size:.875rem}
+details.instr .payload{margin-top:.6rem;max-height:30vh}
+.payload-label{font-size:.8125rem;font-weight:700;margin:.8rem 0 .3rem}
+@media (max-width:1180px){.work{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:820px){.app{grid-template-columns:minmax(0,1fr)}.sheet{padding:1rem}.caratula .expnum{font-size:1.1rem}}
+.sheet-head{flex-wrap:wrap}
+.pane,.main,.work>*{min-width:0}
+@media (max-width:980px){.memgrid{grid-template-columns:minmax(0,1fr)}}
+.memgrid>*{min-width:0}
+/* Guía de keys y modelos sugeridos */
+.linklike{all:unset;cursor:pointer;color:var(--stamp-ink);font-size:.8125rem;font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.linklike:focus-visible{outline:2px solid var(--stamp)}
+.presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.4rem;margin:.2rem 0 .5rem}
+.preset{all:unset;box-sizing:border-box;cursor:pointer;border:1px solid var(--rule-strong);border-radius:var(--r-control);padding:.45rem .6rem;display:grid;gap:.1rem;background:var(--sheet)}
+.preset strong{font-size:.875rem}
+.preset span{font-size:.75rem;color:var(--graphite)}
+.preset:hover{border-color:var(--ink)}
+.preset:focus-visible{outline:2px solid var(--stamp)}
+.preset.on{border-color:var(--stamp);background:var(--stamp-soft)}
+details.guide{border:1px solid var(--rule);border-radius:var(--r-control);padding:.6rem .9rem;margin-bottom:.6rem;background:var(--sheet)}
+details.guide summary{cursor:pointer;font-weight:700;display:flex;gap:.5rem;align-items:center}
+details.guide[open]{border-color:var(--stamp)}
+details.guide ol{padding-left:1.25em;margin:.6rem 0}
+details.guide li{margin-bottom:.35rem}
+details.guide code{font-family:var(--type);background:var(--sheet-2);padding:0 .25em;border-radius:3px}
+
+</style>
+</head>
+<body>
+<div id="root" aria-live="polite"></div>
+<dialog id="dlg" aria-labelledby="dlg-title"></dialog>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<input type="file" id="file-docs" hidden multiple accept=".pdf,.docx,.txt,.md">
+<input type="file" id="file-backup" hidden accept=".folio,.json">
+<noscript><p style="padding:2rem">Folio necesita JavaScript activado para funcionar.</p></noscript>
+<script>
+'use strict';
+/* ============================================================
+   Folio · configuración del autor
+   Edita estos valores antes de publicar una versión.
+   Usa un correo personal o creado para Folio, nunca uno institucional.
+   ============================================================ */
+const OWNER = {
+  name: '[NOMBRE DEL DESARROLLADOR]',
+  email: '[CORREO DE CONTACTO]',
+  city: '[CIUDAD]',
+  repo: '[URL DEL REPOSITORIO]',
+  // Opcional. Contacto para el servicio independiente y pagado de instalación de un servidor propio.
+  // Si queda vacío, Folio no muestra ninguna mención a ese servicio.
+  serviceContact: ''
+};
+
+/* ============================================================
+   Folio MVP · núcleo
+   Todo corre en el navegador. No hay servidor de Folio.
+   ============================================================ */
+const APP = { name: 'Folio', version: '0.2.0', policyVersion: '2026-09-30 (borrador)' };
+const ITER = 310000;
+const te = new TextEncoder(), td = new TextDecoder();
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+class FolioError extends Error {}
+
+function b64(u8) { let s = ''; const CH = 0x8000; for (let i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, u8.subarray(i, i + CH)); return btoa(s); }
+function unb64(str) { const bin = atob(str); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return u8; }
+
+function todayISO() { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function addDaysISO(n) { const d = new Date(); d.setDate(d.getDate() + n); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+function fmtDate(iso) { if (!iso) return 's/f'; const [y, m, d] = iso.slice(0, 10).split('-'); return `${d}/${m}/${y}`; }
+function daysUntil(iso) { const a = new Date(todayISO() + 'T00:00:00'); const b = new Date(iso + 'T00:00:00'); return Math.round((b - a) / 86400000); }
+function rel(ts) { const s = Math.round((Date.now() - ts) / 1000); if (s < 60) return 'hace un momento'; const m = Math.round(s / 60); if (m < 60) return `hace ${m} min`; const h = Math.round(m / 60); return `hace ${h} h`; }
+function fmtDateTime(iso) { const d = new Date(iso); return d.toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' }); }
+function norm(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+
+/* ---------- IndexedDB ---------- */
+const DB = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      let r; try { r = indexedDB.open('folio-mvp', 1); } catch (e) { return rej(e); }
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  st(mode) { return this.db.transaction('kv', mode).objectStore('kv'); },
+  rq(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  get(k) { return this.rq(this.st('readonly').get(k)); },
+  put(k, v) { return this.rq(this.st('readwrite').put(v, k)); },
+  del(k) { return this.rq(this.st('readwrite').delete(k)); },
+  keys() { return this.rq(this.st('readonly').getAllKeys()); },
+  clear() { return this.rq(this.st('readwrite').clear()); },
+  putMany(entries) {
+    return new Promise((res, rej) => {
+      const tx = this.db.transaction('kv', 'readwrite'); const s = tx.objectStore('kv');
+      for (const [k, v] of entries) s.put(v, k);
+      tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+    });
+  }
+};
+
+/* ---------- Bóveda cifrada ---------- */
+const Vault = {
+  key: null,
+  async derive(pass, salt, iter) {
+    const base = await crypto.subtle.importKey('raw', te.encode(pass), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  },
+  async encWith(key, obj) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te.encode(JSON.stringify(obj))));
+    return { iv: b64(iv), ct: b64(ct) };
+  },
+  async decWith(key, rec) {
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(rec.iv) }, key, unb64(rec.ct));
+    return JSON.parse(td.decode(pt));
+  },
+  async create(pass) {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const key = await this.derive(pass, salt, ITER);
+    const check = await this.encWith(key, { ok: 'folio' });
+    await DB.put('vault', { v: 1, salt: b64(salt), iter: ITER, check, createdAt: new Date().toISOString() });
+    this.key = key;
+  },
+  async unlock(pass) {
+    const meta = await DB.get('vault');
+    if (!meta) throw new FolioError('No hay una bóveda en este navegador.');
+    const key = await this.derive(pass, unb64(meta.salt), meta.iter);
+    try { const c = await this.decWith(key, meta.check); if (c.ok !== 'folio') throw 0; }
+    catch { throw new FolioError('La contraseña no coincide con esta bóveda.'); }
+    this.key = key;
+  },
+  async changePass(cur, nw) {
+    const meta = await DB.get('vault');
+    const oldKey = await this.derive(cur, unb64(meta.salt), meta.iter);
+    try { await this.decWith(oldKey, meta.check); } catch { throw new FolioError('La contraseña actual no es correcta.'); }
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const newKey = await this.derive(nw, salt, ITER);
+    const keys = (await DB.keys()).filter(k => k !== 'vault' && k !== 'consent');
+    const out = [];
+    for (const k of keys) { const obj = await this.decWith(oldKey, await DB.get(k)); out.push([k, await this.encWith(newKey, obj)]); }
+    out.push(['vault', { ...meta, salt: b64(salt), iter: ITER, check: await this.encWith(newKey, { ok: 'folio' }) }]);
+    await DB.putMany(out);
+    this.key = newKey;
+  },
+  lock() { this.key = null; }
+};
+const store = {
+  async get(k) { const r = await DB.get(k); return r ? Vault.decWith(Vault.key, r) : null; },
+  async put(k, o) { await DB.put(k, await Vault.encWith(Vault.key, o)); },
+  del(k) { return DB.del(k); }
+};
+
+/* ---------- Proveedores de IA (BYOK) ---------- */
+const PROVIDERS = {
+  openrouter: { label: 'OpenRouter', base: 'https://openrouter.ai/api/v1', kind: 'openai', keyHint: 'sk-or-v1-…', keyUrl: 'https://openrouter.ai/settings/keys', abroad: true,
+    note: 'Una sola key para modelos de varios proveedores. Permite exigir que solo respondan proveedores sin retención de datos.' },
+  openai: { label: 'OpenAI', base: 'https://api.openai.com/v1', kind: 'openai', keyHint: 'sk-…', keyUrl: 'https://platform.openai.com/api-keys', abroad: true,
+    note: 'API de OpenAI con tu cuenta de platform.openai.com. Una suscripción a ChatGPT Plus no sirve aquí.' },
+  anthropic: { label: 'Anthropic (Claude)', base: 'https://api.anthropic.com/v1', kind: 'anthropic', keyHint: 'sk-ant-…', keyUrl: 'https://platform.claude.com', abroad: true,
+    note: 'API de Claude con tu cuenta de platform.claude.com. Una suscripción a Claude Pro no sirve aquí.' },
+  custom: { label: 'Servidor propio (lo configura un técnico)', base: '', kind: 'openai', keyHint: 'solo si tu servidor la pide', keyUrl: null, abroad: false,
+    note: 'Un modelo instalado en una computadora de tu oficina. Nada sale de tu red. Un técnico lo instala y te indica la dirección.' }
+};
+/* Modelos sugeridos en OpenRouter (verifica nombres y precios en cada versión) */
+const OR_RECOMMENDED = [
+  { id: 'anthropic/claude-sonnet-5.5', name: 'Claude Sonnet 5.5', tag: 'Recomendado' },
+  { id: 'openai/gpt-6.1-sol', name: 'GPT-6.1 Sol', tag: 'Recomendado' },
+  { id: 'google/gemini-3.8-flash', name: 'Gemini 3.8 Flash', tag: 'Rápido' },
+  { id: 'deepseek/deepseek-v4.1-flash', name: 'DeepSeek V4.1 Flash', tag: 'Económico' }
+];
+const DEFAULT_SETTINGS = { provider: 'openrouter', baseUrl: '', apiKey: '', model: '', zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto', lastExp: null };
+const provLabel = k => (PROVIDERS[k] || PROVIDERS.custom).label;
+function baseOf(cfg) { const p = PROVIDERS[cfg.provider] || PROVIDERS.custom; return ((cfg.provider === 'custom' || cfg.provider === 'ollama') ? (cfg.baseUrl || p.base) : p.base).replace(/\/+$/, ''); }
+function isReady(cfg) { if (!cfg || !cfg.model) return false; if (cfg.provider === 'custom') return !!cfg.baseUrl; return !!cfg.apiKey; }
+
+function headersFor(cfg) {
+  if (PROVIDERS[cfg.provider]?.kind === 'anthropic') {
+    return { 'content-type': 'application/json', 'x-api-key': cfg.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' };
+  }
+  const h = { 'content-type': 'application/json' };
+  if (cfg.apiKey) h.authorization = 'Bearer ' + cfg.apiKey;
+  return h;
+}
+async function checkRes(res, cfg) {
+  if (res.ok) return;
+  let detail = '';
+  try { const t = await res.text(); const j = JSON.parse(t); detail = j.error?.message || j.message || t; } catch { /* sin detalle */ }
+  detail = String(detail || '').slice(0, 220);
+  const who = provLabel(cfg.provider);
+  if (res.status === 401 || res.status === 403) throw new FolioError(`${who} rechazó la key (código ${res.status}). Revísala en Ajustes.`);
+  if (res.status === 402) throw new FolioError(`Tu cuenta de ${who} no tiene crédito suficiente.`);
+  if (res.status === 404 && /data policy|zdr|retention/i.test(detail)) throw new FolioError(`Ese modelo no tiene proveedores sin retención de datos en ${who}. Elige otro modelo o desactiva esa opción en Ajustes.`);
+  if (res.status === 404) throw new FolioError(`${who} no encontró el modelo o la dirección. Revisa el modelo en Ajustes.${detail ? ' Detalle: ' + detail : ''}`);
+  if (res.status === 429) throw new FolioError(`${who} indica límite de uso alcanzado. Espera un momento o revisa tu plan.`);
+  throw new FolioError(`${who} respondió con error ${res.status}.${detail ? ' Detalle: ' + detail : ''}`);
+}
+async function safeFetch(url, opts, cfg) {
+  try { return await fetch(url, opts); }
+  catch (e) {
+    if (e.name === 'AbortError') throw e;
+    const raw = String((e && e.message) || e);
+    const who = provLabel(cfg.provider); let host = ''; try { host = new URL(url).host; } catch { /* sin host */ }
+    let hint;
+    if (/ISO-8859-1|Invalid value|not a valid HTTP header/i.test(raw)) hint = 'La API key tiene un carácter no válido (por ejemplo un espacio o salto de línea al pegarla). Vuelve a copiarla completa.';
+    else if (navigator.onLine === false) hint = 'Tu equipo indica que no hay conexión a internet.';
+    else if (cfg.provider === 'custom') hint = 'Verifica que el servidor propio esté encendido y que la dirección sea correcta. Si el problema continúa, consulta con quien lo instaló.';
+    else hint = `Tu equipo tiene internet, pero la conexión con ${host || 'el servicio'} fue bloqueada. Causas comunes: firewall o proxy de la red (frecuente en redes institucionales), antivirus o una extensión del navegador (bloqueador de anuncios). Prueba abrir https://${host || 'el servicio'} en otra pestaña, desde otra red (por ejemplo, datos del celular) o con las extensiones desactivadas.`;
+    throw new FolioError(`No se pudo conectar con ${who}. ${hint} Detalle técnico: ${raw}`);
+  }
+}
+async function readSSE(res, pick, onDelta) {
+  const reader = res.body.getReader(); let buf = '', full = '';
+  for (;;) {
+    const { done, value } = await reader.read(); if (done) break;
+    buf += td.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim(); if (!data || data === '[DONE]') continue;
+      let evt; try { evt = JSON.parse(data); } catch { continue; }
+      if (evt.error) throw new FolioError('El proveedor interrumpió la respuesta: ' + String(evt.error.message || evt.error).slice(0, 200));
+      const t = pick(evt); if (t) { full += t; onDelta && onDelta(full); }
+    }
+  }
+  return full;
+}
+async function llm({ cfg, system, messages, stream = false, onDelta, maxTokens = 2000, signal }) {
+  if (!isReady(cfg)) throw new FolioError('Conecta tu proveedor de IA en Ajustes para usar el agente.');
+  const kind = PROVIDERS[cfg.provider]?.kind || 'openai';
+  if (kind === 'anthropic') {
+    const body = { model: cfg.model, max_tokens: maxTokens, system, messages, stream };
+    const res = await safeFetch(baseOf(cfg) + '/messages', { method: 'POST', headers: headersFor(cfg), body: JSON.stringify(body), signal }, cfg);
+    await checkRes(res, cfg);
+    if (!stream) { const j = await res.json(); return (j.content || []).filter(b => b.type === 'text').map(b => b.text).join(''); }
+    return readSSE(res, e => (e.type === 'content_block_delta' && e.delta?.type === 'text_delta') ? e.delta.text : '', onDelta);
+  }
+  const body = { model: cfg.model, messages: [{ role: 'system', content: system }, ...messages], stream };
+  if (cfg.provider === 'openrouter' || cfg.provider === 'custom') body.max_tokens = maxTokens;
+  if (cfg.provider === 'openrouter') body.reasoning = { effort: 'low' };
+  if (cfg.provider === 'openrouter' && cfg.zdr) body.provider = { zdr: true, data_collection: 'deny' };
+  const res = await safeFetch(baseOf(cfg) + '/chat/completions', { method: 'POST', headers: headersFor(cfg), body: JSON.stringify(body), signal }, cfg);
+  await checkRes(res, cfg);
+  if (!stream) { const j = await res.json(); return j.choices?.[0]?.message?.content || ''; }
+  return readSSE(res, e => e.choices?.[0]?.delta?.content || '', onDelta);
+}
+async function listModels(cfg) {
+  if (!cfg.apiKey && cfg.provider !== 'openrouter' && cfg.provider !== 'custom') throw new FolioError('Ingresa tu API key primero.');
+  if (cfg.provider === 'custom' && !cfg.baseUrl) throw new FolioError('Ingresa la dirección de la API primero.');
+  const res = await safeFetch(baseOf(cfg) + '/models', cfg.provider === 'openrouter' ? {} : { headers: headersFor(cfg) }, cfg);
+  await checkRes(res, cfg);
+  const j = await res.json();
+  let ids = (j.data || j.models || []).map(m => m.id || m.name).filter(Boolean);
+  if (cfg.provider === 'openrouter') {
+    ids = ids.filter(id => !/:free$|:batch$|^~|image|audio|lyria|embed|safety|guard/i.test(id));
+    const top = OR_RECOMMENDED.map(r => r.id).filter(r => ids.includes(r));
+    return [...top, ...ids.filter(i => !top.includes(i)).sort()];
+  }
+  return ids.sort();
+}
+
+/* ---------- Seudonimización ---------- */
+const ACC = { a: '[aáàäâ]', e: '[eéèëê]', i: '[iíìïî]', o: '[oóòöô]', u: '[uúùüû]', n: '[nñ]' };
+function fuzzy(s) { return escRe(norm(s)).replace(/[aeioun]/g, c => ACC[c]).replace(/\s+/g, '[\\s,]+'); }
+function nameVariants(name, sharedSurnames) {
+  const w = name.trim().split(/\s+/).filter(Boolean); const v = new Set([w.join(' ')]);
+  if (w.length >= 3) {
+    const ap = w.slice(-2), no = w.slice(0, -2);
+    v.add([...ap, ...no].join(' '));
+    v.add([no[0], ap[0]].join(' '));
+    const apj = ap.join(' ');
+    if (!sharedSurnames.has(norm(apj))) v.add(apj);
+  } else if (w.length === 2) v.add([w[1], w[0]].join(' '));
+  return [...v].filter(x => x.length >= 4);
+}
+const GENERIC = [
+  { re: /[\w.+-]+@[\w-]+\.[\w.-]+/g, kind: 'CORREO' },
+  { re: /(?<!\d)(?:10|15|16|17|20)\d{9}(?!\d)/g, kind: 'RUC' },
+  { re: /(?<![\d-])9\d{2}[ -]?\d{3}[ -]?\d{3}(?![\d-])/g, kind: 'TELEFONO' },
+  { re: /(?<![\d-])\d{8}(?![\d-])/g, kind: 'DNI' },
+  { re: /(?<![\p{L}])(?:Av\.|Avenida|Jr\.|Jirón|Jiron|Calle|Psje\.|Pasaje|Mz\.|Manzana)\s+[^,;\n()]{3,60}/giu, kind: 'DIRECCION' }
+];
+function makePseudo(exp, enabled) {
+  const map = {}; const pairs = []; const counters = {}; const seen = new Map(); let replaced = 0;
+  if (enabled) {
+    const count = new Map();
+    for (const p of exp.partes) { const w = (p.nombre || '').trim().split(/\s+/); if (w.length >= 3) { const k = norm(w.slice(-2).join(' ')); count.set(k, (count.get(k) || 0) + 1); } }
+    const shared = new Set([...count].filter(([, n]) => n > 1).map(([k]) => k));
+    for (const p of exp.partes) {
+      const nm = (p.nombre || '').trim(); if (!nm) continue;
+      const tok = `[${p.tok}]`; map[tok] = nm;
+      for (const v of nameVariants(nm, shared)) pairs.push({ re: new RegExp(`(?<![\\p{L}])${fuzzy(v)}(?![\\p{L}])`, 'giu'), tok, len: v.length });
+      const doc = (p.doc || '').trim();
+      if (doc) { const dt = `[${p.tok.replace('PERSONA', 'DOC')}]`; map[dt] = doc; pairs.push({ re: new RegExp(`(?<![\\w])${escRe(doc)}(?![\\w])`, 'g'), tok: dt, len: 99 }); }
+    }
+    pairs.sort((a, b) => b.len - a.len);
+  }
+  function apply(text) {
+    if (!enabled || !text) return text || '';
+    let t = String(text);
+    for (const pr of pairs) t = t.replace(pr.re, () => { replaced++; return pr.tok; });
+    for (const g of GENERIC) {
+      t = t.replace(g.re, m => {
+        const key = g.kind + '|' + m.trim(); let tok = seen.get(key);
+        if (!tok) { counters[g.kind] = (counters[g.kind] || 0) + 1; tok = `[${g.kind}_${counters[g.kind]}]`; seen.set(key, tok); map[tok] = m.trim(); }
+        replaced++; return tok;
+      });
+    }
+    return t;
+  }
+  function restore(text) {
+    if (!enabled || !text) return text || '';
+    return String(text).replace(/\[(?:PERSONA|DOC|CORREO|RUC|TELEFONO|DNI|DIRECCION)_\d+\]/g, m => map[m] ?? m);
+  }
+  return { enabled, apply, restore, count: () => replaced, map };
+}
+
+/* ---------- Recuperación de fragmentos (local) ---------- */
+const STOP = new Set('para como pero sobre entre cuando tambien donde quien desde todo durante todos contra otros ante ellos esto antes algunos unos otro otras otra tanto estos mucho quienes nada muchos cual poco ella estar estas algunas algo nosotros cuales este esta estan esos esas eso sera seria puede pueden debe deben hacer tiene tienen expediente caso favor dime quiero necesito'.split(' '));
+function terms(q) { return [...new Set(norm(q).split(/[^a-z0-9]+/).filter(w => w.length > 3 && !STOP.has(w)))]; }
+function chunkText(text) {
+  const out = []; let cur = '';
+  for (const p of String(text).split(/\n{2,}/)) {
+    if (cur && (cur.length + p.length) > 1400) { out.push(cur); cur = cur.slice(-180) + '\n\n' + p; }
+    else cur = cur ? cur + '\n\n' + p : p;
+  }
+  if (cur.trim()) out.push(cur);
+  return out.flatMap(c => c.length > 2200 ? (c.match(/[\s\S]{1,1800}/g) || []) : [c]);
+}
+function retrieve(exp, docTexts, q, k = 4) {
+  const ts = terms(q); const cands = [];
+  for (const d of exp.docs) {
+    const text = docTexts[d.id]; if (!text) continue;
+    chunkText(text).forEach((c, i) => {
+      const n = norm(c); let score = 0;
+      for (const t of ts) { let ix = n.indexOf(t); while (ix >= 0) { score++; ix = n.indexOf(t, ix + t.length); } }
+      cands.push({ name: d.name, text: c, score, i });
+    });
+  }
+  let top = cands.filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, k);
+  if (!top.length) top = cands.filter(c => c.i === 0).slice(0, 2);
+  return top;
+}
+
+/* ---------- Contexto del expediente (la "memoria") ---------- */
+function plazoState(p) { if (p.done) return 'cumplido'; const d = daysUntil(p.fecha); return d < 0 ? `vencido hace ${-d} día(s)` : d === 0 ? 'vence hoy' : `vence en ${d} día(s)`; }
+function memoryText(e) {
+  const m = e.memoria, L = [];
+  L.push(`Expediente: ${e.numero || '(sin número)'}`);
+  if (e.materia) L.push(`Materia: ${e.materia}`);
+  if (e.especialidad) L.push(`Especialidad: ${e.especialidad}`);
+  if (e.organo) L.push(`Órgano jurisdiccional: ${e.organo}`);
+  if (e.distrito) L.push(`Distrito judicial: ${e.distrito}`);
+  if (e.estado) L.push(`Estado procesal: ${e.estado}`);
+  if (e.partes.length) { L.push('Partes:'); e.partes.forEach(p => L.push(`- ${p.nombre} (${p.rol}${p.esCliente ? ', cliente del abogado' : ''})${p.doc ? `, documento ${p.doc}` : ''}`)); }
+  if (m.resumen) L.push(`Resumen del caso:\n${m.resumen}`);
+  if (m.hechos) L.push(`Hechos clave:\n${m.hechos}`);
+  if (m.estrategia) L.push(`Estrategia del abogado:\n${m.estrategia}`);
+  const pend = m.pendientes.filter(p => !p.done); if (pend.length) { L.push('Pendientes:'); pend.forEach(p => L.push(`- ${p.text}`)); }
+  if (m.plazos.length) { L.push('Plazos registrados por el abogado:'); [...m.plazos].sort((a, b) => a.fecha.localeCompare(b.fecha)).forEach(p => L.push(`- ${p.fecha}: ${p.desc} (${plazoState(p)})`)); }
+  const movs = [...e.movimientos].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 20);
+  if (movs.length) { L.push('Movimientos (más recientes primero):'); movs.forEach(v => L.push(`- ${v.fecha || 's/f'}: ${v.acto}${v.sumilla ? '. ' + v.sumilla : ''}`)); }
+  if (e.docs.length) { L.push('Documentos cargados:'); e.docs.forEach(d => L.push(`- ${d.name}${d.pages ? ` (${d.pages} págs.)` : ''}`)); }
+  return L.join('\n');
+}
+const SYSTEM_PROMPT = `Eres Folio, asistente de un abogado litigante en el Perú. Trabajas con la memoria del expediente y los fragmentos de documentos que se te entregan.
+Reglas:
+1. Distingue lo que consta en el expediente de tu análisis. Si algo no está en el contexto, dilo.
+2. No inventes números de casación, sentencias, plenos, artículos ni plazos. Si citas una norma, hazlo solo si estás seguro e indica que el abogado debe verificar su texto y vigencia.
+3. Los plazos procesales los confirma el abogado con la resolución y la fecha de notificación en su casilla SINOE. No afirmes que un plazo venció o vence sin esa base.
+4. Los datos personales pueden estar reemplazados por marcadores como [PERSONA_1], [DOC_1] o [DNI_1]. Úsalos tal cual y no intentes adivinar los datos reales.
+5. Responde en español del Perú, claro y directo, con viñetas cuando ayude. Si preparas un borrador de escrito, usa la estructura habitual peruana (sumilla, destinatario, datos del expediente, petitorio, fundamentos, medios probatorios si corresponde, anexos) y deja entre corchetes lo que el abogado debe completar.
+6. Todo lo que produces es un borrador de apoyo. La decisión y la firma son del abogado.`;
+function buildContext(e, docTexts, q) {
+  const frags = retrieve(e, docTexts, q, 4);
+  let t = `FECHA DE HOY: ${todayISO()}\n\n=== MEMORIA DEL EXPEDIENTE ===\n${memoryText(e)}`;
+  if (frags.length) t += `\n\n=== FRAGMENTOS DE DOCUMENTOS (texto extraído en el equipo del abogado) ===\n` + frags.map(f => `--- ${f.name} ---\n${f.text}`).join('\n\n');
+  return { text: t, frags };
+}
+function parseJSONLoose(s) {
+  let t = String(s || '').replace(/```(?:json)?/gi, '').trim();
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a < 0 || b <= a) throw new FolioError('El modelo no devolvió un resultado ordenado. Intenta de nuevo o con otro modelo.');
+  try { return JSON.parse(t.slice(a, b + 1)); } catch { throw new FolioError('El modelo devolvió un resultado incompleto. Intenta de nuevo.'); }
+}
+
+/* ---------- Markdown mínimo y seguro ---------- */
+function md(src) {
+  const lines = esc(src).split('\n'); let html = '', ul = false, ol = false;
+  const inline = s => s.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:]|$)/g, '$1<em>$2</em>');
+  const close = () => { if (ul) { html += '</ul>'; ul = false; } if (ol) { html += '</ol>'; ol = false; } };
+  for (const raw of lines) {
+    const l = raw.trimEnd(); let m;
+    if ((m = l.match(/^#{1,6}\s+(.*)$/))) { close(); html += `<h4>${inline(m[1])}</h4>`; }
+    else if ((m = l.match(/^\s*[-*•]\s+(.*)$/))) { if (ol) { html += '</ol>'; ol = false; } if (!ul) { html += '<ul>'; ul = true; } html += `<li>${inline(m[1])}</li>`; }
+    else if ((m = l.match(/^\s*\d+[.)]\s+(.*)$/))) { if (ul) { html += '</ul>'; ul = false; } if (!ol) { html += '<ol>'; ol = true; } html += `<li>${inline(m[1])}</li>`; }
+    else if (!l.trim()) close();
+    else { close(); html += `<p>${inline(l)}</p>`; }
+  }
+  close(); return html;
+}
+
+/* ---------- Lectura local de documentos ---------- */
+const LIBS = {
+  pdf: ['https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'],
+  pdfw: ['https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'],
+  mammoth: ['https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js']
+};
+const loaded = {};
+function loadScript(urls) {
+  const key = urls[0]; if (loaded[key]) return loaded[key];
+  loaded[key] = (async () => {
+    for (const u of urls) {
+      const ok = await new Promise(res => { const s = document.createElement('script'); s.src = u; s.async = true; s.referrerPolicy = 'no-referrer'; s.onload = () => res(true); s.onerror = () => { s.remove(); res(false); }; document.head.appendChild(s); });
+      if (ok) return true;
+    }
+    delete loaded[key];
+    throw new FolioError('No se pudo descargar el lector de documentos. Revisa tu conexión a internet o pega el texto manualmente.');
+  })();
+  return loaded[key];
+}
+async function extractText(file) {
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.txt') || name.endsWith('.md')) { const text = await file.text(); return { text, pages: Math.max(1, Math.ceil(text.length / 3000)), type: 'txt', exact: false }; }
+  if (name.endsWith('.pdf')) {
+    await loadScript(LIBS.pdfw); await loadScript(LIBS.pdf);
+    const lib = window.pdfjsLib; if (!lib) throw new FolioError('El lector de PDF no se cargó correctamente.');
+    lib.GlobalWorkerOptions.workerSrc = LIBS.pdfw[0];
+    const pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const pg = await pdf.getPage(i); const tc = await pg.getTextContent();
+      pages.push(`[Pág. ${i}]\n` + tc.items.map(it => it.str + (it.hasEOL ? '\n' : ' ')).join('').trim());
+    }
+    const text = pages.join('\n\n');
+    return { text, pages: pdf.numPages, type: 'pdf', exact: true, scanned: text.replace(/\[Pág\. \d+\]/g, '').trim().length < pdf.numPages * 40 };
+  }
+  if (name.endsWith('.docx')) {
+    await loadScript(LIBS.mammoth);
+    const r = await window.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+    return { text: r.value, pages: Math.max(1, Math.ceil(r.value.length / 3000)), type: 'docx', exact: false };
+  }
+  throw new FolioError('Formato no compatible. Usa PDF, Word (.docx) o texto (.txt).');
+}
+
+/* ============================================================
+   Textos legales · BORRADORES para validar con un especialista
+   Reemplaza los campos entre corchetes antes de distribuir.
+   ============================================================ */
+const DRAFT_BANNER = `<div class="draft-banner"><strong>Borrador para revisión.</strong> Este texto debe validarlo un abogado especialista en protección de datos antes de publicar Folio. Completa los datos del autor en <code>config.js</code>.</div>`;
+
+function policyHTML() {
+  return `${DRAFT_BANNER}<div class="legal">
+<p class="muted small">Versión ${esc(APP.policyVersion)}. Aplica a Folio ${esc(APP.version)}, versión de prueba que funciona en tu navegador.</p>
+<h3>1. Quién ofrece Folio</h3>
+<p>Folio es software libre y gratuito desarrollado por ${esc(OWNER.name)} (en adelante, “el desarrollador”), contacto: ${esc(OWNER.email)}. Su código fuente es público en ${esc(OWNER.repo)}, bajo licencia AGPL-3.0.</p>
+<h3>2. En resumen</h3>
+<p>Folio funciona en tu equipo y es gratuito. Tus expedientes, documentos, memoria del caso, conversaciones con el agente y tu API key se guardan cifrados solo en el almacenamiento local de tu navegador. En esta versión no existen servidores de Folio que reciban esa información: el desarrollador no la ve, no la guarda y no la analiza.</p>
+<h3>3. Tu rol frente a los datos de tus clientes</h3>
+<p>Al registrar expedientes en Folio, tú (abogado o estudio) decides qué datos personales se tratan y con qué finalidad. Por eso eres el responsable de ese tratamiento conforme a la Ley N.° 29733, Ley de Protección de Datos Personales, y su Reglamento aprobado por Decreto Supremo N.° 016-2024-JUS. Folio es una herramienta de software bajo tu control; en esta versión no accede a esos datos.</p>
+<h3>4. Envío a proveedores de inteligencia artificial</h3>
+<p>Cuando usas el agente, la aplicación envía directamente desde tu equipo al proveedor que configuraste (por ejemplo, OpenAI, Anthropic u OpenRouter) los fragmentos del expediente necesarios para responder. Ese envío:</p>
+<ul>
+<li>se hace con tu propia cuenta y API key, bajo los términos y la política de privacidad del proveedor, que aceptas directamente con él;</li>
+<li>constituye un flujo transfronterizo de datos personales, porque esos proveedores procesan la información en servidores ubicados fuera del Perú;</li>
+<li>queda anotado solo en tu equipo, en el Registro de envíos de Ajustes (fecha, proveedor, modelo, tamaño y si se aplicó seudonimización).</li>
+</ul>
+<p>Se recomienda usar la API del proveedor y no sus aplicaciones de consumo, mantener activa la seudonimización y, si usas OpenRouter, exigir proveedores sin retención de datos. Folio no ofrece conexión directa con la API propia de DeepSeek porque, según su política de privacidad, almacena los datos en China; ese modelo puede usarse a través de OpenRouter con proveedores sin retención. Si usas un servidor propio instalado en tu oficina, la información no sale de tu red.</p>
+<h3>5. Seudonimización y sus límites</h3>
+<p>Si la activas, antes de cada envío Folio reemplaza en tu equipo los nombres y documentos de las partes que registraste, así como los DNI, RUC, teléfonos, correos y direcciones que detecta, por marcadores como [PERSONA_1]. Al recibir la respuesta, restaura los datos reales solo en tu pantalla. La seudonimización reduce el riesgo, pero no equivale a anonimizar: hechos muy específicos o datos no detectados pueden permitir identificar a una persona. Puedes revisar exactamente qué se envía antes de cada consulta.</p>
+<h3>6. Datos sensibles</h3>
+<p>Los expedientes pueden contener datos sensibles, como información de salud, de la vida familiar o afectiva, de hechos de violencia o de niñas, niños y adolescentes. Registra y envía solo lo indispensable para tu finalidad profesional y verifica que cuentas con la base legal o la autorización que corresponda.</p>
+<h3>7. Seguridad</h3>
+<p>Tus datos se cifran con AES-GCM de 256 bits. La clave se deriva de tu contraseña con PBKDF2-SHA-256 (${ITER.toLocaleString('es-PE')} iteraciones) y solo existe en la memoria de la aplicación mientras está desbloqueada. Folio se bloquea automáticamente tras el periodo de inactividad que elijas. Folio no almacena tu contraseña y nadie puede recuperarla. Las copias de seguridad que exportes están cifradas con tu contraseña y quedan bajo tu custodia.</p>
+<h3>8. Conservación y eliminación</h3>
+<p>Tú decides cuánto tiempo conservar cada expediente. Puedes eliminar un expediente o todos los datos desde Ajustes. Si borras los datos de navegación de tu navegador, la información de Folio también se elimina.</p>
+<h3>9. Datos que trata el desarrollador</h3>
+<p>Ninguno. Folio no crea cuentas, no usa cookies de seguimiento y no envía telemetría; como el código es público, cualquiera puede verificarlo. Al abrirse, la aplicación descarga tipografías desde Google Fonts y, solo cuando importas un PDF o un Word, librerías de lectura desde jsDelivr o cdnjs. Esas solicitudes no incluyen contenido de tus expedientes, pero exponen tu dirección IP a esos servicios.</p>
+<h3>10. Derechos de los titulares de los datos</h3>
+<p>Como el desarrollador no accede a los datos de tus expedientes, las solicitudes de tus clientes o de terceros sobre sus datos deben dirigirse a ti como responsable. Folio te permite editar o eliminar cualquier dato para atenderlas. Los titulares también pueden acudir a la Autoridad Nacional de Protección de Datos Personales del Ministerio de Justicia y Derechos Humanos.</p>
+<h3>11. Uso profesional</h3>
+<p>Folio está dirigido a abogados y estudios jurídicos. No está destinado a menores de edad.</p>
+<h3>12. Cambios</h3>
+<p>Cualquier cambio en esta política se publicará con su fecha de versión y Folio pedirá una nueva aceptación cuando el cambio sea relevante.</p>
+</div>`;
+}
+
+function termsHTML() {
+  return `${DRAFT_BANNER}<div class="legal">
+<p class="muted small">Versión ${esc(APP.policyVersion)}.</p>
+<h3>1. Qué es Folio</h3>
+<p>Folio es una herramienta de apoyo para organizar expedientes y consultar a un modelo de inteligencia artificial elegido por el usuario. No es un servicio de asesoría legal y no reemplaza el criterio profesional del abogado.</p>
+<h3>2. Software libre y gratuito</h3>
+<p>Folio se distribuye gratis bajo licencia AGPL-3.0, cuyo texto completo está en ${esc(OWNER.repo)}. Se ofrece en fase de prueba y “tal cual”. Puede contener errores y cambiar sin aviso. El desarrollador no garantiza su disponibilidad continua ni resultados específicos, en la medida permitida por la ley.</p>
+<h3>3. Resultados de la inteligencia artificial</h3>
+<p>Las respuestas del agente pueden contener errores, omisiones o información inventada, incluidas normas, jurisprudencia y plazos. Debes verificar todo antes de usarlo en un escrito, una audiencia o una decisión. Folio no calcula plazos procesales de forma automática: los plazos que registras son tu responsabilidad.</p>
+<h3>4. Tus obligaciones</h3>
+<ul>
+<li>Cumplir la Ley N.° 29733 y su Reglamento respecto de los datos de tus clientes y de terceros.</li>
+<li>Respetar el secreto profesional y las normas éticas de la abogacía.</li>
+<li>Contar con la autorización de tus clientes cuando envíes sus datos a un proveedor de IA ubicado fuera del Perú, si corresponde.</li>
+<li>Custodiar tu contraseña y tus copias de seguridad.</li>
+</ul>
+<h3>5. Proveedores de IA</h3>
+<p>Tu relación con el proveedor de IA es directa: los costos, límites, disponibilidad y tratamiento de datos se rigen por sus propias condiciones. El desarrollador no controla ni responde por sus servicios.</p>
+<h3>6. Usos no permitidos</h3>
+<p>No puedes usar Folio para fines ilícitos, para tratar datos obtenidos ilícitamente ni para intentar acceder sin autorización a sistemas de terceros, incluidos los portales del Poder Judicial, del Ministerio Público u otras entidades.</p>
+<h3>7. Alcance de esta versión</h3>
+<p>Esta versión no se conecta al CEJ, al SINOE ni a otros portales, no sincroniza entre equipos y no lee documentos escaneados como imagen.</p>
+<h3>8. Tu contenido</h3>
+<p>El contenido que registras es tuyo. El desarrollador no obtiene ningún derecho sobre él.</p>
+<h3>9. Responsabilidad</h3>
+<p>En la medida permitida por la legislación peruana, el desarrollador no responde por daños derivados del uso de Folio o de las respuestas del agente, salvo dolo o culpa inexcusable.</p>
+<h3>10. Ley aplicable</h3>
+<p>Estos términos se rigen por las leyes de la República del Perú. Cualquier controversia se someterá a los jueces de ${esc(OWNER.city)}.</p>
+<h3>11. Contacto</h3>
+<p>${esc(OWNER.email)}</p>
+</div>`;
+}
+
+function clauseText() {
+  return `AUTORIZACIÓN PARA EL USO DE HERRAMIENTAS DE INTELIGENCIA ARTIFICIAL
+
+Yo, [NOMBRE COMPLETO DEL CLIENTE], identificado(a) con DNI N.° [__________], autorizo a [NOMBRE DEL ABOGADO O ESTUDIO], con domicilio en [DOMICILIO], en su calidad de responsable del tratamiento de mis datos personales conforme a la Ley N.° 29733, Ley de Protección de Datos Personales, y su Reglamento aprobado por Decreto Supremo N.° 016-2024-JUS, a tratar la información de mi caso mediante herramientas de software instaladas en sus equipos, incluido el servicio de inteligencia artificial de [NOMBRE DEL PROVEEDOR], con la finalidad exclusiva de analizar, organizar y preparar documentos para la defensa de mis intereses en el proceso [N.° DE EXPEDIENTE / DESCRIPCIÓN].
+
+Declaro que se me ha informado que:
+1. Los servidores de dicho proveedor se ubican fuera del Perú, por lo que el envío de información constituye un flujo transfronterizo de datos personales.
+2. Antes de cada envío se reemplazarán los nombres, documentos de identidad y datos de contacto por marcadores, aunque esta medida no garantiza el anonimato absoluto.
+3. Solo se enviará la información indispensable para la finalidad indicada.
+4. Mi abogado revisará todo contenido generado antes de usarlo.
+5. Puedo revocar esta autorización en cualquier momento y ejercer mis derechos de acceso, rectificación, cancelación y oposición escribiendo a [CORREO DEL ABOGADO O ESTUDIO].
+
+[  ] Autorizo además el tratamiento de mis datos sensibles (por ejemplo, de salud, de mi vida familiar o de mis hijos menores de edad) para la misma finalidad.
+
+Lugar y fecha: [__________]
+
+_____________________________
+Firma del cliente
+Nombre: [__________]
+DNI: [__________]`;
+}
+function clauseHTML() {
+  return `${DRAFT_BANNER}<p class="small muted">Úsala para pedir a tu cliente una autorización escrita y separada antes de enviar datos de su caso a un proveedor de IA. Adáptala a cada caso.</p><pre class="payload" id="clause-text">${esc(clauseText())}</pre>`;
+}
+
+/* ============================================================
+   Folio MVP · interfaz
+   ============================================================ */
+const S = {
+  screen: 'boot', bootError: '', onb: null, settings: null, draftCfg: null, index: [], exp: null, docTexts: {},
+  tab: 'memoria', view: 'exp', sideOpen: false, sending: false, abort: null, audit: [], lastSend: null,
+  stampPress: false, lastActive: Date.now(), filter: ''
+};
+const root = () => $('#root');
+
+/* ---------- Utilidades de interfaz ---------- */
+function toast(msg, err = false) {
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
+  $('#toasts').appendChild(t); setTimeout(() => t.remove(), err ? 7000 : 3800);
+}
+function fail(e) { console.error(e); toast(e instanceof FolioError ? e.message : 'Ocurrió un error inesperado: ' + (e?.message || e), true); }
+function applyTheme() { const t = S.settings?.theme || 'auto'; if (t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t; }
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+
+let dlgPending = null;
+function settleDlg(v) { const p = dlgPending; dlgPending = null; if (p) p.resolve(v); }
+function openDialog({ title, body, foot = '', wide = false }) {
+  settleDlg(false);
+  const d = $('#dlg'); d.className = wide ? 'wide' : '';
+  d.innerHTML = `<div class="dlg"><div class="dlg-head"><h2 id="dlg-title">${esc(title)}</h2><button class="btn ghost sm" data-action="dlg-close" aria-label="Cerrar">✕</button></div><div class="dlg-body">${body}</div>${foot ? `<div class="dlg-foot">${foot}</div>` : ''}</div>`;
+  if (!d.open) d.showModal();
+  return d;
+}
+function closeDialog() { settleDlg(false); const d = $('#dlg'); if (d.open) d.close(); }
+function askDialog({ title, body, ok = 'Confirmar', cancel = 'Cancelar', danger = false, wide = false, collect }) {
+  return new Promise(resolve => {
+    openDialog({ title, body, wide, foot: `<button class="btn" data-dlg="no">${esc(cancel)}</button><button class="btn ${danger ? 'danger' : 'primary'}" data-dlg="yes">${esc(ok)}</button>` });
+    dlgPending = { resolve, collect };
+  });
+}
+function onDlgButton(b) {
+  if (b.dataset.dlg !== 'yes') return closeDialog();
+  const p = dlgPending; if (!p) return closeDialog();
+  const d = $('#dlg'); const v = p.collect ? p.collect(d) : true;
+  if (v === null) return;
+  dlgPending = null; if (d.open) d.close(); p.resolve(v);
+}
+function showLegal(which) {
+  if (which === 'policy') openDialog({ title: 'Política de privacidad', body: policyHTML(), wide: true, foot: `<button class="btn primary" data-action="dlg-close">Entendido</button>` });
+  if (which === 'terms') openDialog({ title: 'Términos de uso', body: termsHTML(), wide: true, foot: `<button class="btn primary" data-action="dlg-close">Entendido</button>` });
+  if (which === 'clause') openDialog({ title: 'Autorización de tu cliente para usar IA', body: clauseHTML(), wide: true, foot: `<button class="btn" data-action="clause-download">Descargar .txt</button><button class="btn primary" data-action="clause-copy">Copiar texto</button>` });
+}
+
+/* ---------- Router ---------- */
+function render() {
+  const r = root();
+  if (S.screen === 'boot') r.innerHTML = `<div class="screen-center"><p class="muted">Abriendo Folio…</p></div>`;
+  else if (S.screen === 'error') r.innerHTML = `<div class="screen-center"><div class="lock"><div class="brand" style="justify-content:center;margin-bottom:1rem"><i></i>Folio</div><div class="note danger"><p>${esc(S.bootError)}</p></div></div></div>`;
+  else if (S.screen === 'onb') renderOnb();
+  else if (S.screen === 'lock') renderLock();
+  else if (S.screen === 'app') renderApp();
+}
+
+/* ============================================================
+   Bienvenida y avisos (onboarding)
+   ============================================================ */
+const ONB_STEPS = ['Así funciona', 'Tus datos', 'Envío al extranjero', 'Tu contraseña', 'Tu proveedor de IA'];
+function newOnb() { return { step: 0, checks: {}, pseudo: true, pass: '', pass2: '', cfg: { ...DEFAULT_SETTINGS } }; }
+function onbCanNext() {
+  const o = S.onb, c = o.checks;
+  if (o.step === 1) return !!(c.resp && c.verify && c.policy);
+  if (o.step === 2) return !!c.transfer;
+  if (o.step === 3) return o.pass.length >= 10 && o.pass === o.pass2 && !!c.norecovery;
+  return true;
+}
+function checkHTML(key, html) { return `<label class="check"><input type="checkbox" data-onb-check="${key}" ${S.onb.checks[key] ? 'checked' : ''}><span>${html}</span></label>`; }
+function passStrength(p) {
+  if (!p) return ''; let s = 0; if (p.length >= 10) s++; if (p.length >= 14) s++; if (/[A-ZÁÉÍÓÚÑ]/.test(p) && /[a-záéíóúñ]/.test(p)) s++; if (/\d/.test(p)) s++; if (/[^\wÁÉÍÓÚÑáéíóúñ]/.test(p)) s++;
+  if (p.length < 10) return `<span style="color:var(--danger)">Muy corta: usa al menos 10 caracteres.</span>`;
+  return s <= 2 ? `<span style="color:var(--warn)">Aceptable. Una frase larga es más segura.</span>` : `<span style="color:var(--ok)">Fuerte.</span>`;
+}
+function onbBody() {
+  const o = S.onb;
+  if (o.step === 0) return `
+    <h1>Tu asistente para litigar, sin sacar tus expedientes de tu equipo</h1>
+    <p class="lead">Folio guarda cada expediente con su propia memoria: partes, plazos, movimientos, documentos y estrategia. El agente de IA lee esa memoria para ayudarte a revisar el caso, ordenar pendientes y preparar borradores.</p>
+    <div class="flow" aria-label="Cómo viaja la información">
+      <div class="node you"><h3>Tu equipo</h3><ul><li>Expedientes y memoria del caso</li><li>Documentos y conversaciones</li><li>Tu API key</li></ul><p class="small muted" style="margin:.5em 0 0">Todo cifrado con tu contraseña.</p></div>
+      <div class="arrow"><svg viewBox="0 0 64 20" aria-hidden="true"><path d="M2 10h56m-8-7 8 7-8 7" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>Solo los fragmentos que la consulta necesita, con los nombres reemplazados</span></div>
+      <div class="node"><h3>Tu proveedor de IA</h3><ul><li>OpenAI, Anthropic u OpenRouter, con tu propia cuenta</li><li>O un servidor propio en tu oficina</li></ul></div>
+      <div class="none"><span aria-hidden="true">⊘</span><span><s>Servidores de Folio</s>: no existen en esta versión. Nunca vemos tus expedientes.</span></div>
+    </div>
+    <div class="note"><p>Esta es una versión de prueba. Funciona en este navegador, sin cuenta y sin conectarse al CEJ ni al SINOE.</p></div>`;
+  if (o.step === 1) return `
+    <h1>Tus datos y tu responsabilidad</h1>
+    <p class="lead">Los expedientes contienen datos personales de tus clientes y de terceros. Al registrarlos en Folio, tú decides qué se guarda y para qué: eres el responsable de ese tratamiento según la Ley 29733 y su reglamento (D.S. 016-2024-JUS).</p>
+    <p>Folio no recibe, no ve y no almacena tus expedientes. Todo queda cifrado en este equipo con una contraseña que solo tú conoces.</p>
+    ${checkHTML('resp', 'Entiendo que soy responsable del tratamiento de los datos personales que registre en Folio y del secreto profesional que les corresponde.')}
+    ${checkHTML('verify', 'Entiendo que el agente de IA puede equivocarse. Revisaré toda cita, plazo, norma o jurisprudencia antes de usarla en un escrito o decisión.')}
+    ${checkHTML('policy', 'Leí la <a href="#" data-action="show-policy">política de privacidad</a> y los <a href="#" data-action="show-terms">términos de uso</a> de esta versión.')}`;
+  if (o.step === 2) return `
+    <h1>Envío de fragmentos fuera del Perú</h1>
+    <p class="lead">Para responder, el agente envía desde tu equipo los fragmentos necesarios del expediente al proveedor de IA que elijas. Sus servidores están fuera del Perú, así que ese envío es un flujo transfronterizo de datos personales.</p>
+    <div class="sheet"><label class="switch"><input type="checkbox" data-onb-pseudo ${o.pseudo ? 'checked' : ''}><span><strong>Reemplazar datos personales antes de enviar</strong><br><span class="small muted">Nombres y documentos de las partes, DNI, RUC, teléfonos, correos y direcciones se cambian por marcadores como [PERSONA_1]. El proveedor no ve los datos reales; Folio los restaura en tu pantalla.</span></span></label></div>
+    <div class="note warn"><p>Reemplazar datos reduce el riesgo, pero no anonimiza: un hecho muy específico puede identificar a alguien. En casos de violencia familiar, menores de edad o salud, envía solo lo indispensable y revisa lo que sale en cada consulta.</p></div>
+    ${checkHTML('transfer', 'Entiendo que, al usar el agente, fragmentos de mis expedientes se envían al proveedor que yo elija, y que debo contar con la autorización de mis clientes cuando corresponda. <a href="#" data-action="show-clause">Ver modelo de autorización para clientes</a>.')}`;
+  if (o.step === 3) return `
+    <h1>Crea la contraseña de tu bóveda</h1>
+    <p class="lead">Con esta contraseña se cifran tus expedientes, documentos, conversaciones y tu API key. Folio no la guarda en ningún lugar.</p>
+    <label class="field"><span>Contraseña</span><input class="input" type="password" data-onb-field="pass" value="${esc(o.pass)}" autocomplete="new-password" minlength="10"><small id="pass-strength">${passStrength(o.pass)}</small></label>
+    <label class="field"><span>Repite la contraseña</span><input class="input" type="password" data-onb-field="pass2" value="${esc(o.pass2)}" autocomplete="new-password"><small id="pass-match"></small></label>
+    <div class="note danger"><p>Si olvidas esta contraseña, nadie puede recuperar tus datos, tampoco nosotros. Si borras los datos de navegación de este navegador, la bóveda también se borra. Haz copias de seguridad desde Ajustes.</p></div>
+    <div style="margin-top:1em">${checkHTML('norecovery', 'Entiendo que no hay forma de recuperar mi contraseña ni mis datos si la olvido.')}</div>`;
+  return `
+    <h1>Conecta tu proveedor de IA</h1>
+    <p class="lead">Usas tu propia cuenta: pagas directo al proveedor y solo por lo que consumes. Puedes hacerlo ahora o después desde Ajustes.</p>
+    <button type="button" class="btn" data-action="show-keyguide" style="margin-bottom:1rem">¿Es tu primera vez? Ver guía paso a paso</button>
+    <div class="sheet" id="pf-block">${providerFieldsHTML(o.cfg)}</div>
+    <div class="note"><p>Tu key se guarda cifrada en este equipo y solo se usa para llamar al proveedor directamente desde aquí.</p></div>`;
+}
+function renderOnb() {
+  const o = S.onb; const last = o.step === ONB_STEPS.length - 1;
+  root().innerHTML = `<div class="onb">
+    <aside>
+      <div class="brand"><i></i>Folio</div>
+      <ol class="steps" aria-label="Pasos de configuración">${ONB_STEPS.map((s, i) => `<li class="${i < o.step ? 'done' : i === o.step ? 'now' : ''}" ${i === o.step ? 'aria-current="step"' : ''}>${esc(s)}</li>`).join('')}</ol>
+      <div class="legal-links"><a href="#" data-action="show-policy">Política de privacidad</a><a href="#" data-action="show-terms">Términos de uso</a><a href="#" data-action="show-clause">Autorización para clientes</a><span class="tiny muted">Versión ${esc(APP.version)}</span></div>
+    </aside>
+    <main><div class="content">${onbBody()}</div>
+      <div class="nav">
+        ${o.step > 0 ? `<button class="btn ghost" data-action="onb-back">Atrás</button>` : '<span></span>'}
+        ${last ? `<div class="row"><button class="btn" data-action="onb-finish" data-skip="1">Configurar después</button><button class="btn primary" data-action="onb-finish">Terminar y abrir Folio</button></div>`
+               : `<button class="btn primary" data-action="onb-next" ${onbCanNext() ? '' : 'disabled'}>Continuar</button>`}
+      </div>
+    </main></div>`;
+  $('.onb main h1')?.setAttribute('tabindex', '-1'); $('.onb main h1')?.focus({ preventScroll: true });
+}
+function updateOnbNav() {
+  const b = $('[data-action="onb-next"]'); if (b) b.disabled = !onbCanNext();
+  if (S.onb.step === 3) {
+    const ps = $('#pass-strength'); if (ps) ps.innerHTML = passStrength(S.onb.pass);
+    const pm = $('#pass-match'); if (pm) pm.innerHTML = S.onb.pass2 ? (S.onb.pass === S.onb.pass2 ? '<span style="color:var(--ok)">Coinciden.</span>' : '<span style="color:var(--danger)">No coinciden.</span>') : '';
+  }
+}
+async function finishOnb(skip) {
+  const o = S.onb; const btns = $$('[data-action="onb-finish"]'); btns.forEach(b => b.disabled = true);
+  try {
+    await Vault.create(o.pass);
+    const cfg = skip ? { provider: o.cfg.provider, baseUrl: '', apiKey: '', model: '' } : pickCfg(o.cfg);
+    S.settings = { ...DEFAULT_SETTINGS, ...cfg, pseudo: o.pseudo };
+    await store.put('settings', S.settings);
+    await DB.put('consent', { policyVersion: APP.policyVersion, appVersion: APP.version, acceptedAt: new Date().toISOString(), items: { ...o.checks }, pseudoAtStart: o.pseudo });
+    S.index = []; await store.put('index', []);
+    S.audit = []; await store.put('audit', []);
+    S.onb = null;
+    enterApp();
+  } catch (e) { btns.forEach(b => b.disabled = false); fail(e); }
+}
+
+/* ---------- Campos del proveedor (compartidos) ---------- */
+const pickCfg = c => ({ provider: c.provider, baseUrl: c.baseUrl || '', apiKey: (c.apiKey || '').trim(), model: (c.model || '').trim(), zdr: !!c.zdr });
+function curCfg() { return S.screen === 'onb' ? S.onb.cfg : S.draftCfg; }
+function providerFieldsHTML(cfg) {
+  const p = PROVIDERS[cfg.provider] || PROVIDERS.openrouter;
+  const own = cfg.provider === 'custom';
+  const opts = Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}" ${cfg.provider === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('');
+  const presets = cfg.provider === 'openrouter' ? `<div class="presets" role="group" aria-label="Modelos sugeridos">${OR_RECOMMENDED.map(m => `<button type="button" class="preset ${cfg.model === m.id ? 'on' : ''}" data-action="pick-model" data-model="${esc(m.id)}"><strong>${esc(m.name)}</strong><span>${esc(m.tag)}</span></button>`).join('')}</div>` : '';
+  return `<label class="field"><span>Proveedor</span><select class="select" data-pf="provider">${opts}</select><small>${esc(p.note)}</small></label>
+  ${own ? `<label class="field"><span>Dirección del servidor</span><input class="input mono" data-pf="baseUrl" value="${esc(cfg.baseUrl)}" placeholder="http://192.168.1.50:11434/v1" spellcheck="false"><small>La indica quien instaló el servidor.</small></label>` : ''}
+  <div class="field"><div class="row" style="justify-content:space-between"><label for="pf-key" style="font-weight:700;font-size:.875rem">API key${own ? ' (opcional)' : ''}</label>${own ? '' : '<button type="button" class="linklike" data-action="show-keyguide">¿Cómo obtengo mi key?</button>'}</div><div class="row" style="flex-wrap:nowrap"><input id="pf-key" class="input mono" type="password" data-pf="apiKey" value="${esc(cfg.apiKey)}" placeholder="${esc(p.keyHint)}" autocomplete="off" spellcheck="false"><button type="button" class="btn sm" data-action="toggle-key">Mostrar</button></div>${p.keyUrl ? `<small>Se crea en <a href="${p.keyUrl}" target="_blank" rel="noopener noreferrer">${esc(new URL(p.keyUrl).host)}</a>.</small>` : ''}</div>
+  <div class="field"><label for="pf-model" style="font-weight:700;font-size:.875rem">Modelo</label>${presets}<div class="row" style="flex-wrap:nowrap"><input id="pf-model" class="input mono" data-pf="model" list="models-dl" value="${esc(cfg.model)}" placeholder="${cfg.provider === 'openrouter' ? 'Elige uno arriba o pulsa “Ver modelos”' : 'Pulsa “Ver modelos” para elegir'}" spellcheck="false"><button type="button" class="btn sm" data-action="list-models">Ver modelos</button></div><datalist id="models-dl"></datalist><small>${cfg.provider === 'openrouter' ? 'Los gratuitos no aparecen en la lista porque suelen usar tus consultas para entrenar.' : 'Para trabajo legal conviene un modelo grande.'}</small></div>
+  ${cfg.provider === 'openrouter' ? `<label class="switch" style="margin-bottom:1rem"><input type="checkbox" data-pf="zdr" ${cfg.zdr ? 'checked' : ''}><span><strong>Solo proveedores sin retención de datos</strong><br><span class="small muted">OpenRouter enviará tus consultas únicamente a proveedores que no guardan ni entrenan con ellas. Así, DeepSeek se ejecuta fuera de China y no en la API propia de DeepSeek. Algunos modelos pueden no estar disponibles.</span></span></label>` : ''}
+  ${own && OWNER.serviceContact ? `<p class="small muted">Servicio de instalación independiente y pagado, ofrecido por el autor de Folio: ${esc(OWNER.serviceContact)}</p>` : ''}
+  <div class="row"><button type="button" class="btn" data-action="test-conn">Probar conexión</button><span id="conn-result" class="small muted" role="status"></span></div>`;
+}
+async function testConn() {
+  const cfg = pickCfg(curCfg()); const out = $('#conn-result');
+  if (!cfg.model) { out.innerHTML = '<span style="color:var(--danger)">Elige un modelo primero.</span>'; return; }
+  out.textContent = 'Probando…';
+  try { await llm({ cfg, system: 'Responde únicamente con la palabra OK.', messages: [{ role: 'user', content: 'Prueba de conexión.' }], maxTokens: 1024 }); out.innerHTML = `<span style="color:var(--ok)">Conexión correcta con ${esc(cfg.model)}.</span>`; }
+  catch (e) { out.innerHTML = `<span style="color:var(--danger)">${esc(e.message)}</span>`; }
+}
+async function fillModels() {
+  const cfg = pickCfg(curCfg()); const out = $('#conn-result');
+  try { out && (out.textContent = 'Buscando modelos…'); const ms = await listModels(cfg); const tags = Object.fromEntries(OR_RECOMMENDED.map(r => [r.id, r.tag])); $('#models-dl').innerHTML = ms.map(m => `<option value="${esc(m)}"${tags[m] ? ` label="${esc(tags[m])}"` : ''}>`).join(''); out && (out.textContent = `${ms.length} modelos disponibles. Escribe en el campo Modelo para filtrar.`); $('#pf-model')?.focus(); }
+  catch (e) { out && (out.innerHTML = `<span style="color:var(--danger)">${esc(e.message)}</span>`); }
+}
+
+function keyGuideHTML(focus) {
+  const open = k => (focus === k ? 'open' : '');
+  const step = arr => `<ol>${arr.map(s => `<li>${s}</li>`).join('')}</ol>`;
+  return `<p>Folio no tiene servidores: usa tu propia cuenta en un proveedor de IA y pagas directo a ese proveedor, solo por lo que usas. Elige una opción:</p>
+  <details class="guide" ${open('openrouter')}><summary>OpenRouter <span class="chip ok">Recomendado</span></summary>
+    <p class="small muted">Una sola key te da acceso a Claude, GPT, Gemini y DeepSeek.</p>
+    ${step(['Entra a <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer">openrouter.ai</a> y crea tu cuenta con Google o con tu correo.',
+      'En <strong>Credits</strong>, carga saldo con tarjeta. Para empezar, US$5 a US$10 alcanzan para varias semanas de uso normal.',
+      'En <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer">Keys</a>, pulsa <strong>Create key</strong>, ponle de nombre “Folio” y fija un límite de crédito con reinicio mensual, por ejemplo US$10. Así nunca gastarás más de eso.',
+      'Copia la key: empieza con <code>sk-or-</code>. Guárdala en un lugar seguro, porque puede que no vuelva a mostrarse completa.',
+      'En Folio elige <strong>OpenRouter</strong>, pega la key, elige un modelo sugerido y pulsa <strong>Probar conexión</strong>.'])}
+    <p class="small">Deja activada en Folio la opción <strong>Solo proveedores sin retención de datos</strong>. En los ajustes de OpenRouter, no actives el registro de tus consultas a cambio de descuentos.</p></details>
+  <details class="guide" ${open('openai')}><summary>OpenAI (GPT)</summary>
+    ${step(['Entra a <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer">platform.openai.com</a>. No es chatgpt.com: la suscripción ChatGPT Plus no incluye la API.',
+      'En <strong>Billing</strong>, agrega una tarjeta y carga crédito.',
+      'En los límites de uso de tu cuenta, fija un tope de gasto mensual.',
+      'En <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">API keys</a>, pulsa <strong>Create new secret key</strong>, ponle “Folio” y cópiala. Empieza con <code>sk-</code> y solo se muestra una vez.',
+      'En Folio elige <strong>OpenAI</strong>, pega la key, pulsa <strong>Ver modelos</strong> y elige uno.'])}</details>
+  <details class="guide" ${open('anthropic')}><summary>Anthropic (Claude)</summary>
+    ${step(['Entra a <a href="https://platform.claude.com" target="_blank" rel="noopener noreferrer">platform.claude.com</a> (Claude Console). La suscripción Claude Pro no incluye la API.',
+      'En <strong>Billing</strong>, carga crédito. Si tu cuenta lo permite, fija también un límite de gasto.',
+      'Ve a <strong>Settings → API keys</strong>, pulsa <strong>Create key</strong> y ponle un nombre.',
+      'Copia la key: empieza con <code>sk-ant-</code> y la consola la muestra completa solo una vez.',
+      'En Folio elige <strong>Anthropic (Claude)</strong>, pega la key, pulsa <strong>Ver modelos</strong> y elige uno.'])}</details>
+  <details class="guide" ${open('deepseek')}><summary>DeepSeek <span class="chip">Económico</span></summary>
+    <p>No uses la API propia de DeepSeek: según su política de privacidad, guarda los datos en China y puede usarlos para entrenar sus modelos. Usa DeepSeek a través de <strong>OpenRouter</strong> con la opción sin retención activada: es el mismo modelo, ejecutado por proveedores fuera de China, y el más barato de la lista.</p></details>
+  <details class="guide" ${open('custom')}><summary>Servidor propio en tu oficina</summary>
+    <p>Un modelo instalado en una computadora de tu oficina con tarjeta gráfica. Nada sale de tu red, pero requiere una instalación técnica: quien lo instale te dará la dirección del servidor para ponerla en Folio.</p>
+    <p class="small muted">La calidad depende del equipo. Con tarjetas gráficas de 24 GB o más se obtienen resultados aceptables; con menos, los modelos son pequeños y cometen más errores en la redacción de escritos.</p>
+    ${OWNER.serviceContact ? `<p class="small">Servicio de instalación independiente y pagado, ofrecido por el autor de Folio: ${esc(OWNER.serviceContact)}</p>` : ''}</details>
+  <h3 style="font-size:1rem;margin:1.2rem 0 .4rem">¿Cuánto cuesta?</h3>
+  <p class="small">Una consulta típica en Folio cuesta aproximadamente menos de US$0.002 con DeepSeek V4.1 Flash, unos US$0.015 con Gemini 3.8 Flash y unos US$0.04 con Claude Sonnet 5.5 o GPT-6.1 Sol. Precios aproximados de septiembre de 2026; revisa los vigentes en la página del proveedor.</p>`;
+}
+function showKeyGuide() {
+  const focus = (curCfg() || {}).provider || 'openrouter';
+  openDialog({ title: '¿Cómo obtengo mi API key?', body: keyGuideHTML(focus), wide: true, foot: '<button class="btn primary" data-action="dlg-close">Entendido</button>' });
+}
+
+/* ============================================================
+   Bloqueo
+   ============================================================ */
+function renderLock() {
+  root().innerHTML = `<div class="screen-center"><div class="lock">
+    <div class="stamp big ${S.stampPress ? 'press' : ''}"><b>Guardado solo en este equipo</b><span>Bóveda cifrada</span></div>
+    <h1>Desbloquea Folio</h1><p class="muted">Ingresa la contraseña de tu bóveda.</p>
+    <form data-form="unlock"><label class="field"><span>Contraseña</span><input class="input" type="password" name="pass" autocomplete="current-password" required autofocus></label>
+    <button class="btn primary block" type="submit">Desbloquear</button><p id="lock-err" class="small" style="color:var(--danger);margin-top:.8em" role="alert"></p></form>
+    <p class="tiny muted" style="margin-top:2rem">¿Olvidaste la contraseña? Solo puedes restaurar una copia de seguridad o empezar de cero. <a href="#" data-action="wipe-from-lock">Borrar todo y empezar</a></p>
+  </div></div>`;
+  S.stampPress = false;
+  setTimeout(() => $('input[name=pass]')?.focus(), 30);
+}
+async function doUnlock(pass) {
+  const err = $('#lock-err'); const btn = $('[data-form="unlock"] button'); btn.disabled = true; err.textContent = '';
+  try {
+    await Vault.unlock(pass);
+    S.settings = { ...DEFAULT_SETTINGS, ...(await store.get('settings') || {}) };
+    if (!PROVIDERS[S.settings.provider]) Object.assign(S.settings, { provider: 'openrouter', baseUrl: '', model: '' });
+    S.index = await store.get('index') || [];
+    S.audit = await store.get('audit') || [];
+    enterApp();
+  } catch (e) { btn.disabled = false; err.textContent = e instanceof FolioError ? e.message : 'No se pudo abrir la bóveda.'; }
+}
+function lockNow(msg) {
+  if (S.sending && S.abort) S.abort.abort();
+  Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, screen: 'lock', view: 'exp' });
+  closeDialog(); render(); if (msg) toast(msg);
+}
+setInterval(() => {
+  if (S.screen !== 'app' || !S.settings || S.sending) return;
+  if (Date.now() - S.lastActive > (S.settings.autoLockMin || 15) * 60000) lockNow('Folio se bloqueó por inactividad.');
+}, 20000);
+['pointerdown', 'keydown', 'wheel'].forEach(ev => document.addEventListener(ev, () => { S.lastActive = Date.now(); }, { passive: true }));
+
+/* ============================================================
+   Aplicación
+   ============================================================ */
+async function enterApp() {
+  S.screen = 'app'; S.stampPress = true; applyTheme();
+  const last = S.settings.lastExp && S.index.find(x => x.id === S.settings.lastExp);
+  if (last) await openExp(last.id, true); else { S.exp = null; render(); }
+  setTimeout(() => { S.stampPress = false; }, 50);
+}
+function caratulaTitle(e) {
+  const cli = e.partes.filter(p => p.esCliente).map(p => p.nombre).join(', ');
+  const con = e.partes.filter(p => !p.esCliente).map(p => p.nombre).join(', ');
+  return cli || con ? `${cli || 'Cliente'} contra ${con || 'contraparte'}` : (e.materia || 'Expediente sin partes');
+}
+function upsertIndex(e) {
+  const s = { id: e.id, numero: e.numero, titulo: caratulaTitle(e), materia: e.materia, ejemplo: !!e.ejemplo, updatedAt: e.updatedAt, plazos: e.memoria.plazos.filter(p => !p.done).map(p => ({ fecha: p.fecha, desc: p.desc })) };
+  const i = S.index.findIndex(x => x.id === e.id); if (i >= 0) S.index[i] = s; else S.index.unshift(s);
+}
+let saveT = null;
+function saveSoon() { clearTimeout(saveT); saveT = setTimeout(() => saveExp().catch(fail), 350); }
+async function saveExp() {
+  clearTimeout(saveT); const e = S.exp; if (!e || !Vault.key) return;
+  e.updatedAt = new Date().toISOString();
+  await store.put('exp:' + e.id, e); upsertIndex(e); await store.put('index', S.index);
+  renderSideParts();
+}
+async function saveSettings() { await store.put('settings', S.settings); }
+async function addAudit(entry) { S.audit.unshift(entry); S.audit = S.audit.slice(0, 500); await store.put('audit', S.audit); }
+
+async function openExp(id, silent) {
+  try {
+    const e = await store.get('exp:' + id); if (!e) throw new FolioError('No se encontró el expediente.');
+    S.exp = e; S.docTexts = {}; S.view = 'exp'; S.sideOpen = false;
+    if (S.tab === 'agente' && window.innerWidth > 1180) S.tab = 'memoria';
+    for (const d of e.docs) { const r = await store.get('doc:' + d.id); if (r) S.docTexts[d.id] = r.text; }
+    if (S.settings.lastExp !== id) { S.settings.lastExp = id; saveSettings(); }
+    render();
+  } catch (e) { if (!silent) fail(e); S.exp = null; render(); }
+}
+function blankExp(f) {
+  return { id: uid(), numero: f.numero || '', materia: f.materia || '', especialidad: f.especialidad || '', organo: f.organo || '', distrito: f.distrito || '', estado: f.estado || '',
+    partes: [], nextTok: 1, memoria: { resumen: '', hechos: '', estrategia: '', pendientes: [], plazos: [] }, movimientos: [], chat: [], docs: [],
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+}
+function addParte(e, nombre, rol, doc, esCliente) { e.partes.push({ id: uid(), tok: `PERSONA_${e.nextTok++}`, nombre: nombre.trim(), rol, doc: (doc || '').trim(), esCliente: !!esCliente }); }
+
+/* ---------- Sello ---------- */
+function stampHTML() {
+  const s = S.settings; let sub = 'Nada enviado en esta sesión';
+  if (s && s.provider === 'custom') sub = 'IA en tu servidor propio';
+  else if (S.lastSend) sub = `Último envío a ${provLabel(S.lastSend.provider)}, ${rel(S.lastSend.at)}${S.lastSend.pseudo ? ', con datos reemplazados' : ''}`;
+  return `<div class="stamp ${S.stampPress ? 'press' : ''}" role="status" title="Tus expedientes se guardan cifrados en este equipo. Folio no tiene servidores."><b>Guardado solo en este equipo</b><span>${esc(sub)}</span></div>`;
+}
+function updateStamp() { const sl = $('.stamp-slot'); if (sl) sl.innerHTML = stampHTML(); }
+setInterval(() => { if (S.screen === 'app' && S.lastSend) updateStamp(); }, 60000);
+
+/* ---------- Barra lateral ---------- */
+function deadlineChip(fecha, done) {
+  if (done) return `<span class="chip ok">Cumplido</span>`;
+  const d = daysUntil(fecha);
+  if (d < 0) return `<span class="chip due">Vencido</span>`;
+  if (d === 0) return `<span class="chip due">Hoy</span>`;
+  if (d <= 3) return `<span class="chip soon">En ${d} día${d > 1 ? 's' : ''}</span>`;
+  return `<span class="chip">En ${d} días</span>`;
+}
+function deadlinesHTML() {
+  const all = []; S.index.forEach(x => (x.plazos || []).forEach(p => all.push({ ...p, id: x.id, numero: x.numero })));
+  all.sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const next = all.filter(p => daysUntil(p.fecha) <= 14).slice(0, 6);
+  if (!next.length) return `<p class="tiny muted" style="margin:0">Sin plazos en los próximos 14 días.</p>`;
+  return `<ul class="deadlines">${next.map(p => { const d = daysUntil(p.fecha); const color = d < 0 || d === 0 ? 'var(--danger)' : d <= 3 ? 'var(--warn)' : 'var(--ink)';
+    return `<li><button data-action="open-exp" data-id="${p.id}"><span class="d" style="color:${color}">${esc(fmtDate(p.fecha).slice(0, 5))}</span><span><strong>${esc(p.desc)}</strong><br><span class="muted mono">${esc(p.numero || 's/n')}</span></span></button></li>`; }).join('')}</ul>`;
+}
+function listHTML() {
+  const f = norm(S.filter);
+  const items = S.index.filter(x => !f || norm(`${x.numero} ${x.titulo} ${x.materia}`).includes(f));
+  if (!S.index.length) return `<li style="padding:1rem .5rem" class="small muted">Aún no tienes expedientes.</li>`;
+  if (!items.length) return `<li style="padding:1rem .5rem" class="small muted">Ningún expediente coincide con “${esc(S.filter)}”.</li>`;
+  return items.map(x => { const next = (x.plazos || []).map(p => p.fecha).sort()[0];
+    return `<li><button data-action="open-exp" data-id="${x.id}" aria-current="${S.exp?.id === x.id && S.view === 'exp'}"><span class="num">${esc(x.numero || 'Sin número')}</span><span class="tit">${esc(x.titulo)}</span><span class="meta">${esc(x.materia || '')}${next ? ' ' + deadlineChip(next) : ''}${x.ejemplo ? ' <span class="chip">Ejemplo</span>' : ''}</span></button></li>`; }).join('');
+}
+function sidebarHTML() {
+  return `<aside class="side" aria-label="Expedientes">
+    <div class="side-top"><div class="brand"><i></i>Folio</div><button class="btn primary sm" data-action="new-exp">Nuevo expediente</button></div>
+    <div class="search"><label class="sr-only" for="q-exp">Buscar expediente</label><input id="q-exp" class="input" data-search placeholder="Buscar por número o parte" value="${esc(S.filter)}"></div>
+    <div class="side-section"><h2>Próximos plazos</h2><div id="deadlines">${deadlinesHTML()}</div></div>
+    <ul class="explist" id="explist">${listHTML()}</ul>
+    <div class="side-bottom"><button class="btn ghost sm" data-action="open-settings">Ajustes</button><button class="btn ghost sm" data-action="lock-now">Bloquear</button></div>
+  </aside>`;
+}
+function renderSideParts() { const l = $('#explist'); if (l) l.innerHTML = listHTML(); const d = $('#deadlines'); if (d) d.innerHTML = deadlinesHTML(); }
+
+/* ---------- Estructura principal ---------- */
+function renderApp() {
+  const main = S.view === 'settings' ? settingsHTML() : S.exp ? expHTML() : emptyHTML();
+  root().innerHTML = `<div class="app ${S.sideOpen ? 'side-open' : ''}">
+    <div class="scrim" data-action="close-side"></div>
+    ${sidebarHTML()}
+    <div class="main">
+      <div class="topbar"><button class="btn ghost sm" data-action="open-side">☰ Expedientes</button><div class="brand" style="font-size:1.1rem"><i></i>Folio</div></div>
+      ${main}
+    </div></div>`;
+  S.stampPress = false;
+  scrollMsgs();
+}
+function emptyHTML() {
+  return `<div class="empty"><div class="stamp ${S.stampPress ? 'press' : ''}" style="margin-bottom:2rem"><b>Guardado solo en este equipo</b><span>Bóveda abierta</span></div>
+    <h1>Crea tu primer expediente</h1>
+    <p class="lead">Cada expediente tiene su propia memoria: partes, plazos, movimientos, documentos y estrategia. El agente la lee antes de responder, así no repites el contexto en cada consulta.</p>
+    ${!isReady(S.settings) ? `<div class="note warn"><p>Aún no conectas un proveedor de IA. Puedes registrar expedientes igual y conectarlo cuando quieras.</p><button class="btn sm" data-action="open-settings">Conectar proveedor</button></div>` : ''}
+    <div class="row"><button class="btn primary" data-action="new-exp">Crear expediente</button><button class="btn" data-action="load-sample">Probar con un expediente de ejemplo</button></div>
+    <p class="tiny muted" style="margin-top:1rem">El ejemplo usa datos ficticios.</p></div>`;
+}
+function expHTML() {
+  const e = S.exp; const cli = e.partes.filter(p => p.esCliente), con = e.partes.filter(p => !p.esCliente);
+  const nm = arr => arr.map(p => esc(p.nombre)).join(', ');
+  const tabs = [['memoria', 'Memoria del caso'], ['movimientos', `Movimientos (${e.movimientos.length})`], ['documentos', `Documentos (${e.docs.length})`], ['agente', 'Agente']];
+  return `<header class="caratula">
+      <div>
+        <div class="expnum">${esc(e.numero || 'Sin número')} ${e.ejemplo ? '<span class="chip">Ejemplo ficticio</span>' : ''}<button class="btn ghost sm" data-action="edit-exp">Editar datos</button></div>
+        <div class="partes"><strong>${nm(cli) || 'Tu cliente'}</strong><span class="vs">contra</span><strong>${nm(con) || 'Contraparte'}</strong></div>
+        <div class="org">${esc([e.materia, e.organo, e.distrito].filter(Boolean).join(', ') || 'Completa materia y órgano jurisdiccional en Editar datos.')}</div>
+      </div>
+      <div class="stamp-slot">${stampHTML()}</div>
+      <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" class="${k === 'agente' ? 'agent-tab' : ''}" aria-selected="${S.tab === k}" data-action="tab" data-tab="${k}">${esc(l)}</button>`).join('')}</nav>
+    </header>
+    <div class="work ${S.tab === 'agente' ? 'show-agent' : ''}" id="work">
+      <section class="pane" id="pane" role="tabpanel">${paneHTML()}</section>
+      <aside class="agent" id="agent" aria-label="Agente del expediente">${agentHTML()}</aside>
+    </div>`;
+}
+function renderPane() { const p = $('#pane'); if (p) p.innerHTML = paneHTML(); }
+function paneHTML() { const t = S.tab === 'agente' ? 'memoria' : S.tab; return t === 'movimientos' ? movsHTML() : t === 'documentos' ? docsHTML() : memHTML(); }
+
+/* ---------- Memoria ---------- */
+function memHTML() {
+  const e = S.exp, m = e.memoria;
+  const plazos = [...m.plazos].sort((a, b) => a.fecha.localeCompare(b.fecha));
+  return `<div class="memgrid">
+    <div class="sheet span"><div class="sheet-head"><h3>Situación actual</h3><span class="tiny muted">El agente lee esta memoria en cada consulta</span></div>
+      <label class="field"><span>Estado procesal</span><input class="input" data-bind="estado" value="${esc(e.estado)}" placeholder="Ej.: demanda admitida, pendiente audiencia única"></label>
+      <label class="field" style="margin:0"><span>Resumen del caso</span><textarea class="textarea" data-bind="memoria.resumen" rows="3" placeholder="Qué se pide, a favor de quién y por qué">${esc(m.resumen)}</textarea></label></div>
+    <div class="sheet"><h3>Plazos</h3><p class="hint">Registra la fecha de vencimiento que confirmaste con la resolución y tu notificación SINOE.</p>
+      <ul class="list">${plazos.map(p => `<li><input type="checkbox" aria-label="Marcar cumplido" data-action="toggle-plazo" data-id="${p.id}" ${p.done ? 'checked' : ''}><span><span class="date">${esc(fmtDate(p.fecha))}</span> ${deadlineChip(p.fecha, p.done)}<br><span class="${p.done ? 'done' : ''}">${esc(p.desc)}</span></span><button class="iconbtn" aria-label="Eliminar plazo" data-action="del-plazo" data-id="${p.id}">✕</button></li>`).join('') || '<li class="small muted" style="display:block">Sin plazos registrados.</li>'}</ul>
+      <div class="addrow"><input class="input mono" type="date" id="nplazo-f" style="flex:0 0 10.5em" aria-label="Fecha de vencimiento"><input class="input" id="nplazo-d" placeholder="Qué vence" aria-label="Descripción del plazo"><button class="btn sm" data-action="add-plazo">Agregar</button></div></div>
+    <div class="sheet"><h3>Pendientes</h3><p class="hint">Tareas del caso para ti o tu equipo.</p>
+      <ul class="list">${m.pendientes.map(p => `<li><input type="checkbox" aria-label="Marcar hecho" data-action="toggle-pend" data-id="${p.id}" ${p.done ? 'checked' : ''}><span class="${p.done ? 'done' : ''}">${esc(p.text)}</span><button class="iconbtn" aria-label="Eliminar pendiente" data-action="del-pend" data-id="${p.id}">✕</button></li>`).join('') || '<li class="small muted" style="display:block">Sin pendientes.</li>'}</ul>
+      <div class="addrow"><input class="input" id="npend" placeholder="Nuevo pendiente" aria-label="Nuevo pendiente"><button class="btn sm" data-action="add-pend">Agregar</button></div></div>
+    <div class="sheet span"><div class="sheet-head"><h3>Partes y datos que se reemplazan</h3><span class="tiny muted">${S.settings.pseudo ? 'Reemplazo activado' : 'Reemplazo desactivado en Ajustes'}</span></div>
+      <p class="hint">Antes de enviar al proveedor, Folio cambia estos nombres y documentos por el marcador de la última columna.</p>
+      <div class="table-wrap"><table class="partes-table"><thead><tr><th>Nombre completo</th><th>Rol</th><th>Documento</th><th>Cliente</th><th>Se envía como</th><th></th></tr></thead><tbody>
+      ${e.partes.map(p => `<tr><td>${esc(p.nombre)}</td><td>${esc(p.rol)}</td><td class="mono">${esc(p.doc || '—')}</td><td><input type="checkbox" aria-label="Es mi cliente" data-action="toggle-cliente" data-id="${p.id}" ${p.esCliente ? 'checked' : ''}></td><td><span class="tok">[${esc(p.tok)}]</span></td><td><button class="iconbtn" aria-label="Eliminar parte" data-action="del-parte" data-id="${p.id}">✕</button></td></tr>`).join('') || '<tr><td colspan="6" class="small muted">Agrega las partes para que el agente las identifique sin ver sus datos reales.</td></tr>'}
+      </tbody></table></div>
+      <div class="addrow" style="flex-wrap:wrap"><input class="input" id="nparte-n" placeholder="Nombres y apellidos" style="flex:2 1 14em" aria-label="Nombre de la parte"><select class="select" id="nparte-r" style="flex:1 1 9em" aria-label="Rol">${['Demandante', 'Demandado', 'Agraviado(a)', 'Imputado(a)', 'Tercero', 'Testigo', 'Otro'].map(r => `<option>${r}</option>`).join('')}</select><input class="input mono" id="nparte-d" placeholder="DNI o RUC" style="flex:1 1 8em" aria-label="Documento"><label class="row small" style="flex:0 0 auto"><input type="checkbox" id="nparte-c"> Mi cliente</label><button class="btn sm" data-action="add-parte">Agregar</button></div></div>
+    <div class="sheet"><h3>Hechos clave</h3><textarea class="textarea" data-bind="memoria.hechos" rows="6" placeholder="Hechos relevantes y fechas">${esc(m.hechos)}</textarea></div>
+    <div class="sheet"><h3>Estrategia</h3><textarea class="textarea" data-bind="memoria.estrategia" rows="6" placeholder="Tu teoría del caso y próximos pasos">${esc(m.estrategia)}</textarea></div>
+  </div>`;
+}
+
+/* ---------- Movimientos ---------- */
+function movsHTML() {
+  const movs = [...S.exp.movimientos].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  return `<div class="sheet"><div class="sheet-head"><h3>Movimientos del expediente</h3><div class="row"><button class="btn sm" data-action="paste-cej">Pegar desde el CEJ</button><button class="btn primary sm" data-action="add-mov">Agregar movimiento</button></div></div>
+    <p class="hint">Copia el seguimiento del expediente desde la consulta del CEJ y pégalo: el agente lo ordena. Folio no se conecta al CEJ por ti.</p>
+    ${movs.length ? `<ol class="timeline" reversed>${movs.map(v => `<li><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="when">${esc(fmtDate(v.fecha))}</span><button class="iconbtn" aria-label="Eliminar movimiento" data-action="del-mov" data-id="${v.id}">✕</button></div><div class="acto">${esc(v.acto)}</div>${v.sumilla ? `<div class="sum">${esc(v.sumilla)}</div>` : ''}</li>`).join('')}</ol>` : '<p class="small muted">Sin movimientos. Agrega el primero o pega el seguimiento del CEJ.</p>'}</div>`;
+}
+
+/* ---------- Documentos ---------- */
+function docsHTML() {
+  const e = S.exp;
+  return `<div class="dropzone" data-action="pick-file" tabindex="0" role="button" aria-label="Agregar documentos"><strong>Arrastra aquí PDF, Word (.docx) o texto (.txt), o haz clic para elegir.</strong><br><span class="small">El texto se extrae en tu equipo y se guarda cifrado. El archivo original no se copia.</span></div>
+    <div class="note" style="margin-bottom:1rem"><p>Los PDF escaneados como imagen no tienen texto que leer; esta versión no hace reconocimiento óptico (OCR).</p></div>
+    ${e.docs.length ? `<div class="docs">${e.docs.map(d => `<article class="doc"><span class="folio" title="${d.pages || '?'} páginas">${d.type === 'pdf' ? 'Fs.' : '≈'} ${d.pages || '?'}</span><span class="name">${esc(d.name)}</span><span class="tiny muted">${(d.chars || 0).toLocaleString('es-PE')} caracteres, agregado el ${esc(fmtDate(d.addedAt))}</span>${d.scanned ? '<span class="chip soon">Parece escaneado</span>' : ''}<div class="actions"><button class="btn sm" data-action="view-doc" data-id="${d.id}">Ver texto</button><button class="btn ghost sm" data-action="del-doc" data-id="${d.id}">Eliminar</button></div></article>`).join('')}</div>` : '<p class="small muted">Sin documentos. Agrega la demanda, resoluciones o escritos clave para que el agente pueda citarlos.</p>'}`;
+}
+async function addFiles(files) {
+  const e = S.exp; if (!e) return;
+  for (const f of files) {
+    if (f.size > 40 * 1024 * 1024) { toast(`${f.name} supera 40 MB; divídelo antes de cargarlo.`, true); continue; }
+    toast(`Leyendo ${f.name} en tu equipo…`);
+    try {
+      const r = await extractText(f); const id = uid(); const text = r.text.slice(0, 1500000);
+      await store.put('doc:' + id, { id, expId: e.id, name: f.name, text });
+      S.docTexts[id] = text;
+      e.docs.push({ id, name: f.name, type: r.type, pages: r.pages, chars: text.length, addedAt: todayISO(), scanned: !!r.scanned });
+      await saveExp(); if (S.tab === 'documentos') renderPane(); updateTabs();
+      toast(r.scanned ? `${f.name}: casi no tiene texto. Puede ser un escaneo.` : `${f.name} agregado.`, !!r.scanned);
+    } catch (err) { fail(err); }
+  }
+}
+function updateTabs() { const e = S.exp; if (!e) return; const t = $$('.tabs button'); if (t.length >= 3) { t[1].textContent = `Movimientos (${e.movimientos.length})`; t[2].textContent = `Documentos (${e.docs.length})`; } }
+
+/* ============================================================
+   Agente
+   ============================================================ */
+const QUICK = [['Resume el expediente', 'Resume el expediente en pocas líneas: qué se discute, en qué etapa está y qué viene.'],
+  ['Plazos y qué preparar', '¿Qué plazos tengo registrados y qué debería preparar para cada uno?'],
+  ['Riesgos del caso', 'Identifica los puntos débiles y riesgos de mi posición, y cómo mitigarlos.'],
+  ['Borrador de escrito', 'Prepara un borrador de escrito para: ']];
+function msgHTML(m, i) {
+  if (m.role === 'user') return `<div class="msg user">${esc(m.content)}</div>`;
+  if (m.role === 'error') return `<div class="msg error" role="alert">${esc(m.content)}</div>`;
+  const meta = m.meta ? `Enviado a ${esc(provLabel(m.meta.provider))} (${esc(m.meta.model)})${m.meta.pseudo ? `, ${m.meta.replaced} dato${m.meta.replaced === 1 ? '' : 's'} reemplazado${m.meta.replaced === 1 ? '' : 's'}` : ', sin reemplazo de datos'}` : '';
+  return `<div class="msg assistant">${md(m.content)}<div class="foot"><span>${meta}</span><button class="btn ghost sm" data-action="copy-msg" data-i="${i}">Copiar</button></div></div>`;
+}
+function agentHTML() {
+  const e = S.exp, s = S.settings, ready = isReady(s);
+  const abroad = PROVIDERS[s.provider]?.abroad;
+  const line = !ready ? '' : abroad
+    ? `<span class="dot ${s.pseudo ? '' : 'off'}"></span>${s.pseudo ? 'Se envía a ' + esc(provLabel(s.provider)) + ' con datos reemplazados' : 'Se envía a ' + esc(provLabel(s.provider)) + ' sin reemplazar datos'}`
+    : `<span class="dot"></span>Se envía a tu servidor propio`;
+  return `<div class="agent-head"><div><h2>Agente del expediente</h2><div class="prov">${ready ? esc(provLabel(s.provider)) + ', ' + esc(s.model) : 'Sin proveedor conectado'}</div></div>
+      <div class="row"><button class="btn sm" data-action="propose-memory" ${e.chat.some(m => m.role === 'assistant') && ready ? '' : 'disabled'} title="El agente propone cambios a la memoria del caso; tú decides cuáles aplicar">Actualizar memoria</button>${e.chat.length ? '<button class="btn ghost sm" data-action="clear-chat">Limpiar</button>' : ''}</div></div>
+    <div class="msgs" id="msgs">${e.chat.length ? e.chat.map(msgHTML).join('') : `<div class="empty-agent"><p>Pregunta sobre este expediente. El agente ya conoce su memoria, movimientos y documentos.</p></div>`}</div>
+    ${ready ? `<div class="quick">${QUICK.map(([l], i) => `<button data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}</div>
+    <form class="composer" data-form="chat"><label class="sr-only" for="q">Tu consulta</label><textarea id="q" class="textarea" rows="2" placeholder="Escribe tu consulta. Enter envía, Mayús+Enter salta de línea." ${S.sending ? 'disabled' : ''}></textarea>
+      <div class="row"><span class="privacy-line">${line}</span>${S.sending ? '<button class="btn" type="button" data-action="stop">Detener</button>' : '<button class="btn primary" type="submit">Enviar</button>'}</div></form>`
+    : `<div class="composer"><div class="note warn"><p>Conecta tu proveedor de IA para conversar con el agente.</p><button class="btn sm" data-action="open-settings">Conectar proveedor</button></div></div>`}`;
+}
+function renderAgent() { const a = $('#agent'); if (a) { a.innerHTML = agentHTML(); scrollMsgs(); } }
+function scrollMsgs() { const m = $('#msgs'); if (m) m.scrollTop = m.scrollHeight; }
+
+function highlightTokens(s) { return esc(s).replace(/\[(?:PERSONA|DOC|CORREO|RUC|TELEFONO|DNI|DIRECCION)_\d+\]/g, t => `<mark>${t}</mark>`); }
+async function reviewPayload(system, messages, P, kind) {
+  if (!S.settings.review) return true;
+  const s = S.settings;
+  let instr = system, data = '';
+  const cut = system.indexOf('\n\nFECHA DE HOY:');
+  if (cut >= 0) { instr = system.slice(0, cut); data = system.slice(cut + 2); }
+  const convo = messages.map(m => `[${m.role === 'user' ? 'Abogado' : 'Agente'}]\n${m.content}`).join('\n\n');
+  const r = await askDialog({ title: 'Revisa lo que se enviará', wide: true, ok: 'Enviar', collect: d => ({ skip: $('#rv-skip', d).checked }),
+    body: `<p>Este es el texto exacto que saldrá de tu equipo hacia <strong>${esc(provLabel(s.provider))}</strong> (${esc(s.model)})${PROVIDERS[s.provider]?.abroad ? ', con servidores fuera del Perú' : ''}. ${P.enabled ? `Se reemplazaron <strong>${P.count()}</strong> datos personales; aparecen resaltados.` : '<strong>El reemplazo de datos está desactivado.</strong>'}</p>
+      ${P.enabled ? '<p class="small muted">Revisa si queda algún nombre, apodo o dato que identifique a alguien. Si lo ves, cancela y agrégalo como parte en la memoria.</p>' : ''}
+      <p class="payload-label">Consulta y datos del caso</p>
+      <div class="payload">${highlightTokens(convo + (data ? '\n\n' + data : ''))}</div>
+      <details class="instr"><summary>Instrucciones fijas de Folio para el modelo (no contienen datos del caso)</summary><div class="payload">${highlightTokens(instr)}</div></details>
+      <label class="row small" style="margin-top:.8rem"><input type="checkbox" id="rv-skip"> No volver a mostrar antes de cada envío (puedes reactivarlo en Ajustes)</label>` });
+  if (!r) return false;
+  if (r.skip) { S.settings.review = false; await saveSettings(); }
+  return true;
+}
+function historyFor(e) {
+  const h = e.chat.filter(m => m.role === 'user' || m.role === 'assistant').slice(-8).map(m => ({ role: m.role, content: m.content }));
+  while (h.length && h[0].role !== 'user') h.shift();
+  const out = []; for (const m of h) { if (out.length && out[out.length - 1].role === m.role) out[out.length - 1].content += '\n\n' + m.content; else out.push({ ...m }); }
+  return out;
+}
+async function sendChat(text) {
+  const e = S.exp, s = S.settings; text = text.trim(); if (!text || S.sending) return;
+  const P = makePseudo(e, s.pseudo);
+  const ctx = buildContext(e, S.docTexts, text);
+  const system = P.apply(SYSTEM_PROMPT + '\n\n' + ctx.text);
+  const hist = historyFor(e).map(m => ({ role: m.role, content: P.apply(m.content) }));
+  let messages = [...hist, { role: 'user', content: P.apply(text) }];
+  if (messages.length >= 2 && messages[messages.length - 2].role === 'user') { const last = messages.pop(); messages[messages.length - 1].content += '\n\n' + last.content; }
+  if (!(await reviewPayload(system, messages, P, 'chat'))) return;
+  e.chat.push({ role: 'user', content: text, at: new Date().toISOString() });
+  S.sending = true; S.abort = new AbortController(); renderAgent();
+  const box = $('#msgs'); box.insertAdjacentHTML('beforeend', `<div class="msg assistant" id="streaming"><span class="typing" aria-label="El agente está escribiendo"><i></i><i></i><i></i></span></div>`); scrollMsgs();
+  const chars = system.length + messages.reduce((a, m) => a + m.content.length, 0);
+  try {
+    let pending = null;
+    const full = await llm({ cfg: s, system, messages, stream: true, maxTokens: 6000, signal: S.abort.signal, onDelta: t => { pending = t; requestAnimationFrame(() => { if (pending == null) return; const el = $('#streaming'); if (el) { el.innerHTML = md(P.restore(pending)); scrollMsgs(); } pending = null; }); } });
+    const content = P.restore(full).trim() || '(El modelo no devolvió texto.)';
+    e.chat.push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count() } });
+    await logSend('Consulta', chars, P);
+  } catch (err) {
+    if (err.name === 'AbortError') e.chat.push({ role: 'error', content: 'Detuviste la respuesta.' });
+    else e.chat.push({ role: 'error', content: err instanceof FolioError ? err.message : 'Error inesperado: ' + err.message });
+  } finally { S.sending = false; S.abort = null; await saveExp().catch(fail); renderAgent(); updateStamp(); $('#q')?.focus(); }
+}
+async function logSend(kind, chars, P) {
+  const s = S.settings; S.lastSend = { at: Date.now(), provider: s.provider, pseudo: P.enabled };
+  await addAudit({ at: new Date().toISOString(), kind, provider: s.provider, model: s.model, exp: S.exp?.numero || 's/n', chars, pseudo: P.enabled, replaced: P.count(), local: !PROVIDERS[s.provider]?.abroad });
+}
+
+/* ---------- La memoria se actualiza con tu aprobación ---------- */
+async function proposeMemory() {
+  const e = S.exp, s = S.settings; const P = makePseudo(e, s.pseudo);
+  const convo = e.chat.filter(m => m.role !== 'error').slice(-8).map(m => `${m.role === 'user' ? 'ABOGADO' : 'AGENTE'}: ${m.content}`).join('\n\n');
+  const system = `Eres el módulo de memoria de Folio. Propón cambios a la memoria de un expediente judicial peruano a partir de la conversación reciente. Devuelve SOLO un objeto JSON válido, sin texto adicional, con esta forma:
+{"estado": string|null, "resumen_agregar": string|null, "hechos_agregar": string|null, "estrategia_agregar": string|null, "pendientes_nuevos": [string], "plazos_nuevos": [{"fecha": "AAAA-MM-DD", "descripcion": string}]}
+Incluye solo información nueva que aparezca de forma explícita en la conversación. No inventes fechas: un plazo nuevo solo se propone si la conversación menciona una fecha concreta. Usa null o listas vacías si no hay nada. Conserva los marcadores como [PERSONA_1] tal cual.`;
+  const user = P.apply(`FECHA DE HOY: ${todayISO()}\n\nMEMORIA ACTUAL:\n${memoryText(e)}\n\nCONVERSACIÓN RECIENTE:\n${convo}`);
+  if (!(await reviewPayload(system, [{ role: 'user', content: user }], P, 'memoria'))) return;
+  const btn = $('[data-action="propose-memory"]'); if (btn) { btn.disabled = true; btn.textContent = 'Analizando…'; }
+  try {
+    const out = await llm({ cfg: s, system, messages: [{ role: 'user', content: user }], maxTokens: 4000 });
+    await logSend('Actualizar memoria', system.length + user.length, P);
+    const j = parseJSONLoose(out); const R = v => typeof v === 'string' ? P.restore(v).trim() : '';
+    const items = [];
+    if (R(j.estado)) items.push({ k: 'estado', label: 'Nuevo estado procesal', v: R(j.estado) });
+    if (R(j.resumen_agregar)) items.push({ k: 'resumen', label: 'Agregar al resumen', v: R(j.resumen_agregar) });
+    if (R(j.hechos_agregar)) items.push({ k: 'hechos', label: 'Agregar a hechos clave', v: R(j.hechos_agregar) });
+    if (R(j.estrategia_agregar)) items.push({ k: 'estrategia', label: 'Agregar a la estrategia', v: R(j.estrategia_agregar) });
+    (j.pendientes_nuevos || []).map(R).filter(Boolean).forEach(v => items.push({ k: 'pend', label: 'Nuevo pendiente', v }));
+    (j.plazos_nuevos || []).filter(p => p && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha || '') && R(p.descripcion)).forEach(p => items.push({ k: 'plazo', label: `Nuevo plazo, ${fmtDate(p.fecha)}`, v: R(p.descripcion), fecha: p.fecha }));
+    if (!items.length) { toast('El agente no encontró información nueva para la memoria.'); return; }
+    const sel = await askDialog({ title: 'Cambios propuestos a la memoria', ok: 'Aplicar seleccionados', wide: true,
+      collect: d => $$('[data-prop]', d).filter(c => c.checked).map(c => +c.dataset.prop),
+      body: `<p>Marca lo que quieres guardar. Nada cambia sin tu aprobación.</p><ul class="proposal">${items.map((it, i) => `<li><label class="check"><input type="checkbox" data-prop="${i}" ${it.k === 'plazo' ? '' : 'checked'}><span><strong>${esc(it.label)}</strong><br>${esc(it.v)}${it.k === 'plazo' ? '<br><span class="small" style="color:var(--warn)">Verifica esta fecha con la resolución y tu notificación antes de aceptarla.</span>' : ''}</span></label></li>`).join('')}</ul>` });
+    if (!sel || !sel.length) return;
+    const m = e.memoria;
+    for (const i of sel) { const it = items[i];
+      if (it.k === 'estado') e.estado = it.v;
+      else if (it.k === 'pend') m.pendientes.push({ id: uid(), text: it.v, done: false });
+      else if (it.k === 'plazo') m.plazos.push({ id: uid(), fecha: it.fecha, desc: it.v, done: false });
+      else m[it.k] = (m[it.k] ? m[it.k].trimEnd() + '\n' : '') + it.v; }
+    await saveExp(); renderPane(); toast(`Memoria actualizada: ${sel.length} cambio${sel.length > 1 ? 's' : ''}.`);
+  } catch (err) { fail(err); } finally { renderAgent(); updateStamp(); }
+}
+
+/* ---------- Movimientos pegados del CEJ ---------- */
+async function pasteCEJ() {
+  const s = S.settings;
+  const text = await askDialog({ title: 'Pegar seguimiento del CEJ', ok: isReady(s) ? 'Ordenar con el agente' : 'Entendido', wide: true,
+    collect: d => { if (!isReady(s)) return ''; const v = $('#cej-text', d).value.trim(); if (!v) { $('#cej-err', d).textContent = 'Pega primero el texto copiado del CEJ.'; return null; } return v; },
+    body: `<ol class="small"><li>Abre la consulta del expediente en cej.pj.gob.pe.</li><li>Selecciona el bloque de seguimiento del expediente y cópialo.</li><li>Pégalo aquí. El agente extrae fecha, acto y sumilla; tú revisas antes de guardar.</li></ol>
+      ${isReady(s) ? `<label class="field"><span>Texto copiado</span><textarea class="textarea" id="cej-text" rows="10" placeholder="Pega aquí el seguimiento del expediente"></textarea></label><p id="cej-err" class="small" style="color:var(--danger)" role="alert"></p>` : '<div class="note warn"><p>Para ordenar el texto necesitas conectar un proveedor de IA. Mientras tanto, usa Agregar movimiento.</p></div>'}` });
+  if (!text) return;
+  const e = S.exp; const P = makePseudo(e, s.pseudo);
+  const system = `Extrae los movimientos procesales del texto copiado de la Consulta de Expedientes Judiciales (CEJ) del Poder Judicial del Perú. Devuelve SOLO un objeto JSON válido, sin texto adicional: {"movimientos":[{"fecha":"AAAA-MM-DD"|null,"acto":"texto breve, por ejemplo 'Resolución 3' o 'Escrito'","sumilla":"resumen en una línea"}]}. Usa exactamente las fechas del texto. No inventes movimientos. Conserva los marcadores como [PERSONA_1] tal cual.`;
+  const user = P.apply(text.slice(0, 20000));
+  if (!(await reviewPayload(system, [{ role: 'user', content: user }], P, 'cej'))) return;
+  toast('El agente está ordenando los movimientos…');
+  try {
+    const out = await llm({ cfg: s, system, messages: [{ role: 'user', content: user }], maxTokens: 8000 });
+    await logSend('Ordenar movimientos', system.length + user.length, P); updateStamp();
+    const list = (parseJSONLoose(out).movimientos || []).map(v => ({ fecha: /^\d{4}-\d{2}-\d{2}$/.test(v.fecha || '') ? v.fecha : '', acto: P.restore(String(v.acto || '')).trim(), sumilla: P.restore(String(v.sumilla || '')).trim() })).filter(v => v.acto);
+    if (!list.length) { toast('No se encontraron movimientos en el texto.', true); return; }
+    const sel = await askDialog({ title: `${list.length} movimientos encontrados`, ok: 'Agregar seleccionados', wide: true,
+      collect: d => $$('[data-mv]', d).filter(c => c.checked).map(c => +c.dataset.mv),
+      body: `<p>Revisa cada movimiento contra el CEJ antes de agregarlo.</p><ul class="proposal">${list.map((v, i) => `<li><label class="check"><input type="checkbox" data-mv="${i}" checked><span><span class="mono"><strong>${esc(fmtDate(v.fecha))}</strong></span> ${esc(v.acto)}<br><span class="small muted">${esc(v.sumilla)}</span></span></label></li>`).join('')}</ul>` });
+    if (!sel || !sel.length) return;
+    sel.forEach(i => e.movimientos.push({ id: uid(), ...list[i] }));
+    await saveExp(); renderPane(); updateTabs(); toast(`${sel.length} movimientos agregados.`);
+  } catch (err) { fail(err); }
+}
+
+/* ============================================================
+   Formularios de expediente y movimiento
+   ============================================================ */
+const ESPECIALIDADES = ['Civil', 'Familia', 'Penal', 'Laboral', 'Contencioso administrativo', 'Constitucional', 'Comercial', 'Otra'];
+async function expForm(e) {
+  const isNew = !e; e = e || {};
+  const r = await askDialog({ title: isNew ? 'Nuevo expediente' : 'Datos del expediente', ok: isNew ? 'Crear expediente' : 'Guardar cambios', wide: true,
+    collect: d => { const f = Object.fromEntries($$('[name]', d).map(i => [i.name, i.type === 'checkbox' ? i.checked : i.value.trim()])); if (isNew && !f.numero && !f.cliente) { $('#exp-err', d).textContent = 'Ingresa al menos el número de expediente o el nombre de tu cliente.'; return null; } return f; },
+    body: `<div class="grid2">
+      <label class="field"><span>Número de expediente</span><input class="input mono" name="numero" value="${esc(e.numero)}" placeholder="00000-2026-0-0000-XX-XX-00"></label>
+      <label class="field"><span>Materia</span><input class="input" name="materia" value="${esc(e.materia)}" placeholder="Ej.: alimentos, desalojo, violencia familiar"></label>
+      <label class="field"><span>Especialidad</span><select class="select" name="especialidad"><option value="">Elegir</option>${ESPECIALIDADES.map(x => `<option ${e.especialidad === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+      <label class="field"><span>Distrito judicial</span><input class="input" name="distrito" value="${esc(e.distrito)}" placeholder="Ej.: Junín"></label>
+      <label class="field" style="grid-column:1/-1"><span>Órgano jurisdiccional</span><input class="input" name="organo" value="${esc(e.organo)}" placeholder="Ej.: 2.° Juzgado de Familia de Huancayo"></label>
+      <label class="field" style="grid-column:1/-1"><span>Estado procesal</span><input class="input" name="estado" value="${esc(e.estado)}" placeholder="Ej.: calificación de la demanda"></label>
+      ${isNew ? `<label class="field"><span>Tu cliente</span><input class="input" name="cliente" placeholder="Nombres y apellidos"><small>Podrás agregar más partes en la memoria.</small></label>
+      <label class="field"><span>Rol de tu cliente</span><select class="select" name="rolCliente">${['Demandante', 'Demandado', 'Agraviado(a)', 'Imputado(a)', 'Tercero', 'Otro'].map(x => `<option>${x}</option>`).join('')}</select></label>
+      <label class="field"><span>Contraparte</span><input class="input" name="contraparte" placeholder="Nombres y apellidos o razón social"></label>
+      <label class="field"><span>Rol de la contraparte</span><select class="select" name="rolContra">${['Demandado', 'Demandante', 'Imputado(a)', 'Agraviado(a)', 'Tercero', 'Otro'].map(x => `<option>${x}</option>`).join('')}</select></label>` : ''}
+    </div><p id="exp-err" class="small" style="color:var(--danger)" role="alert"></p>
+    ${isNew ? '' : '<div class="note danger" style="margin-top:.5rem"><p>¿Ya no necesitas este expediente? <button type="button" class="btn danger sm" data-action="del-exp">Eliminar expediente</button></p></div>'}` });
+  if (!r) return;
+  if (isNew) {
+    const ne = blankExp(r);
+    if (r.cliente) addParte(ne, r.cliente, r.rolCliente, '', true);
+    if (r.contraparte) addParte(ne, r.contraparte, r.rolContra, '', false);
+    S.exp = ne; S.docTexts = {}; S.tab = 'memoria'; S.view = 'exp'; S.sideOpen = false;
+    await saveExp(); S.settings.lastExp = ne.id; await saveSettings(); render(); toast('Expediente creado.');
+  } else {
+    Object.assign(S.exp, { numero: r.numero, materia: r.materia, especialidad: r.especialidad, organo: r.organo, distrito: r.distrito, estado: r.estado });
+    await saveExp(); render(); toast('Datos guardados.');
+  }
+}
+async function deleteExp() {
+  const e = S.exp; closeDialog();
+  const ok = await askDialog({ title: 'Eliminar expediente', ok: 'Eliminar definitivamente', danger: true, body: `<p>Se eliminará <strong class="mono">${esc(e.numero || 'este expediente')}</strong> con su memoria, movimientos, documentos y conversaciones de este equipo. No se puede deshacer.</p>` });
+  if (!ok) return;
+  for (const d of e.docs) await store.del('doc:' + d.id);
+  await store.del('exp:' + e.id); S.index = S.index.filter(x => x.id !== e.id); await store.put('index', S.index);
+  S.exp = null; S.settings.lastExp = null; await saveSettings(); render(); toast('Expediente eliminado.');
+}
+async function movForm() {
+  const r = await askDialog({ title: 'Agregar movimiento', ok: 'Agregar',
+    collect: d => { const f = { fecha: $('#mv-f', d).value, acto: $('#mv-a', d).value.trim(), sumilla: $('#mv-s', d).value.trim() }; if (!f.acto) { $('#mv-err', d).textContent = 'Indica el acto, por ejemplo Resolución 2.'; return null; } return f; },
+    body: `<div class="grid2"><label class="field"><span>Fecha</span><input class="input mono" type="date" id="mv-f" value="${todayISO()}"></label><label class="field"><span>Acto</span><input class="input" id="mv-a" placeholder="Ej.: Resolución 2, Escrito, Audiencia"></label></div>
+      <label class="field"><span>Sumilla</span><textarea class="textarea" id="mv-s" rows="3" placeholder="Qué se resolvió o presentó"></textarea></label><p id="mv-err" class="small" style="color:var(--danger)" role="alert"></p>` });
+  if (!r) return;
+  S.exp.movimientos.push({ id: uid(), ...r }); await saveExp(); renderPane(); updateTabs(); toast('Movimiento agregado.');
+}
+
+/* ---------- Expediente de ejemplo (datos ficticios) ---------- */
+async function loadSample() {
+  const e = blankExp({ numero: '00845-2026-0-1501-JP-FC-01', materia: 'Alimentos', especialidad: 'Familia', organo: 'Juzgado de Paz Letrado de Huancayo', distrito: 'Junín', estado: 'Demanda contestada; audiencia única programada' });
+  e.ejemplo = true;
+  addParte(e, 'Rosa Elena Quispe Rojas', 'Demandante', '45879632', true);
+  addParte(e, 'Julio César Huamán Torres', 'Demandado', '41236598', false);
+  const m = e.memoria;
+  m.resumen = 'Demanda de alimentos a favor de la hija de la demandante, de 7 años. Se pide una pensión mensual equivalente al 30 % de los ingresos del demandado, técnico en una empresa minera de la región.';
+  m.hechos = 'La convivencia terminó en 2024.\nEl demandado dejó de aportar desde enero de 2026.\nLa madre cubre pensión escolar, útiles y controles médicos de la menor.';
+  m.estrategia = 'Acreditar los ingresos del demandado con informe de su empleador. Presentar liquidación de gastos mensuales de la menor con boletas.';
+  m.pendientes.push({ id: uid(), text: 'Reunir boletas de gastos escolares de 2026', done: false }, { id: uid(), text: 'Pedir al juzgado oficio al empleador del demandado', done: true });
+  m.plazos.push({ id: uid(), fecha: addDaysISO(2), desc: 'Presentar escrito con medios probatorios adicionales', done: false }, { id: uid(), fecha: addDaysISO(9), desc: 'Audiencia única (confirmar hora en la resolución)', done: false });
+  [['2026-08-04', 'Demanda', 'Ingreso de la demanda por mesa de partes electrónica.'], ['2026-08-12', 'Resolución 1', 'Admite a trámite la demanda y corre traslado al demandado.'], ['2026-09-02', 'Escrito del demandado', 'Contesta la demanda; alega ingresos menores a los indicados.'], ['2026-09-15', 'Resolución 3', 'Tiene por contestada la demanda y cita a audiencia única.']]
+    .forEach(([fecha, acto, sumilla]) => e.movimientos.push({ id: uid(), fecha, acto, sumilla }));
+  const docText = `SUMILLA: Demanda de alimentos\n\nSEÑOR JUEZ DEL JUZGADO DE PAZ LETRADO DE HUANCAYO:\n\nROSA ELENA QUISPE ROJAS, identificada con DNI N.° 45879632, con domicilio real en Jr. Los Pinos 245, El Tambo, teléfono 964 123 456 y correo rosa.quispe@correo.pe, ante usted me presento y digo:\n\nI. PETITORIO\nInterpongo demanda de alimentos contra JULIO CÉSAR HUAMÁN TORRES, identificado con DNI N.° 41236598, a fin de que acuda a nuestra menor hija con una pensión alimenticia mensual equivalente al 30 % de sus ingresos.\n\nII. FUNDAMENTOS DE HECHO\n1. La recurrente y el demandado mantuvieron una convivencia que concluyó en el año 2024.\n2. Desde enero de 2026 el demandado no aporta para la manutención de la menor, pese a percibir ingresos como técnico en una empresa minera.\n3. La recurrente asume sola los gastos de educación, alimentación, vestido y salud de la menor, que ascienden aproximadamente a S/ 1,200 mensuales.\n\nIII. MEDIOS PROBATORIOS\n1. Partida de nacimiento de la menor.\n2. Boletas de pago de pensión escolar.\n3. Constancias de atención médica.\n\n(Documento ficticio de ejemplo.)`;
+  const id = uid(); await Promise.resolve();
+  S.exp = e; S.docTexts = { [id]: docText };
+  await store.put('doc:' + id, { id, expId: e.id, name: 'Demanda de alimentos (ejemplo).txt', text: docText });
+  e.docs.push({ id, name: 'Demanda de alimentos (ejemplo).txt', type: 'txt', pages: 1, chars: docText.length, addedAt: todayISO() });
+  S.tab = 'memoria'; S.view = 'exp';
+  await saveExp(); S.settings.lastExp = e.id; await saveSettings(); render(); toast('Expediente de ejemplo cargado. Todos sus datos son ficticios.');
+}
+
+/* ============================================================
+   Ajustes
+   ============================================================ */
+async function settingsView() { S.view = 'settings'; S.draftCfg = { ...pickCfg(S.settings) }; S.sideOpen = false; render(); }
+function settingsHTML() {
+  const s = S.settings;
+  return `<div class="settings"><div class="wrap">
+    <div class="row" style="justify-content:space-between;margin-bottom:1rem"><h1 style="margin:0">Ajustes</h1><button class="btn" data-action="close-settings">Volver a expedientes</button></div>
+    <section class="sheet"><div class="sheet-head"><h3>Proveedor de IA</h3><button class="btn sm" data-action="show-keyguide">Guía para obtener tu key</button></div><p class="hint">Usas tu propia cuenta. La key se guarda cifrada en este equipo.</p><div id="pf-block">${providerFieldsHTML(S.draftCfg)}</div>
+      <div class="row" style="margin-top:1rem"><button class="btn primary" data-action="save-provider">Guardar proveedor</button></div></section>
+    <section class="sheet"><h3>Privacidad de cada consulta</h3>
+      <label class="switch" style="margin:.6rem 0 1rem"><input type="checkbox" data-setting="pseudo" ${s.pseudo ? 'checked' : ''}><span><strong>Reemplazar datos personales antes de enviar</strong><br><span class="small muted">Nombres y documentos de las partes, DNI, RUC, teléfonos, correos y direcciones.</span></span></label>
+      <label class="switch" style="margin-bottom:1rem"><input type="checkbox" data-setting="review" ${s.review ? 'checked' : ''}><span><strong>Revisar el texto antes de cada envío</strong><br><span class="small muted">Muestra exactamente lo que saldrá de tu equipo y te pide confirmar.</span></span></label>
+      <div class="note warn"><p>Reemplazar datos reduce el riesgo, pero no anonimiza. Envía solo lo indispensable en casos sensibles.</p></div></section>
+    <section class="sheet"><h3>Seguridad</h3>
+      <label class="field" style="max-width:280px"><span>Bloqueo automático por inactividad</span><select class="select" data-setting="autoLockMin">${[5, 15, 30, 60].map(n => `<option value="${n}" ${s.autoLockMin === n ? 'selected' : ''}>${n} minutos</option>`).join('')}</select></label>
+      <div class="row"><button class="btn" data-action="change-pass">Cambiar contraseña</button><button class="btn" data-action="lock-now">Bloquear ahora</button></div></section>
+    <section class="sheet"><h3>Copias de seguridad</h3><p class="hint">La copia sale cifrada con tu contraseña actual. Guárdala en un lugar seguro: sin ella, perder este navegador es perder tus datos.</p>
+      <div class="row"><button class="btn" data-action="export-backup">Descargar copia cifrada</button><button class="btn" data-action="import-backup">Restaurar una copia</button></div></section>
+    <section class="sheet"><div class="sheet-head"><h3>Registro de envíos</h3>${S.audit.length ? '<button class="btn sm" data-action="export-audit">Descargar CSV</button>' : ''}</div>
+      <p class="hint">Cada vez que el agente envía información, queda anotado aquí, solo en este equipo. Te sirve para demostrar qué salió, cuándo y a quién.</p>
+      ${S.audit.length ? `<div class="table-wrap"><table class="audit"><thead><tr><th>Fecha</th><th>Acción</th><th>Expediente</th><th>Destino</th><th>Datos reemplazados</th></tr></thead><tbody>${S.audit.slice(0, 50).map(a => `<tr><td class="mono">${esc(fmtDateTime(a.at))}</td><td>${esc(a.kind)}</td><td class="mono">${esc(a.exp)}</td><td>${esc(provLabel(a.provider))}<br><span class="muted">${esc(a.model)}</span></td><td>${a.pseudo ? a.replaced : 'Desactivado'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="small muted">Aún no hay envíos.</p>'}</section>
+    <section class="sheet"><h3>Documentos legales</h3><p class="hint" id="consent-line"></p>
+      <div class="row"><button class="btn" data-action="show-policy">Política de privacidad</button><button class="btn" data-action="show-terms">Términos de uso</button><button class="btn" data-action="show-clause">Autorización para clientes</button></div></section>
+    <section class="sheet"><h3>Apariencia</h3><label class="field" style="max-width:280px"><span>Tema</span><select class="select" data-setting="theme">${[['auto', 'Según el sistema'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([v, l]) => `<option value="${v}" ${s.theme === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label></section>
+    <section class="sheet"><h3>Qué no hace esta versión</h3><ul class="small"><li>No se conecta al CEJ ni al SINOE: pegas el seguimiento y el agente lo ordena.</li><li>No lee documentos escaneados como imagen.</li><li>No sincroniza entre equipos ni tiene app móvil.</li><li>No calcula plazos procesales: los registras tú.</li></ul><p class="tiny muted">Folio ${esc(APP.version)}</p></section>
+    <section class="sheet" style="border-color:var(--danger)"><h3>Borrar todo</h3><p class="hint">Elimina de este navegador todos los expedientes, documentos, conversaciones, ajustes y el registro de envíos.</p><button class="btn danger" data-action="wipe-all">Borrar todos los datos de este equipo</button></section>
+  </div></div>`;
+}
+async function fillConsentLine() {
+  const c = await DB.get('consent'); const el = $('#consent-line');
+  if (el && c) el.textContent = `Aceptaste los avisos de la versión ${c.policyVersion} el ${fmtDateTime(c.acceptedAt)}. La aceptación queda guardada en este equipo.`;
+}
+async function exportBackup() {
+  const keys = await DB.keys(); const records = {};
+  for (const k of keys) records[k] = await DB.get(k);
+  download(new Blob([JSON.stringify({ format: 'folio-respaldo', version: 1, app: APP.version, exportedAt: new Date().toISOString(), records })], { type: 'application/json' }), `folio-respaldo-${todayISO()}.folio`);
+  toast('Copia descargada. Está cifrada con tu contraseña actual.');
+}
+async function importBackup(file) {
+  let data; try { data = JSON.parse(await file.text()); } catch { return toast('El archivo no es una copia de Folio válida.', true); }
+  if (data.format !== 'folio-respaldo' || !data.records?.vault) return toast('El archivo no es una copia de Folio válida.', true);
+  const ok = await askDialog({ title: 'Restaurar copia de seguridad', ok: 'Reemplazar y restaurar', danger: true, body: `<p>La copia es del ${esc(fmtDateTime(data.exportedAt))}. Reemplazará <strong>todos</strong> los datos actuales de este equipo.</p><p>Después se pedirá la contraseña con la que se hizo esa copia.</p>` });
+  if (!ok) return;
+  await DB.clear(); await DB.putMany(Object.entries(data.records));
+  lockNow('Copia restaurada. Ingresa la contraseña de esa copia.');
+}
+async function wipeAll() {
+  const ok = await askDialog({ title: 'Borrar todos los datos', ok: 'Borrar todo', danger: true,
+    collect: d => $('#wipe-ok', d).checked ? true : ($('#wipe-err', d).textContent = 'Marca la casilla para confirmar.', null),
+    body: `<p>Se borrarán de este navegador todos los expedientes, documentos, conversaciones, ajustes, tu API key y el registro de envíos. No se puede deshacer.</p><label class="check"><input type="checkbox" id="wipe-ok"><span>Entiendo que el borrado es definitivo.</span></label><p id="wipe-err" class="small" style="color:var(--danger)" role="alert"></p>` });
+  if (!ok) return;
+  await DB.clear(); Vault.lock(); location.reload();
+}
+async function changePassFlow() {
+  const r = await askDialog({ title: 'Cambiar contraseña', ok: 'Cambiar contraseña',
+    collect: d => { const c = $('#cp-c', d).value, n = $('#cp-n', d).value, n2 = $('#cp-n2', d).value; const er = $('#cp-err', d);
+      if (n.length < 10) { er.textContent = 'La nueva contraseña debe tener al menos 10 caracteres.'; return null; }
+      if (n !== n2) { er.textContent = 'Las contraseñas nuevas no coinciden.'; return null; } return { c, n }; },
+    body: `<label class="field"><span>Contraseña actual</span><input class="input" type="password" id="cp-c" autocomplete="current-password"></label><label class="field"><span>Nueva contraseña</span><input class="input" type="password" id="cp-n" autocomplete="new-password"></label><label class="field"><span>Repite la nueva contraseña</span><input class="input" type="password" id="cp-n2" autocomplete="new-password"></label><p class="small muted">Las copias de seguridad anteriores seguirán usando la contraseña antigua.</p><p id="cp-err" class="small" style="color:var(--danger)" role="alert"></p>` });
+  if (!r) return;
+  toast('Cifrando de nuevo tus datos…');
+  try { await Vault.changePass(r.c, r.n); toast('Contraseña cambiada.'); } catch (e) { fail(e); }
+}
+function exportAudit() {
+  const rows = [['fecha', 'accion', 'expediente', 'proveedor', 'modelo', 'caracteres', 'reemplazo_activo', 'datos_reemplazados', 'procesamiento_local']]
+    .concat(S.audit.map(a => [a.at, a.kind, a.exp, provLabel(a.provider), a.model, a.chars, a.pseudo ? 'si' : 'no', a.replaced, a.local ? 'si' : 'no']));
+  const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  download(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }), `folio-registro-envios-${todayISO()}.csv`);
+}
+
+/* ============================================================
+   Eventos (delegados)
+   ============================================================ */
+function setPath(obj, path, val) { const ks = path.split('.'); let o = obj; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
+document.addEventListener('click', async ev => {
+  const db = ev.target.closest('[data-dlg]'); if (db) { onDlgButton(db); return; }
+  const a = ev.target.closest('[data-action]'); if (!a) return;
+  const act = a.dataset.action, id = a.dataset.id;
+  if (a.tagName === 'A') ev.preventDefault();
+  try {
+    switch (act) {
+      case 'dlg-close': closeDialog(); break;
+      case 'show-policy': showLegal('policy'); break;
+      case 'show-terms': showLegal('terms'); break;
+      case 'show-clause': showLegal('clause'); break;
+      case 'clause-copy': await navigator.clipboard.writeText(clauseText()); toast('Texto copiado.'); break;
+      case 'clause-download': download(new Blob([clauseText()], { type: 'text/plain;charset=utf-8' }), 'autorizacion-uso-ia-cliente.txt'); break;
+      case 'onb-next': if (onbCanNext()) { S.onb.step++; renderOnb(); } break;
+      case 'onb-back': S.onb.step--; renderOnb(); break;
+      case 'onb-finish': await finishOnb(!!a.dataset.skip); break;
+      case 'toggle-key': { const i = $('#pf-key'); if (i) { i.type = i.type === 'password' ? 'text' : 'password'; a.textContent = i.type === 'password' ? 'Mostrar' : 'Ocultar'; } break; }
+      case 'list-models': await fillModels(); break;
+      case 'show-keyguide': showKeyGuide(); break;
+      case 'pick-model': { const cfg = curCfg(); cfg.model = a.dataset.model; const inp = $('#pf-model'); if (inp) inp.value = cfg.model; $$('.preset').forEach(b => b.classList.toggle('on', b.dataset.model === cfg.model)); break; }
+      case 'test-conn': await testConn(); break;
+      case 'wipe-from-lock': await wipeAll(); break;
+      case 'open-side': S.sideOpen = true; $('.app')?.classList.add('side-open'); break;
+      case 'close-side': S.sideOpen = false; $('.app')?.classList.remove('side-open'); break;
+      case 'open-exp': await openExp(id); break;
+      case 'new-exp': await expForm(null); break;
+      case 'edit-exp': await expForm(S.exp); break;
+      case 'del-exp': await deleteExp(); break;
+      case 'load-sample': await loadSample(); break;
+      case 'tab': S.tab = a.dataset.tab; $$('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === S.tab)); $('#work')?.classList.toggle('show-agent', S.tab === 'agente'); renderPane(); if (S.tab === 'agente') scrollMsgs(); break;
+      case 'add-plazo': { const f = $('#nplazo-f').value, d = $('#nplazo-d').value.trim(); if (!f || !d) { toast('Indica la fecha y qué vence.', true); break; } S.exp.memoria.plazos.push({ id: uid(), fecha: f, desc: d, done: false }); await saveExp(); renderPane(); break; }
+      case 'toggle-plazo': { const p = S.exp.memoria.plazos.find(x => x.id === id); p.done = !p.done; await saveExp(); renderPane(); break; }
+      case 'del-plazo': S.exp.memoria.plazos = S.exp.memoria.plazos.filter(x => x.id !== id); await saveExp(); renderPane(); break;
+      case 'add-pend': { const v = $('#npend').value.trim(); if (!v) break; S.exp.memoria.pendientes.push({ id: uid(), text: v, done: false }); await saveExp(); renderPane(); $('#npend')?.focus(); break; }
+      case 'toggle-pend': { const p = S.exp.memoria.pendientes.find(x => x.id === id); p.done = !p.done; await saveExp(); renderPane(); break; }
+      case 'del-pend': S.exp.memoria.pendientes = S.exp.memoria.pendientes.filter(x => x.id !== id); await saveExp(); renderPane(); break;
+      case 'add-parte': { const n = $('#nparte-n').value.trim(); if (n.split(/\s+/).length < 2) { toast('Escribe nombres y apellidos completos para reemplazarlos bien.', true); break; } addParte(S.exp, n, $('#nparte-r').value, $('#nparte-d').value, $('#nparte-c').checked); await saveExp(); render(); break; }
+      case 'toggle-cliente': { const p = S.exp.partes.find(x => x.id === id); p.esCliente = !p.esCliente; await saveExp(); render(); break; }
+      case 'del-parte': { const ok = await askDialog({ title: 'Quitar parte', ok: 'Quitar', danger: true, body: '<p>Si la quitas, su nombre ya no se reemplazará antes de enviar al proveedor.</p>' }); if (!ok) break; S.exp.partes = S.exp.partes.filter(x => x.id !== id); await saveExp(); render(); break; }
+      case 'add-mov': await movForm(); break;
+      case 'paste-cej': await pasteCEJ(); break;
+      case 'del-mov': S.exp.movimientos = S.exp.movimientos.filter(x => x.id !== id); await saveExp(); renderPane(); updateTabs(); break;
+      case 'pick-file': $('#file-docs').click(); break;
+      case 'view-doc': { const d = S.exp.docs.find(x => x.id === id); const t = S.docTexts[id] || ''; openDialog({ title: d.name, wide: true, body: `<p class="small muted">Texto extraído en tu equipo${t.length > 40000 ? ', primeros 40 000 caracteres' : ''}.</p><div class="payload">${esc(t.slice(0, 40000)) || 'Sin texto.'}</div>`, foot: '<button class="btn primary" data-action="dlg-close">Cerrar</button>' }); break; }
+      case 'del-doc': { const d = S.exp.docs.find(x => x.id === id); const ok = await askDialog({ title: 'Eliminar documento', ok: 'Eliminar', danger: true, body: `<p>Se eliminará el texto de <strong>${esc(d.name)}</strong> de este equipo.</p>` }); if (!ok) break; await store.del('doc:' + id); delete S.docTexts[id]; S.exp.docs = S.exp.docs.filter(x => x.id !== id); await saveExp(); renderPane(); updateTabs(); break; }
+      case 'quick': { const q = QUICK[+a.dataset.i][1]; if (+a.dataset.i === 3) { const t = $('#q'); t.value = q; t.focus(); t.setSelectionRange(q.length, q.length); } else await sendChat(q); break; }
+      case 'stop': S.abort?.abort(); break;
+      case 'copy-msg': await navigator.clipboard.writeText(S.exp.chat[+a.dataset.i].content); toast('Respuesta copiada.'); break;
+      case 'clear-chat': { const ok = await askDialog({ title: 'Limpiar conversación', ok: 'Limpiar', body: '<p>Se borra la conversación de este expediente. La memoria del caso se mantiene.</p>' }); if (!ok) break; S.exp.chat = []; await saveExp(); renderAgent(); break; }
+      case 'propose-memory': await proposeMemory(); break;
+      case 'open-settings': await settingsView(); fillConsentLine(); break;
+      case 'close-settings': S.view = 'exp'; render(); break;
+      case 'save-provider': Object.assign(S.settings, pickCfg(S.draftCfg)); await saveSettings(); toast(isReady(S.settings) ? 'Proveedor guardado.' : 'Guardado. Falta la key o el modelo para usar el agente.', !isReady(S.settings)); break;
+      case 'lock-now': lockNow(); break;
+      case 'change-pass': await changePassFlow(); break;
+      case 'export-backup': await exportBackup(); break;
+      case 'import-backup': $('#file-backup').click(); break;
+      case 'export-audit': exportAudit(); break;
+      case 'wipe-all': await wipeAll(); break;
+    }
+  } catch (e) { fail(e); }
+});
+document.addEventListener('change', async ev => {
+  const t = ev.target;
+  try {
+    if (t.dataset.onbCheck !== undefined) { S.onb.checks[t.dataset.onbCheck] = t.checked; updateOnbNav(); }
+    else if (t.hasAttribute('data-onb-pseudo')) S.onb.pseudo = t.checked;
+    else if (t.dataset.pf) {
+      const cfg = curCfg(); const k = t.dataset.pf;
+      cfg[k] = t.type === 'checkbox' ? t.checked : t.value;
+      if (k === 'provider') { cfg.baseUrl = ''; cfg.model = ''; $('#pf-block').innerHTML = providerFieldsHTML(cfg); }
+    }
+    else if (t.dataset.bind && S.exp) { setPath(S.exp, t.dataset.bind, t.value); saveSoon(); }
+    else if (t.dataset.setting) {
+      const k = t.dataset.setting; S.settings[k] = t.type === 'checkbox' ? t.checked : (k === 'autoLockMin' ? +t.value : t.value);
+      await saveSettings(); if (k === 'theme') applyTheme(); toast('Ajuste guardado.');
+    }
+    else if (t.id === 'file-docs') { const f = [...t.files]; t.value = ''; await addFiles(f); }
+    else if (t.id === 'file-backup') { const f = t.files[0]; t.value = ''; if (f) await importBackup(f); }
+  } catch (e) { fail(e); }
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.dataset.onbField) { S.onb[t.dataset.onbField] = t.value; updateOnbNav(); }
+  else if (t.dataset.pf && t.type !== 'checkbox' && t.tagName !== 'SELECT') curCfg()[t.dataset.pf] = t.value;
+  else if (t.hasAttribute('data-search')) { S.filter = t.value; const l = $('#explist'); if (l) l.innerHTML = listHTML(); }
+  else if (t.dataset.bind && S.exp) { setPath(S.exp, t.dataset.bind, t.value); saveSoon(); }
+});
+document.addEventListener('submit', async ev => {
+  const f = ev.target.closest('[data-form]'); if (!f) return; ev.preventDefault();
+  if (f.dataset.form === 'unlock') await doUnlock(f.pass.value);
+  if (f.dataset.form === 'chat') { const v = $('#q').value; if (!v.trim()) return; await sendChat(v); }
+});
+document.addEventListener('keydown', ev => {
+  const t = ev.target;
+  if (t.id === 'q' && ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); t.closest('form')?.requestSubmit(); }
+  if (t.classList?.contains('dropzone') && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); $('#file-docs').click(); }
+  if (ev.key === 'Enter' && (t.id === 'npend' || t.id === 'nplazo-d' || t.id === 'nparte-n' || t.id === 'nparte-d')) { ev.preventDefault(); $(`[data-action="${t.id === 'npend' ? 'add-pend' : t.id === 'nplazo-d' ? 'add-plazo' : 'add-parte'}"]`)?.click(); }
+});
+document.addEventListener('dragover', ev => { const z = ev.target.closest?.('.dropzone'); if (z) { ev.preventDefault(); z.classList.add('over'); } });
+document.addEventListener('dragleave', ev => { const z = ev.target.closest?.('.dropzone'); if (z) z.classList.remove('over'); });
+document.addEventListener('drop', ev => { const z = ev.target.closest?.('.dropzone'); if (!z) return; ev.preventDefault(); z.classList.remove('over'); addFiles([...ev.dataTransfer.files]).catch(fail); });
+window.addEventListener('beforeunload', () => { if (S.exp && Vault.key) saveExp(); });
+
+/* ============================================================
+   Inicio
+   ============================================================ */
+$('#dlg').addEventListener('cancel', () => settleDlg(false));
+(async function boot() {
+  render();
+  if (!window.crypto?.subtle || !window.indexedDB) { S.screen = 'error'; S.bootError = 'Este navegador no permite el almacenamiento cifrado local que Folio necesita. Abre el archivo con Chrome, Edge o Firefox actualizados.'; return render(); }
+  try { await DB.open(); } catch { S.screen = 'error'; S.bootError = 'El navegador bloqueó el almacenamiento local. Si estás en modo incógnito, abre Folio en una ventana normal.'; return render(); }
+  const meta = await DB.get('vault');
+  if (meta) { S.screen = 'lock'; S.stampPress = true; } else { S.screen = 'onb'; S.onb = newOnb(); }
+  render();
+})();
+
+</script>
+</body>
+</html>

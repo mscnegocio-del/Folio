@@ -1,0 +1,46 @@
+# Tareas — Folio
+
+Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende de algo externo)
+
+## Épicas
+- E1 Núcleo local-first (bóveda, expedientes, memoria) — ✅
+- E2 Agente y privacidad (seudonimización, revisión, registro) — ✅
+- E3 Proveedores y onboarding (BYOK, guía de keys) — ✅
+- E4 Publicación (GitHub, licencia, Release, legal) — 🔄
+- E5 Validación con usuarios y calidad de modelos — ⏳
+- E6 App de escritorio (Electron) y conectores CEJ/SINOE — ⏳
+- E7 Endurecimiento de seguridad — ⏳
+
+## Sprint actual — Publicación v0.2.0
+| # | Tarea | Estado |
+|---|---|---|
+| T-101 | Completar `src/config.js` (nombre, correo personal, ciudad, URL del repo) y `python build.py` | ⏳ |
+| T-102 | Subir repositorio a GitHub | 🔄 |
+| T-103 | Agregar LICENSE desde plantilla GitHub (GNU AGPLv3) | ⏳ |
+| T-104 | Crear Release v0.2.0 con `dist/folio.html` | ⏳ |
+| T-105 | Probar con un PDF y un DOCX reales (CDN) en la PC del usuario | ⏳ |
+| T-106 | Probar OpenAI y Anthropic directos con keys reales (solo OpenRouter está probado) | ⏳ |
+| T-107 | Validación de textos legales por especialista en datos personales | 💤 |
+| T-108 | Consulta escrita sobre incompatibilidades del cargo en el PJ | 💤 |
+
+## Backlog priorizado
+| # | Tarea | Épica | Notas |
+|---|---|---|---|
+| T-201 | Re-pedir aceptación de avisos si cambia `APP.policyVersion` | E4 | Hoy `consent` guarda la versión pero no se vuelve a pedir |
+| T-202 | Integridad SRI (`integrity` + `crossorigin`) para pdf.js y mammoth | E7 | Evita que un CDN comprometido inyecte código con acceso a la bóveda abierta |
+| T-203 | Incluir tipografías en el HTML (base64 o subset) | E7 | Elimina la exposición de IP a Google Fonts |
+| T-204 | Content-Security-Policy por `<meta>` (connect-src solo proveedores) | E7 | Evaluar compatibilidad con file:// |
+| T-205 | Prueba con 3–5 abogados de confianza; registrar fricciones | E5 | Mensaje de presentación pendiente |
+| T-206 | Prueba ciega de calidad: 20 tareas anonimizadas, DeepSeek V4.1 Flash vs Gemini 3.8 Flash vs Sonnet 5.5 | E5 | Pantalla de comparación lado a lado sin revelar el modelo |
+| T-207 | Texto del primer Release y mensaje para abogados | E4 | |
+| T-208 | Selector "Rápido / Profundo" (modelo económico vs. modelo grande) | E5 | Solo si la prueba ciega lo justifica |
+| T-209 | Empaquetar en Electron: datos en disco, key en llavero del SO, sin dependencia de CDN | E6 | Firma de código antes de distribuir .exe |
+| T-210 | Conector CEJ local: el abogado resuelve el captcha en su sesión y el conector lee el resultado | E6 | Nunca romper captchas desde servidor |
+| T-211 | SINOE: lector de avisos por correo (OAuth solo lectura) + descarga de cédula desde la PC | E6 | Credenciales solo en el llavero del SO |
+| T-212 | OCR local para PDF escaneados | E6 | Evaluar Tesseract en Electron |
+| T-213 | Sincronización entre equipos | E6 | Implica rol de encargado si pasa por servidor: diseñar cifrado extremo a extremo |
+| T-214 | Plantillas de escritos frecuentes (alimentos, violencia, apelación) | E5 | Siempre como borrador |
+| T-215 | Reemplazo de apodos y apellidos sueltos (alias por parte) | E2 | Campo "también conocido como" en Partes |
+
+## Completado (resumen)
+Ver memory.md → ✅ Completado y CHANGELOG.md.
