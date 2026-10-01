@@ -43,3 +43,6 @@
 3. Implementar re-aceptación de avisos cuando cambie `APP.policyVersion` (T-201)
 4. Prueba con 3–5 abogados de confianza; registrar fricciones en process/tasks.md
 5. Prueba ciega de calidad: 20 tareas reales anonimizadas, DeepSeek V4.1 Flash vs Gemini 3.8 Flash vs Sonnet 5.5
+
+## Historial
+- 2026-09-30: repo público, Release v0.2.0, README con SEO, sitio en GitHub Pages (docs/index.html → https://mscnegocio-del.github.io/Folio/). Pendiente: registrar el sitio en Google Search Console.
