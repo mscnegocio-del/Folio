@@ -7,6 +7,8 @@ const S = {
   stampPress: false, lastActive: Date.now(), filter: ''
 };
 const root = () => $('#root');
+// Logo: el mismo del sitio web (ícono de documento + "folio" + insignia Beta)
+const BRAND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h9l5 5V20a.5.5 0 0 1-.5.5h-13A.5.5 0 0 1 5 20z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3.5V8.5h5M8.5 12.5h7M8.5 16h4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>folio<span class="badge">Beta</span>';
 
 /* ---------- Utilidades de interfaz ---------- */
 function toast(msg, err = false) {
@@ -50,7 +52,7 @@ function showLegal(which) {
 function render() {
   const r = root();
   if (S.screen === 'boot') r.innerHTML = `<div class="screen-center"><p class="muted">Abriendo Folio…</p></div>`;
-  else if (S.screen === 'error') r.innerHTML = `<div class="screen-center"><div class="lock"><div class="brand" style="justify-content:center;margin-bottom:1rem"><i></i>Folio</div><div class="note danger"><p>${esc(S.bootError)}</p></div></div></div>`;
+  else if (S.screen === 'error') r.innerHTML = `<div class="screen-center"><div class="lock"><div class="brand" style="justify-content:center;margin-bottom:1rem">${BRAND}</div><div class="note danger"><p>${esc(S.bootError)}</p></div></div></div>`;
   else if (S.screen === 'onb') renderOnb();
   else if (S.screen === 'lock') renderLock();
   else if (S.screen === 'app') renderApp();
@@ -117,7 +119,7 @@ function renderOnb() {
   const o = S.onb; const last = o.step === ONB_STEPS.length - 1;
   root().innerHTML = `<div class="onb">
     <aside>
-      <div class="brand"><i></i>Folio</div>
+      <div class="brand">${BRAND}</div>
       <ol class="steps" aria-label="Pasos de configuración">${ONB_STEPS.map((s, i) => `<li class="${i < o.step ? 'done' : i === o.step ? 'now' : ''}" ${i === o.step ? 'aria-current="step"' : ''}>${esc(s)}</li>`).join('')}</ol>
       <div class="legal-links"><a href="#" data-action="show-policy">Política de privacidad</a><a href="#" data-action="show-terms">Términos de uso</a><a href="#" data-action="show-clause">Autorización para clientes</a><span class="tiny muted">Versión ${esc(APP.version)}</span></div>
     </aside>
@@ -338,7 +340,7 @@ function listHTML() {
 }
 function sidebarHTML() {
   return `<aside class="side" aria-label="Expedientes">
-    <div class="side-top"><div class="brand"><i></i>Folio</div><button class="btn primary sm" data-action="new-exp">Nuevo expediente</button></div>
+    <div class="side-top"><div class="brand">${BRAND}</div><button class="btn primary sm" data-action="new-exp">Nuevo expediente</button></div>
     <div class="search"><label class="sr-only" for="q-exp">Buscar expediente</label><input id="q-exp" class="input" data-search placeholder="Buscar por número o parte" value="${esc(S.filter)}"></div>
     <div class="side-section"><h2>Próximos plazos</h2><div id="deadlines">${deadlinesHTML()}</div></div>
     <ul class="explist" id="explist">${listHTML()}</ul>
@@ -354,7 +356,7 @@ function renderApp() {
     <div class="scrim" data-action="close-side"></div>
     ${sidebarHTML()}
     <div class="main">
-      <div class="topbar"><button class="btn ghost sm" data-action="open-side">☰ Expedientes</button><div class="brand" style="font-size:1.1rem"><i></i>Folio</div></div>
+      <div class="topbar"><button class="btn ghost sm" data-action="open-side">☰ Expedientes</button><div class="brand" style="font-size:1.1rem">${BRAND}</div></div>
       ${main}
     </div></div>`;
   S.stampPress = false;

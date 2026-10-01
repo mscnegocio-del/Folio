@@ -14,10 +14,10 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 ## Sprint actual — Publicación v0.2.0
 | # | Tarea | Estado |
 |---|---|---|
-| T-101 | Completar `src/config.js` (nombre, correo personal, ciudad, URL del repo) y `python build.py` | ⏳ |
-| T-102 | Subir repositorio a GitHub | 🔄 |
-| T-103 | Agregar LICENSE desde plantilla GitHub (GNU AGPLv3) | ⏳ |
-| T-104 | Crear Release v0.2.0 con `dist/folio.html` | ⏳ |
+| T-101 | Completar `src/config.js` (nombre, correo personal, ciudad, URL del repo) y `python build.py` | ✅ |
+| T-102 | Subir repositorio a GitHub (público) + sitio en GitHub Pages | ✅ |
+| T-103 | Agregar LICENSE desde plantilla GitHub (GNU AGPLv3) | ✅ |
+| T-104 | Crear Release v0.2.0 con `dist/folio.html` (y v0.3.0 con el rediseño) | ✅ |
 | T-105 | Probar con un PDF y un DOCX reales (CDN) en la PC del usuario | ⏳ |
 | T-106 | Probar OpenAI y Anthropic directos con keys reales (solo OpenRouter está probado) | ⏳ |
 | T-107 | Validación de textos legales por especialista en datos personales | 💤 |
@@ -28,7 +28,7 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 |---|---|---|---|
 | T-201 | Re-pedir aceptación de avisos si cambia `APP.policyVersion` | E4 | Hoy `consent` guarda la versión pero no se vuelve a pedir |
 | T-202 | Integridad SRI (`integrity` + `crossorigin`) para pdf.js y mammoth | E7 | Evita que un CDN comprometido inyecte código con acceso a la bóveda abierta |
-| T-203 | Incluir tipografías en el HTML (base64 o subset) | E7 | Elimina la exposición de IP a Google Fonts |
+| T-203 | ✅ Incluir tipografías en el HTML (base64 o subset) — hecho en v0.3.0 | E7 | Elimina la exposición de IP a Google Fonts |
 | T-204 | Content-Security-Policy por `<meta>` (connect-src solo proveedores) | E7 | Evaluar compatibilidad con file:// |
 | T-205 | Prueba con 3–5 abogados de confianza; registrar fricciones | E5 | Mensaje de presentación pendiente |
 | T-206 | Prueba ciega de calidad: 20 tareas anonimizadas, DeepSeek V4.1 Flash vs Gemini 3.8 Flash vs Sonnet 5.5 | E5 | Pantalla de comparación lado a lado sin revelar el modelo |

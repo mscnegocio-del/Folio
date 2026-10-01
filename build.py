@@ -6,7 +6,8 @@ SRC = ROOT / "src"
 JS_ORDER = ["config.js", "core.js", "legal.js", "ui.js"]  # el orden importa
 
 shell = (SRC / "shell.html").read_text(encoding="utf-8")
-css = (SRC / "styles.css").read_text(encoding="utf-8")
+CSS_ORDER = ["fonts.css", "styles.css"]  # tipografías incluidas (sin Google Fonts) + estilos
+css = "\n".join((SRC / f).read_text(encoding="utf-8") for f in CSS_ORDER)
 js = "\n".join((SRC / f).read_text(encoding="utf-8") for f in JS_ORDER)
 
 out = shell.replace("/*__CSS__*/", css).replace("/*__JS__*/", js)

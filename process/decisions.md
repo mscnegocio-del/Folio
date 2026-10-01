@@ -25,3 +25,5 @@
 | D-21 | Distribuir el HTML en Releases; no `.exe` sin firmar | 2026-09-30 | Instalador Electron sin firma | La advertencia de SmartScreen asusta a usuarios no técnicos |
 | D-22 | Datos del autor centralizados en `src/config.js`; nunca correo del PJ | 2026-09-30 | Datos fijos en textos legales | Separar el proyecto personal del trabajo institucional; editar en un solo lugar |
 | D-23 | Textos legales en tercera persona ("el desarrollador") | 2026-09-30 | "Nosotros" | No hay empresa ni RUC detrás |
+| D-24 | Rediseño v0.3.0: app con el mismo sistema visual del sitio, en claro y oscuro | 2026-09-30 | Solo oscuro (clon exacto del sitio); mantener el estilo papel/violeta | Coherencia sitio↔app; el modo claro se mantiene para lecturas largas de día; texto secundario con más contraste que el sitio |
+| D-25 | Tipografías incluidas en el HTML (T-203) y política r2: la app ya no consulta Google Fonts | 2026-09-30 | Seguir con Google Fonts | Elimina la exposición de IP al abrir; funciona sin internet. Se cambió la sección 9 de la política → `policyVersion` = "2026-09-30 r2 (borrador)" |

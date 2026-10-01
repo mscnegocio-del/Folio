@@ -1,5 +1,5 @@
 # Estado actual — Folio
-> Última actualización: 2026-09-30 · Versión: 0.2.0
+> Última actualización: 2026-09-30 · Versión: 0.3.0
 
 ## ✅ Completado
 - [x] Investigación de mercado (sept. 2026): BYOK existe globalmente; en Perú nadie combina BYOK + memoria por expediente → process/research.md
@@ -22,6 +22,8 @@
 - [x] Guía "¿Cómo obtengo mi key?" en la app y en docs/guia-api-keys.md
 - [x] Textos legales reescritos para versión gratuita, sin RUC, licencia AGPL-3.0
 - [x] Repositorio estructurado (src/, build.py, dist/, docs/, process/, tests/) + harness
+- [x] Repo público en GitHub, Release v0.2.0, README con SEO y sitio en GitHub Pages (docs/index.html)
+- [x] v0.3.0: rediseño visual igual al sitio (claro y oscuro), tipografías incluidas en el HTML (T-203), política r2 → process/specs/rediseno-visual-v0.3.md
 
 ## 🔄 En progreso
 - [x] Publicado en GitHub (público) con Release v0.2.0 — 2026-09-30
@@ -38,7 +40,7 @@
 - Consulta escrita sobre incompatibilidades del cargo en el PJ (antes de difundir y, sobre todo, antes de cobrar cualquier servicio)
 
 ## 📌 Próximos pasos (próxima sesión)
-1. Subir el repo, agregar LICENSE (AGPLv3 desde plantilla de GitHub) y crear Release v0.2.0
+1. Registrar el sitio en Google Search Console y enviar sitemap.xml (lo hace el usuario)
 2. Probar con un PDF real (pdf.js por CDN nunca se probó en el entorno de desarrollo) y con OpenAI/Anthropic directos
 3. Implementar re-aceptación de avisos cuando cambie `APP.policyVersion` (T-201)
 4. Prueba con 3–5 abogados de confianza; registrar fricciones en process/tasks.md
@@ -47,3 +49,4 @@
 ## Historial
 - 2026-09-30: repo público, Release v0.2.0, README con SEO, sitio en GitHub Pages (docs/index.html → https://mscnegocio-del.github.io/Folio/). Pendiente: registrar el sitio en Google Search Console.
 - 2026-09-30: sitio rediseñado con estilo oscuro tipo DeepSeek Harness (Montserrat/DM Sans/Fragment Mono, botones píldora); sin logos ni textos de DeepSeek.
+- 2026-09-30: v0.3.0 — app rediseñada con el sistema del sitio (DM Sans/Montserrat/Fragment Mono, acento azul, píldoras), fuentes en base64 (src/fonts.css), sin Google Fonts; e2e TODO OK.

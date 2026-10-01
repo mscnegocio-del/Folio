@@ -30,7 +30,7 @@ function policyHTML() {
 <h3>8. Conservación y eliminación</h3>
 <p>Tú decides cuánto tiempo conservar cada expediente. Puedes eliminar un expediente o todos los datos desde Ajustes. Si borras los datos de navegación de tu navegador, la información de Folio también se elimina.</p>
 <h3>9. Datos que trata el desarrollador</h3>
-<p>Ninguno. Folio no crea cuentas, no usa cookies de seguimiento y no envía telemetría; como el código es público, cualquiera puede verificarlo. Al abrirse, la aplicación descarga tipografías desde Google Fonts y, solo cuando importas un PDF o un Word, librerías de lectura desde jsDelivr o cdnjs. Esas solicitudes no incluyen contenido de tus expedientes, pero exponen tu dirección IP a esos servicios.</p>
+<p>Ninguno. Folio no crea cuentas, no usa cookies de seguimiento y no envía telemetría; como el código es público, cualquiera puede verificarlo. Al abrirse, la aplicación no se conecta a ningún servicio: las tipografías vienen incluidas en el archivo. Solo cuando importas un PDF o un Word descarga librerías de lectura desde jsDelivr o cdnjs. Esas solicitudes no incluyen contenido de tus expedientes, pero exponen tu dirección IP a esos servicios.</p>
 <h3>10. Derechos de los titulares de los datos</h3>
 <p>Como el desarrollador no accede a los datos de tus expedientes, las solicitudes de tus clientes o de terceros sobre sus datos deben dirigirse a ti como responsable. Folio te permite editar o eliminar cualquier dato para atenderlas. Los titulares también pueden acudir a la Autoridad Nacional de Protección de Datos Personales del Ministerio de Justicia y Derechos Humanos.</p>
 <h3>11. Uso profesional</h3>

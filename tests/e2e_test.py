@@ -18,7 +18,7 @@ SHOTS = Path(__file__).resolve().parent / "shots"
 SHOTS.mkdir(exist_ok=True)
 PASS = "Litigio-Seguro-2026"
 REAL_DATA = ["Rosa Elena", "Huamán", "HUAMÁN", "45879632", "41236598", "964 123 456", "rosa.quispe", "Los Pinos"]
-sent, errors, failures = [], [], []
+sent, errors, failures, font_requests = [], [], [], []
 
 
 def check(cond, msg):
@@ -29,6 +29,8 @@ def check(cond, msg):
 
 def handle(route, request):
     url = request.url
+    if "fonts.g" in url:
+        font_requests.append(url)
     if any(h in url for h in ["fonts.g", "jsdelivr", "cdnjs"]):
         return route.abort()
     if url.endswith("/chat/completions"):
@@ -119,8 +121,11 @@ with sync_playwright() as p:
 
     d = b.new_context(viewport={"width": 1440, "height": 900}, color_scheme="dark"); dp = d.new_page(); dp.route("**/*", handle)
     onboarding(dp, with_provider=False); dp.screenshot(path=str(SHOTS / "03-oscuro.png"))
+    dp.click("[data-action=load-sample]"); dp.wait_for_selector(".caratula"); dp.wait_for_timeout(500)
+    dp.screenshot(path=str(SHOTS / "04-oscuro-expediente.png"))
     b.close()
 
+check(not font_requests, "sin solicitudes a Google Fonts (tipografías incluidas)")
 check(not errors, f"sin errores de JavaScript {errors if errors else ''}")
 print(f"\n{'TODO OK' if not failures else str(len(failures)) + ' FALLAS'}")
 sys.exit(1 if failures else 0)

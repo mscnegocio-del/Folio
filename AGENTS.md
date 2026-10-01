@@ -1,4 +1,4 @@
-# AGENTS.md — Folio v0.2.0
+# AGENTS.md — Folio v0.3.0
 > Generado: 2026-09-30 · Autor: Milton Alejandro Salcedo Cruz
 
 Folio es un agente de IA gratuito y de código abierto para abogados litigantes en el Perú.
@@ -22,7 +22,8 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Toda nueva salida de red debe declararse en la política (`src/legal.js`, sección 9)
 - Si cambias textos legales: sube `APP.policyVersion` (src/core.js) y anótalo en process/decisions.md
 - Datos del autor solo en `src/config.js` (nunca correo institucional del PJ)
-- Orden del bundle: config.js → core.js → legal.js → ui.js (ver build.py)
+- Orden del bundle: CSS fonts.css → styles.css; JS config.js → core.js → legal.js → ui.js (ver build.py)
+- UI: usar solo los tokens de `src/styles.css` (claro y oscuro); nunca volver a cargar fuentes desde Google Fonts
 - Commits: `tipo(alcance): descripción en español` — tipos: feat, fix, docs, style, refactor, test, chore
 
 ## NUNCA

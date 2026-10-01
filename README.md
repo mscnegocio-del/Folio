@@ -4,7 +4,7 @@
 
 **Inteligencia artificial para tus expedientes judiciales, gratuita y de código abierto.<br>Tus expedientes no salen de tu equipo.**
 
-[![Descargar v0.2.0](https://img.shields.io/github/v/release/mscnegocio-del/Folio?label=descargar&color=5B3FC4)](https://github.com/mscnegocio-del/Folio/releases/latest)
+[![Descargar v0.2.0](https://img.shields.io/github/v/release/mscnegocio-del/Folio?label=descargar&color=4d6bfe)](https://github.com/mscnegocio-del/Folio/releases/latest)
 [![Licencia AGPL-3.0](https://img.shields.io/badge/licencia-AGPL--3.0-blue)](LICENSE)
 ![Sin instalación](https://img.shields.io/badge/instalación-ninguna-success)
 ![Sin servidores](https://img.shields.io/badge/servidores-ninguno-success)
@@ -128,6 +128,7 @@ python tests/e2e_test.py     # debe terminar en "TODO OK"
 | `src/legal.js` | Política de privacidad, términos de uso y autorización para clientes |
 | `src/ui.js` | Interfaz, bienvenida, agente, ajustes y eventos |
 | `src/styles.css` · `src/shell.html` | Estilos (temas claro/oscuro) y estructura base |
+| `src/fonts.css` | Tipografías incluidas (DM Sans, Montserrat, Fragment Mono; licencia SIL OFL 1.1) |
 | `tests/e2e_test.py` | Prueba end-to-end con Playwright y un proveedor de IA simulado |
 | `AGENTS.md` · `memory.md` · `process/` | Contexto para agentes de IA: arquitectura, decisiones, tareas y esquema de datos |
 

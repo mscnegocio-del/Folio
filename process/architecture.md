@@ -25,6 +25,7 @@ folio/
 ├── build.py               ← ensambla src/ → dist/folio.html
 ├── src/
 │   ├── shell.html         ← esqueleto HTML con marcadores /*__CSS__*/ y /*__JS__*/
+│   ├── fonts.css          ← tipografías WOFF2 en base64 (DM Sans, Montserrat, Fragment Mono; OFL)
 │   ├── styles.css         ← tokens, layout, componentes, temas claro/oscuro
 │   ├── config.js          ← OWNER: datos del autor (editar antes de publicar)
 │   ├── core.js            ← utilidades, DB, Vault, proveedores, LLM, seudonimización, recuperación
@@ -76,9 +77,11 @@ folio/
 - **Auto-bloqueo**: inactividad configurable (5/15/30/60 min); no bloquea mientras hay una respuesta en curso.
 
 ## Diseño visual
-- Tokens: papel `#F1F2EE`, tinta `#1E2230`, sello violeta `#5B3FC4`, manila `#CDB27A`; modo oscuro equivalente.
-- Tipografías: Atkinson Hyperlegible (interfaz, legibilidad) + Courier Prime (números de expediente, foliador).
-- Elemento distintivo: sello violeta "Guardado solo en este equipo" con animación de estampado única; foliador "Fs. N" en documentos.
+- Desde v0.3.0 comparte el sistema visual del sitio web (spec: `process/specs/rediseno-visual-v0.3.md`).
+- Tokens claro: fondo `#F5F5F4`, hoja `#FFFFFF`, tinta `#111114`. Oscuro: fondo `#0A0A0A`, hoja `#121214`, tinta `#F4F4F5`. Acento azul `#3D5AF1` / `#8B9DFF`.
+- Componentes: botones en píldora (primario negro en claro, blanco en oscuro), tarjetas de 16 px, campos de 10 px, pestañas en segmento, brillo azul en pantallas de entrada.
+- Tipografías incluidas en el HTML (`src/fonts.css`, sin Google Fonts): Montserrat (títulos), DM Sans (interfaz), Fragment Mono (números de expediente, fechas, foliador).
+- Elemento distintivo: sello azul "Guardado solo en este equipo" con animación de estampado única; foliador "Fs. N" en documentos.
 - Responsive: <1180 px el agente pasa a pestaña; <820 px la barra lateral es un cajón. Grillas con `minmax(0,1fr)` para evitar desbordes.
 
 ## Restricciones de entorno
