@@ -4,6 +4,20 @@
    ============================================================ */
 const DRAFT_BANNER = `<div class="draft-banner"><strong>Borrador para revisión.</strong> Este texto debe validarlo un abogado especialista en protección de datos antes de publicar Folio. Completa los datos del autor en <code>config.js</code>.</div>`;
 
+/* Historial de cambios de los avisos, del más antiguo al más reciente.
+   Al cambiar textos legales: subir APP.policyVersion (core.js) y agregar aquí una entrada con la misma versión.
+   Si la versión aceptada por el abogado es anterior, Folio le pide aceptar de nuevo y le muestra estos cambios. */
+const POLICY_CHANGES = [
+  { version: '2026-09-30 (borrador)', items: [] },
+  { version: '2026-09-30 r2 (borrador)', items: [
+    'Política de privacidad, sección 9: Folio ya no descarga tipografías de Google Fonts al abrirse. Ahora no se conecta a ningún servicio hasta que importas un PDF o un Word o consultas a tu proveedor de IA.'
+  ] }
+];
+function policyChangesSince(version) {
+  const i = POLICY_CHANGES.findIndex(c => c.version === version);
+  return (i < 0 ? POLICY_CHANGES : POLICY_CHANGES.slice(i + 1)).filter(c => c.items.length);
+}
+
 function policyHTML() {
   return `${DRAFT_BANNER}<div class="legal">
 <p class="muted small">Versión ${esc(APP.policyVersion)}. Aplica a Folio ${esc(APP.version)}, versión de prueba que funciona en tu navegador.</p>

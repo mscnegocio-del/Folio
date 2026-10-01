@@ -139,6 +139,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .lock h1{font-size:2rem;margin-bottom:.4em}
 .lock form{margin-top:1.5rem;text-align:left}
 
+/* Re-aceptación de avisos */
+.reconsent{width:min(620px,100%)}
+.reconsent h1{font-size:clamp(1.7rem,3vw,2.2rem);margin-bottom:.5em}
+.reconsent .lead{font-size:1.0625rem;margin-bottom:1.4em}
+.changes{margin:.4rem 0 0;padding-left:1.2em;color:var(--graphite)}
+.changes li{margin-bottom:.4em}
+
 /* Bienvenida */
 .onb{min-height:100vh;display:grid;grid-template-columns:300px 1fr}
 .onb aside{background:var(--sheet);border-right:1px solid var(--rule);padding:2rem 1.5rem;display:flex;flex-direction:column;gap:2rem}

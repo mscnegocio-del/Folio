@@ -26,7 +26,7 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 ## Backlog priorizado
 | # | Tarea | Épica | Notas |
 |---|---|---|---|
-| T-201 | Re-pedir aceptación de avisos si cambia `APP.policyVersion` | E4 | Hoy `consent` guarda la versión pero no se vuelve a pedir |
+| T-201 | ✅ Re-pedir aceptación de avisos si cambia `APP.policyVersion` | E4 | Pantalla tras desbloquear con los cambios (`POLICY_CHANGES`); historial en `consent.history` |
 | T-202 | Integridad SRI (`integrity` + `crossorigin`) para pdf.js y mammoth | E7 | Evita que un CDN comprometido inyecte código con acceso a la bóveda abierta |
 | T-203 | ✅ Incluir tipografías en el HTML (base64 o subset) — hecho en v0.3.0 | E7 | Elimina la exposición de IP a Google Fonts |
 | T-204 | Content-Security-Policy por `<meta>` (connect-src solo proveedores) | E7 | Evaluar compatibilidad con file:// |

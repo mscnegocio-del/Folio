@@ -20,7 +20,7 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Todo dato persistente pasa por `store.get/put` (cifrado). Nunca `localStorage` para datos o keys
 - La seudonimización (`makePseudo`) se aplica a TODO lo que sale hacia un proveedor de IA
 - Toda nueva salida de red debe declararse en la política (`src/legal.js`, sección 9)
-- Si cambias textos legales: sube `APP.policyVersion` (src/core.js) y anótalo en process/decisions.md
+- Si cambias textos legales: sube `APP.policyVersion` (src/core.js), agrega la entrada en `POLICY_CHANGES` (src/legal.js) y anótalo en process/decisions.md. Al desbloquear, Folio pide aceptar de nuevo
 - Datos del autor solo en `src/config.js` (nunca correo institucional del PJ)
 - Orden del bundle: CSS fonts.css → styles.css; JS config.js → core.js → legal.js → ui.js (ver build.py)
 - UI: usar solo los tokens de `src/styles.css` (claro y oscuro); nunca volver a cargar fuentes desde Google Fonts

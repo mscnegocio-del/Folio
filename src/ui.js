@@ -4,7 +4,7 @@
 const S = {
   screen: 'boot', bootError: '', onb: null, settings: null, draftCfg: null, index: [], exp: null, docTexts: {},
   tab: 'memoria', view: 'exp', sideOpen: false, sending: false, abort: null, audit: [], lastSend: null,
-  stampPress: false, lastActive: Date.now(), filter: ''
+  stampPress: false, lastActive: Date.now(), filter: '', consent: null
 };
 const root = () => $('#root');
 // Logo: el mismo del sitio web (ícono de documento + "folio" + insignia Beta)
@@ -55,6 +55,7 @@ function render() {
   else if (S.screen === 'error') r.innerHTML = `<div class="screen-center"><div class="lock"><div class="brand" style="justify-content:center;margin-bottom:1rem">${BRAND}</div><div class="note danger"><p>${esc(S.bootError)}</p></div></div></div>`;
   else if (S.screen === 'onb') renderOnb();
   else if (S.screen === 'lock') renderLock();
+  else if (S.screen === 'reconsent') renderReconsent();
   else if (S.screen === 'app') renderApp();
 }
 
@@ -243,19 +244,52 @@ async function doUnlock(pass) {
     if (!PROVIDERS[S.settings.provider]) Object.assign(S.settings, { provider: 'openrouter', baseUrl: '', model: '' });
     S.index = await store.get('index') || [];
     S.audit = await store.get('audit') || [];
+    S.consent = await DB.get('consent');
+    if (needsReconsent(S.consent)) { S.screen = 'reconsent'; render(); return; }
     enterApp();
   } catch (e) { btn.disabled = false; err.textContent = e instanceof FolioError ? e.message : 'No se pudo abrir la bóveda.'; }
 }
 function lockNow(msg) {
   if (S.sending && S.abort) S.abort.abort();
-  Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, screen: 'lock', view: 'exp' });
+  Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, consent: null, screen: 'lock', view: 'exp' });
   closeDialog(); render(); if (msg) toast(msg);
 }
 setInterval(() => {
-  if (S.screen !== 'app' || !S.settings || S.sending) return;
+  if ((S.screen !== 'app' && S.screen !== 'reconsent') || !S.settings || S.sending) return;
   if (Date.now() - S.lastActive > (S.settings.autoLockMin || 15) * 60000) lockNow('Folio se bloqueó por inactividad.');
 }, 20000);
 ['pointerdown', 'keydown', 'wheel'].forEach(ev => document.addEventListener(ev, () => { S.lastActive = Date.now(); }, { passive: true }));
+
+/* ============================================================
+   Re-aceptación de avisos (T-201): si cambió APP.policyVersion
+   ============================================================ */
+function needsReconsent(c) { return !c || c.policyVersion !== APP.policyVersion; }
+function renderReconsent() {
+  const c = S.consent; const changes = policyChangesSince(c?.policyVersion);
+  const when = fmtDateTime(c?.acceptedAt || '');
+  const since = c ? `Aceptaste la versión <span class="mono">${esc(c.policyVersion)}</span> el ${esc(when)}${when.endsWith('.') ? '' : '.'}` : 'No encontramos una aceptación previa en este equipo.';
+  root().innerHTML = `<div class="screen-center"><div class="reconsent">
+    <div class="brand" style="margin-bottom:1.5rem">${BRAND}</div>
+    <h1>Actualizamos los avisos de Folio</h1>
+    <p class="lead muted">${since} La versión vigente es <span class="mono">${esc(APP.policyVersion)}</span>. Revisa los cambios y acéptalos para seguir usando Folio.</p>
+    ${changes.length ? `<div class="sheet"><h3>Qué cambió</h3><ul class="changes">${changes.map(ch => ch.items.map(it => `<li>${esc(it)}</li>`).join('')).join('')}</ul></div>` : ''}
+    <div class="row" style="margin-bottom:1rem"><button class="btn sm" data-action="show-policy">Leer la política de privacidad</button><button class="btn sm" data-action="show-terms">Leer los términos de uso</button></div>
+    <label class="check"><input type="checkbox" data-reconsent-check><span>Leí la política de privacidad y los términos de uso de esta versión y los acepto.</span></label>
+    <div class="row" style="justify-content:space-between;margin-top:1.25rem">
+      <button class="btn ghost" data-action="reconsent-decline">Ahora no, bloquear</button>
+      <button class="btn primary" data-action="reconsent-accept" disabled>Aceptar y continuar</button>
+    </div>
+    <p class="tiny muted" style="margin-top:1.5rem">Si no estás de acuerdo, puedes dejar de usar Folio: tus expedientes siguen cifrados en este equipo y no se envían a ningún lugar.</p>
+  </div></div>`;
+}
+async function acceptReconsent() {
+  const old = S.consent;
+  const history = old ? [...(old.history || []), { policyVersion: old.policyVersion, appVersion: old.appVersion, acceptedAt: old.acceptedAt }] : [];
+  S.consent = { ...(old || {}), policyVersion: APP.policyVersion, appVersion: APP.version, acceptedAt: new Date().toISOString(), items: { ...(old?.items || {}), policy: true }, history };
+  await DB.put('consent', S.consent);
+  enterApp();
+  setTimeout(() => toast('Avisos aceptados. La aceptación queda guardada en este equipo.'), 60);
+}
 
 /* ============================================================
    Aplicación
@@ -699,7 +733,7 @@ function settingsHTML() {
 }
 async function fillConsentLine() {
   const c = await DB.get('consent'); const el = $('#consent-line');
-  if (el && c) el.textContent = `Aceptaste los avisos de la versión ${c.policyVersion} el ${fmtDateTime(c.acceptedAt)}. La aceptación queda guardada en este equipo.`;
+  if (el && c) el.textContent = `Aceptaste los avisos de la versión ${c.policyVersion} el ${fmtDateTime(c.acceptedAt)}. La aceptación queda guardada en este equipo${c.history?.length ? ` junto con ${c.history.length === 1 ? 'la aceptación anterior' : `las ${c.history.length} aceptaciones anteriores`}` : ''}.`;
 }
 async function exportBackup() {
   const keys = await DB.keys(); const records = {};
@@ -797,6 +831,8 @@ document.addEventListener('click', async ev => {
       case 'close-settings': S.view = 'exp'; render(); break;
       case 'save-provider': Object.assign(S.settings, pickCfg(S.draftCfg)); await saveSettings(); toast(isReady(S.settings) ? 'Proveedor guardado.' : 'Guardado. Falta la key o el modelo para usar el agente.', !isReady(S.settings)); break;
       case 'lock-now': lockNow(); break;
+      case 'reconsent-accept': await acceptReconsent(); break;
+      case 'reconsent-decline': lockNow('Folio quedó bloqueado. Para usarlo debes aceptar los avisos vigentes.'); break;
       case 'change-pass': await changePassFlow(); break;
       case 'export-backup': await exportBackup(); break;
       case 'import-backup': $('#file-backup').click(); break;
@@ -809,6 +845,7 @@ document.addEventListener('change', async ev => {
   const t = ev.target;
   try {
     if (t.dataset.onbCheck !== undefined) { S.onb.checks[t.dataset.onbCheck] = t.checked; updateOnbNav(); }
+    else if (t.hasAttribute('data-reconsent-check')) { const b = $('[data-action="reconsent-accept"]'); if (b) b.disabled = !t.checked; }
     else if (t.hasAttribute('data-onb-pseudo')) S.onb.pseudo = t.checked;
     else if (t.dataset.pf) {
       const cfg = curCfg(); const k = t.dataset.pf;

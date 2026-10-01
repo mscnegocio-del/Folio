@@ -5,7 +5,7 @@ Base `folio-mvp` · versión 1 · object store `kv` (clave → valor). Todo regi
 | Clave | Cifrado | Contenido |
 |---|---|---|
 | `vault` | No | `{ v:1, salt, iter:310000, check:{iv,ct}, createdAt }` — `check` descifra a `{ok:'folio'}` para validar la contraseña |
-| `consent` | No | `{ policyVersion, appVersion, acceptedAt, items:{resp,verify,policy,transfer,norecovery}, pseudoAtStart }` — solo booleanos, sin datos personales |
+| `consent` | No | `{ policyVersion, appVersion, acceptedAt, items:{resp,verify,policy,transfer,norecovery}, pseudoAtStart, history:[{policyVersion, appVersion, acceptedAt}] }` (`history` desde T-201) — solo booleanos, sin datos personales |
 | `settings` | Sí | ver Settings |
 | `index` | Sí | lista resumida de expedientes (barra lateral y plazos globales) |
 | `exp:<uuid>` | Sí | expediente completo |

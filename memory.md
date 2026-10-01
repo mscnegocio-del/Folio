@@ -42,7 +42,7 @@
 ## 📌 Próximos pasos (próxima sesión)
 1. Registrar el sitio en Google Search Console y enviar sitemap.xml (lo hace el usuario)
 2. Probar con un PDF real (pdf.js por CDN nunca se probó en el entorno de desarrollo) y con OpenAI/Anthropic directos
-3. Implementar re-aceptación de avisos cuando cambie `APP.policyVersion` (T-201)
+3. Publicar la re-aceptación (T-201, ya en `main`) en un Release v0.3.1 cuando el usuario lo indique
 4. Prueba con 3–5 abogados de confianza; registrar fricciones en process/tasks.md
 5. Prueba ciega de calidad: 20 tareas reales anonimizadas, DeepSeek V4.1 Flash vs Gemini 3.8 Flash vs Sonnet 5.5
 
@@ -50,3 +50,4 @@
 - 2026-09-30: repo público, Release v0.2.0, README con SEO, sitio en GitHub Pages (docs/index.html → https://mscnegocio-del.github.io/Folio/). Pendiente: registrar el sitio en Google Search Console.
 - 2026-09-30: sitio rediseñado con estilo oscuro tipo DeepSeek Harness (Montserrat/DM Sans/Fragment Mono, botones píldora); sin logos ni textos de DeepSeek.
 - 2026-09-30: v0.3.0 — app rediseñada con el sistema del sitio (DM Sans/Montserrat/Fragment Mono, acento azul, píldoras), fuentes en base64 (src/fonts.css), sin Google Fonts; e2e TODO OK.
+- 2026-10-01: T-201 hecho — pantalla de re-aceptación tras desbloquear (POLICY_CHANGES en legal.js, consent.history); e2e TODO OK. Sin Release aún.

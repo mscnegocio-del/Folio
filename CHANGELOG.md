@@ -1,5 +1,12 @@
 # Changelog — Folio
 
+## [Sin publicar]
+### Agregado
+- Re-aceptación de avisos (T-201): si la política o los términos cambiaron desde la última aceptación, Folio muestra qué cambió al desbloquear y pide aceptarlos para continuar. "Ahora no" bloquea sin borrar nada.
+- Historial de aceptaciones en este equipo; Ajustes indica cuántas aceptaciones anteriores hay.
+### Pruebas
+- La prueba end-to-end cubre la re-aceptación: botón bloqueado sin casilla, rechazo, aceptación e historial.
+
 ## [0.3.0] — 2026-09-30
 ### Cambiado
 - Rediseño visual: la app usa el mismo sistema que el sitio web (botones en píldora, tarjetas redondeadas, pestañas en segmento, brillo azul en pantallas de entrada), en tema claro y oscuro.
