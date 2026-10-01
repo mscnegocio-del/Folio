@@ -1,0 +1,8 @@
+{
+ "_nota": "TEXTOS FICTICIOS SOLO PARA PRUEBAS. No son normas reales.",
+ "actualizadoAl": "2026-09-28",
+ "normas": [
+  {"id": "CC", "titulo": "Código Civil", "corto": "CC", "alias": ["codigo civil", "c.c.", "cc"], "materias": ["civil", "familia"], "base": "Ficticio", "fuenteOficial": "https://spij.minjus.gob.pe/", "actualizadoAl": "2026-09-28"},
+  {"id": "CP", "titulo": "Código Penal", "corto": "CP", "alias": ["codigo penal", "c.p.", "cp"], "materias": ["penal"], "base": "Ficticio", "fuenteOficial": "https://spij.minjus.gob.pe/", "actualizadoAl": "2026-09-28"}
+ ]
+}

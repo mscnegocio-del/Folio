@@ -20,6 +20,12 @@
 | Sincronización por servidor | Encargado | No existe (T-213 exigiría cifrado extremo a extremo) |
 | Keys por cliente en cuenta del autor (sin proxy) | Menor exposición, pero sigue en la cadena | No aplica en la versión gratuita |
 
+## Biblioteca legal (E8)
+- D. Leg. 822, art. 9 b) y d): los textos oficiales de normas y los simples datos no son objeto de derecho de autor; hay
+  que respetar el texto y citar la fuente. Folio no copia concordancias ni sumillas del SPIJ.
+- SPIJ sin condiciones de uso publicadas → descarga manual, sin extracción automática. El Peruano: solo `busquedas.elperuano.pe` (robots lo permite).
+- Términos de uso §7: la biblioteca no es edición oficial; se verifica en la fuente oficial.
+
 ## Flujo transfronterizo y datos sensibles
 - Enviar fragmentos a OpenAI/Anthropic/OpenRouter (EE.UU. u otros) es flujo transfronterizo; con BYOK lo realiza el abogado, y Folio debe informarlo (paso 3 de la bienvenida + política §4).
 - Expedientes de familia/violencia contienen datos sensibles (vida afectiva o familiar, salud, menores).

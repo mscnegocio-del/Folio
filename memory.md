@@ -26,6 +26,7 @@
 - [x] v0.3.0: rediseño visual igual al sitio (claro y oscuro), tipografías incluidas en el HTML (T-203), política r2 → process/specs/rediseno-visual-v0.3.md
 
 ## 🔄 En progreso
+- [ ] E8 Biblioteca legal peruana: spec aprobado, F0 hecha, motor + conversor + e2e listos (sin publicar). **Falta: el usuario descarga del SPIJ las 11 normas en Word a `normas/fuentes/` (T-304)**; luego calibrar, revisar y publicar v0.4.0
 - [x] Publicado en GitHub (público) con Release v0.2.0 — 2026-09-30
 - [x] src/config.js completado con datos del autor
 
@@ -52,3 +53,5 @@
 - 2026-09-30: v0.3.0 — app rediseñada con el sistema del sitio (DM Sans/Montserrat/Fragment Mono, acento azul, píldoras), fuentes en base64 (src/fonts.css), sin Google Fonts; e2e TODO OK.
 - 2026-10-01: T-201 hecho — pantalla de re-aceptación tras desbloquear (POLICY_CHANGES en legal.js, consent.history); e2e TODO OK. Sin Release aún.
 - 2026-10-01: v0.3.1 publicada — re-aceptación de avisos (T-201) + aviso de nueva versión desde GitHub (política 2026-10-01). Los usuarios de v0.3.0 o anteriores deben descargar v0.3.1 a mano una vez; desde ahí la app avisa sola.
+- 2026-10-01: spec E8 (biblioteca legal peruana vigente + verificador de citas + actualización híbrida diaria/semanal). Pendiente aprobación.
+- 2026-10-01: E8 F0+F1 (motor). D. Leg. 822 art. 9 b confirmado; SPIJ sin términos → descarga manual; vigía F2 sobre busquedas.elperuano.pe. APP.version 0.4.0 sin release (falta corpus real). Pendiente respuesta §12.2 (horas semanales del mantenedor).

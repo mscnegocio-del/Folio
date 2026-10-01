@@ -14,6 +14,10 @@ const POLICY_CHANGES = [
   ] },
   { version: '2026-10-01 (borrador)', items: [
     'Política de privacidad, sección 9: Folio puede consultar la página pública de versiones del proyecto en GitHub (como máximo dos veces al día) para avisarte cuando haya una versión nueva. No envía datos tuyos ni de tus expedientes, pero GitHub ve tu dirección IP. Puedes desactivarlo en Ajustes → Actualizaciones.'
+  ] },
+  { version: '2026-10-01 r2 (borrador)', items: [
+    'Política de privacidad, sección 9: la biblioteca legal peruana se descarga desde el sitio público del proyecto (GitHub Pages) y puede actualizarse sola, como máximo dos veces al día. Las búsquedas en la biblioteca se hacen en tu equipo.',
+    'Términos de uso, nueva sección 7 (Biblioteca legal): la biblioteca no es una edición oficial; verifica cada artículo en la fuente oficial antes de usarlo.'
   ] }
 ];
 function policyChangesSince(version) {
@@ -47,7 +51,7 @@ function policyHTML() {
 <h3>8. Conservación y eliminación</h3>
 <p>Tú decides cuánto tiempo conservar cada expediente. Puedes eliminar un expediente o todos los datos desde Ajustes. Si borras los datos de navegación de tu navegador, la información de Folio también se elimina.</p>
 <h3>9. Datos que trata el desarrollador</h3>
-<p>Ninguno. Folio no crea cuentas, no usa cookies de seguimiento y no envía telemetría; como el código es público, cualquiera puede verificarlo. Al abrirse, la aplicación no se conecta a ningún servicio: las tipografías vienen incluidas en el archivo. Solo cuando importas un PDF o un Word descarga librerías de lectura desde jsDelivr o cdnjs. Además, si está activada la opción <em>Buscar nuevas versiones</em> (Ajustes → Actualizaciones), después de desbloquear Folio consulta como máximo dos veces al día la página pública de versiones del proyecto en GitHub (api.github.com) para avisarte si hay una versión nueva. Esas solicitudes no incluyen ningún dato tuyo ni de tus expedientes, pero exponen tu dirección IP a esos servicios. Puedes desactivar la búsqueda de versiones cuando quieras.</p>
+<p>Ninguno. Folio no crea cuentas, no usa cookies de seguimiento y no envía telemetría; como el código es público, cualquiera puede verificarlo. Al abrirse, la aplicación no se conecta a ningún servicio: las tipografías vienen incluidas en el archivo. Solo cuando importas un PDF o un Word descarga librerías de lectura desde jsDelivr o cdnjs. Además, si está activada la opción <em>Buscar nuevas versiones</em> (Ajustes → Actualizaciones), después de desbloquear Folio consulta como máximo dos veces al día la página pública de versiones del proyecto en GitHub (api.github.com) para avisarte si hay una versión nueva. Si descargas la <em>biblioteca legal peruana</em>, Folio la obtiene desde el sitio público del proyecto en GitHub Pages y, si está activada la actualización automática, revisa ahí como máximo dos veces al día si hay textos nuevos; las búsquedas en la biblioteca se hacen en tu equipo y nunca salen de él. Esas solicitudes no incluyen ningún dato tuyo ni de tus expedientes, pero exponen tu dirección IP a esos servicios. Puedes desactivar la búsqueda de versiones y la actualización de la biblioteca cuando quieras.</p>
 <h3>10. Derechos de los titulares de los datos</h3>
 <p>Como el desarrollador no accede a los datos de tus expedientes, las solicitudes de tus clientes o de terceros sobre sus datos deben dirigirse a ti como responsable. Folio te permite editar o eliminar cualquier dato para atenderlas. Los titulares también pueden acudir a la Autoridad Nacional de Protección de Datos Personales del Ministerio de Justicia y Derechos Humanos.</p>
 <h3>11. Uso profesional</h3>
@@ -77,7 +81,9 @@ function termsHTML() {
 <p>Tu relación con el proveedor de IA es directa: los costos, límites, disponibilidad y tratamiento de datos se rigen por sus propias condiciones. El desarrollador no controla ni responde por sus servicios.</p>
 <h3>6. Usos no permitidos</h3>
 <p>No puedes usar Folio para fines ilícitos, para tratar datos obtenidos ilícitamente ni para intentar acceder sin autorización a sistemas de terceros, incluidos los portales del Poder Judicial, del Ministerio Público u otras entidades.</p>
-<h3>7. Alcance de esta versión</h3>
+<h3>7. Biblioteca legal</h3>
+<p>La biblioteca legal peruana de Folio reúne textos de normas tomados de fuentes oficiales (SPIJ y diario oficial El Peruano) y muestra su fecha de actualización. <strong>No es una edición oficial</strong>: puede tener errores u omisiones y no incluir cambios posteriores a esa fecha. Antes de usar un artículo en un escrito, verifica su texto y vigencia en la fuente oficial. Las fichas de verificación de citas son una ayuda automática y no garantizan que una cita sea correcta.</p>
+<h3>7-A. Alcance de esta versión</h3>
 <p>Esta versión no se conecta al CEJ, al SINOE ni a otros portales, no sincroniza entre equipos y no lee documentos escaneados como imagen.</p>
 <h3>8. Tu contenido</h3>
 <p>El contenido que registras es tuyo. El desarrollador no obtiene ningún derecho sobre él.</p>

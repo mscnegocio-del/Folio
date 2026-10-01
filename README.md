@@ -128,6 +128,7 @@ python tests/e2e_test.py     # debe terminar en "TODO OK"
 | `src/legal.js` | Política de privacidad, términos de uso y autorización para clientes |
 | `src/ui.js` | Interfaz, bienvenida, agente, ajustes y eventos |
 | `src/styles.css` · `src/shell.html` | Estilos (temas claro/oscuro) y estructura base |
+| `src/normas.js` · `normas/` | Biblioteca legal peruana: motor en la app y conversor del paquete ([guía del mantenedor](normas/README.md)) |
 | `src/fonts.css` | Tipografías incluidas (DM Sans, Montserrat, Fragment Mono; licencia SIL OFL 1.1) |
 | `tests/e2e_test.py` | Prueba end-to-end con Playwright y un proveedor de IA simulado |
 | `AGENTS.md` · `memory.md` · `process/` | Contexto para agentes de IA: arquitectura, decisiones, tareas y esquema de datos |

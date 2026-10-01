@@ -3,7 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent
 SRC = ROOT / "src"
-JS_ORDER = ["config.js", "core.js", "legal.js", "ui.js"]  # el orden importa
+JS_ORDER = ["config.js", "core.js", "normas.js", "legal.js", "ui.js"]  # el orden importa
 
 shell = (SRC / "shell.html").read_text(encoding="utf-8")
 CSS_ORDER = ["fonts.css", "styles.css"]  # tipografías incluidas (sin Google Fonts) + estilos

@@ -2,7 +2,7 @@
    Folio MVP · núcleo
    Todo corre en el navegador. No hay servidor de Folio.
    ============================================================ */
-const APP = { name: 'Folio', version: '0.3.1', policyVersion: '2026-10-01 (borrador)' };
+const APP = { name: 'Folio', version: '0.4.0', policyVersion: '2026-10-01 r2 (borrador)' };
 const ITER = 310000;
 const te = new TextEncoder(), td = new TextDecoder();
 const $ = (s, el = document) => el.querySelector(s);
@@ -120,7 +120,7 @@ const OR_RECOMMENDED = [
   { id: 'google/gemini-3.8-flash', name: 'Gemini 3.8 Flash', tag: 'Rápido' },
   { id: 'deepseek/deepseek-v4.1-flash', name: 'DeepSeek V4.1 Flash', tag: 'Económico' }
 ];
-const DEFAULT_SETTINGS = { provider: 'openrouter', baseUrl: '', apiKey: '', model: '', zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto', lastExp: null, updateCheck: true, updateLastCheck: 0, updateKnown: null };
+const DEFAULT_SETTINGS = { provider: 'openrouter', baseUrl: '', apiKey: '', model: '', zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto', lastExp: null, updateCheck: true, updateLastCheck: 0, updateKnown: null, legalPlanner: true, normasAuto: true, normasLastCheck: 0 };
 /* ---------- Aviso de nuevas versiones ----------
    Una consulta GET pública a GitHub (sin datos del abogado ni de expedientes). Declarada en la política, sección 9.
    Se desactiva en Ajustes → Actualizaciones. */

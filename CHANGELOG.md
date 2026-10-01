@@ -1,5 +1,13 @@
 # Changelog — Folio
 
+## [Sin publicar] — 0.4.0
+### Agregado
+- Biblioteca legal peruana (E8): descarga recomendada desde la bienvenida o Ajustes, búsqueda local, búsqueda legal asistida, bloque de normas vigentes en cada consulta, fichas de verificación de citas, fecha de corte y avisos de atraso, actualización automática incremental y "Ver cambios recientes".
+- Conversor `normas/build_normas.py` con reporte de calidad y catálogo de las 11 normas aprobadas.
+- Términos de uso §7 (la biblioteca no es edición oficial) y política sección 9 (descarga desde GitHub Pages). Versión de avisos "2026-10-01 r2".
+### Pruebas
+- e2e con paquete ficticio armado por el conversor real: instalación, revisión previa, envío sin datos reales, fichas de citas, actualización incremental y aviso de atraso.
+
 ## [0.3.1] — 2026-10-01
 ### Agregado
 - Aviso de nueva versión: al desbloquear, Folio consulta la página pública de versiones en GitHub (máximo dos veces al día) y, si hay una más reciente, muestra una barra que no interrumpe el trabajo, con "Actualizar" (copia de seguridad, descarga y pasos) y "Más tarde".

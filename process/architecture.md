@@ -25,6 +25,7 @@ folio/
 ├── build.py               ← ensambla src/ → dist/folio.html
 ├── src/
 │   ├── shell.html         ← esqueleto HTML con marcadores /*__CSS__*/ y /*__JS__*/
+│   ├── normas.js          ← biblioteca legal peruana: descarga, búsqueda, citas (E8)
 │   ├── fonts.css          ← tipografías WOFF2 en base64 (DM Sans, Montserrat, Fragment Mono; OFL)
 │   ├── styles.css         ← tokens, layout, componentes, temas claro/oscuro
 │   ├── config.js          ← OWNER: datos del autor (editar antes de publicar)
@@ -83,6 +84,18 @@ folio/
 - Tipografías incluidas en el HTML (`src/fonts.css`, sin Google Fonts): Montserrat (títulos), DM Sans (interfaz), Fragment Mono (números de expediente, fechas, foliador).
 - Elemento distintivo: sello azul "Guardado solo en este equipo" con animación de estampado única; foliador "Fs. N" en documentos.
 - Responsive: <1180 px el agente pasa a pestaña; <820 px la barra lateral es un cajón. Grillas con `minmax(0,1fr)` para evitar desbordes.
+
+## Biblioteca legal (E8) — `src/normas.js`
+- Paquete en `docs/normas/` (GitHub Pages): `manifest.json` + `<ID>.json.gz` con `sha256`; lo arma `normas/build_normas.py`
+  desde `normas/fuentes/` (Word/TXT del SPIJ) y `normas/ajustes/` (correcciones y cambios por regir).
+- `updateNormas()` descarga solo lo que cambió, verifica `sha256`, descomprime con `DecompressionStream` y guarda en la
+  base IndexedDB `folio-normas` (sin cifrar: textos públicos). Registra cambios por artículo (`changes`).
+- `Lib.search()` BM25 local con raíces simples; prioriza normas según la especialidad del expediente.
+- Consulta: búsqueda asistida (`PLANNER_PROMPT`, JSON con citas y términos) → `gatherArticles()` (citas explícitas +
+  plan + memoria + búsqueda, máx. 8 artículos / 14 000 caracteres) → `normasBlock()` + `LEGAL_RULES` en el prompt.
+- `checkCitations()` revisa la respuesta: ✓ vigente, ⚠ texto distinto o por regir, ✗ derogado o inexistente, ○ fuera de
+  la biblioteca, 🌐 extranjera. Se guarda en `msg.citas`.
+- Avisos: encabezado "Normas al dd/mm/aaaa" (ámbar a los 14 días); a los 30 días cada respuesta lo advierte.
 
 ## Aviso de nuevas versiones
 - `fetchLatestRelease()` (core.js) → `GET https://api.github.com/repos/<OWNER.repo>/releases/latest`, sin credenciales, 8 s de tiempo límite; falla en silencio (p. ej., proxy corporativo).

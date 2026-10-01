@@ -22,7 +22,8 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Toda nueva salida de red debe declararse en la política (`src/legal.js`, sección 9)
 - Si cambias textos legales: sube `APP.policyVersion` (src/core.js), agrega la entrada en `POLICY_CHANGES` (src/legal.js) y anótalo en process/decisions.md. Al desbloquear, Folio pide aceptar de nuevo
 - Datos del autor solo en `src/config.js` (nunca correo institucional del PJ)
-- Orden del bundle: CSS fonts.css → styles.css; JS config.js → core.js → legal.js → ui.js (ver build.py)
+- Orden del bundle: CSS fonts.css → styles.css; JS config.js → core.js → normas.js → legal.js → ui.js (ver build.py)
+- Biblioteca legal: solo texto oficial de normas y datos de modificación; nunca concordancias del SPIJ ni extracción automática del SPIJ (ver normas/README.md)
 - UI: usar solo los tokens de `src/styles.css` (claro y oscuro); nunca volver a cargar fuentes desde Google Fonts
 - Commits: `tipo(alcance): descripción en español` — tipos: feat, fix, docs, style, refactor, test, chore
 
@@ -34,6 +35,7 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - NUNCA agregar opciones que exijan configuración técnica al abogado (por eso se quitó Ollama)
 - NUNCA afirmar plazos o normas en prompts/plantillas sin indicar que el abogado debe verificarlos
 - NUNCA presentar los modelos de terceros como "propios" del autor
+- NUNCA presentar la biblioteca legal como edición oficial ni publicar un paquete sin revisión humana
 
 ## Reglas de trabajo
 - Leer memory.md al inicio de cada sesión

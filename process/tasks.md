@@ -10,6 +10,7 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 - E5 Validación con usuarios y calidad de modelos — ⏳
 - E6 App de escritorio (Electron) y conectores CEJ/SINOE — ⏳
 - E7 Endurecimiento de seguridad — ⏳
+- E8 Biblioteca legal peruana actualizada (normas vigentes, verificador de citas) — 🔄 spec aprobado; F0 ✅; F1 motor ✅, faltan los textos reales
 
 ## Sprint actual — Publicación v0.2.0
 | # | Tarea | Estado |
@@ -22,6 +23,19 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 | T-106 | Probar OpenAI y Anthropic directos con keys reales (solo OpenRouter está probado) | ⏳ |
 | T-107 | Validación de textos legales por especialista en datos personales | 💤 |
 | T-108 | Consulta escrita sobre incompatibilidades del cargo en el PJ | 💤 |
+
+## E8 · Biblioteca legal peruana
+| # | Tarea | Estado |
+|---|---|---|
+| T-301 | F0: derechos (D. Leg. 822 art. 9), condiciones SPIJ/El Peruano, lista de normas | ✅ |
+| T-302 | Motor en Folio: descarga con sha256, búsqueda BM25, búsqueda asistida, bloque de normas, verificador de citas, fecha de corte y avisos de atraso | ✅ |
+| T-303 | Conversor `normas/build_normas.py` + catálogo + datos ficticios de prueba + e2e | ✅ |
+| T-304 | Descargar del SPIJ las 11 normas a `normas/fuentes/` (Word) y calibrar el conversor con los archivos reales | ⏳ usuario |
+| T-305 | Revisión humana del primer paquete (artículos por norma, saltos, muestras contra el SPIJ) y publicación en `docs/normas/` | ⏳ |
+| T-306 | Release v0.4.0 con la biblioteca | ⏳ |
+| T-307 | F2: vigía diario (GitHub Actions + sitemap de busquedas.elperuano.pe) que abre un PR con el cambio propuesto | ⏳ |
+| T-308 | F2: alerta por expediente cuando cambia un artículo citado en su memoria o chats | ⏳ |
+| T-309 | Prueba de calidad con 40 preguntas (con y sin biblioteca) dentro de T-206 | ⏳ |
 
 ## Backlog priorizado
 | # | Tarea | Épica | Notas |

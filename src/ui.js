@@ -63,7 +63,7 @@ function render() {
    Bienvenida y avisos (onboarding)
    ============================================================ */
 const ONB_STEPS = ['Así funciona', 'Tus datos', 'Envío al extranjero', 'Tu contraseña', 'Tu proveedor de IA'];
-function newOnb() { return { step: 0, checks: {}, pseudo: true, pass: '', pass2: '', cfg: { ...DEFAULT_SETTINGS } }; }
+function newOnb() { return { step: 0, checks: {}, pseudo: true, normas: true, pass: '', pass2: '', cfg: { ...DEFAULT_SETTINGS } }; }
 function onbCanNext() {
   const o = S.onb, c = o.checks;
   if (o.step === 1) return !!(c.resp && c.verify && c.policy);
@@ -114,6 +114,7 @@ function onbBody() {
     <p class="lead">Usas tu propia cuenta: pagas directo al proveedor y solo por lo que consumes. Puedes hacerlo ahora o después desde Ajustes.</p>
     <button type="button" class="btn" data-action="show-keyguide" style="margin-bottom:1rem">¿Es tu primera vez? Ver guía paso a paso</button>
     <div class="sheet" id="pf-block">${providerFieldsHTML(o.cfg)}</div>
+    <label class="check"><input type="checkbox" data-onb-normas ${o.normas ? 'checked' : ''}><span><strong>Descargar la biblioteca legal peruana (recomendado)</strong><br><span class="small muted">Textos vigentes de la Constitución, los códigos y leyes principales, para que el agente cite normas peruanas actualizadas y Folio verifique sus citas. Unos 2 MB desde el sitio público del proyecto; las búsquedas se hacen en tu equipo.</span></span></label>
     <div class="note"><p>Tu key se guarda cifrada en este equipo y solo se usa para llamar al proveedor directamente desde aquí.</p></div>`;
 }
 function renderOnb() {
@@ -150,8 +151,9 @@ async function finishOnb(skip) {
     await DB.put('consent', { policyVersion: APP.policyVersion, appVersion: APP.version, acceptedAt: new Date().toISOString(), items: { ...o.checks }, pseudoAtStart: o.pseudo });
     S.index = []; await store.put('index', []);
     S.audit = []; await store.put('audit', []);
-    S.onb = null;
-    enterApp();
+    const wantNormas = o.normas; S.onb = null;
+    await enterApp();
+    if (wantNormas) installNormas(true);
   } catch (e) { btns.forEach(b => b.disabled = false); fail(e); }
 }
 
@@ -296,10 +298,12 @@ async function acceptReconsent() {
    ============================================================ */
 async function enterApp() {
   S.screen = 'app'; S.stampPress = true; applyTheme();
+  await Lib.load();
   const last = S.settings.lastExp && S.index.find(x => x.id === S.settings.lastExp);
   if (last) await openExp(last.id, true); else { S.exp = null; render(); }
   setTimeout(() => { S.stampPress = false; }, 50);
   maybeCheckUpdate().catch(() => {});
+  maybeUpdateNormas().catch(() => {});
 }
 function caratulaTitle(e) {
   const cli = e.partes.filter(p => p.esCliente).map(p => p.nombre).join(', ');
@@ -398,6 +402,87 @@ function renderApp() {
   S.stampPress = false;
   scrollMsgs();
 }
+/* ---------- Biblioteca legal peruana (E8) ---------- */
+function libStatusHTML() {
+  if (!Lib.installed()) return `<button class="libstat off" data-action="open-settings" title="Descarga la biblioteca legal para que el agente cite normas peruanas vigentes">Sin biblioteca legal</button>`;
+  const age = Lib.ageDays(); const cls = age >= NORMAS_STALE_WARN ? 'warn' : '';
+  return `<span class="libstat ${cls}" title="${age >= NORMAS_STALE_WARN ? `La biblioteca tiene ${age} días sin actualizarse: puede no incluir cambios recientes.` : 'Textos de normas peruanas en tu equipo'}">Normas al ${esc(fmtDate(Lib.manifest.actualizadoAl))}</span>`;
+}
+const CITA = { vigente: ['ok', '✓', 'Vigente en tu biblioteca'], porRegir: ['warn', '⚠', 'Tiene un cambio que aún no rige'], textoDistinto: ['warn', '⚠', 'La cita textual no coincide con el texto vigente'],
+  derogado: ['bad', '✗', 'Derogado'], noEncontrado: ['bad', '✗', 'No existe en tu biblioteca'], fuera: ['info', '○', 'No está en tu biblioteca: verifícala en el SPIJ'], extranjera: ['bad', '🌐', 'Norma de otro país'] };
+function citasHTML(m) {
+  const c = m.citas; if (!c) return '';
+  const chips = c.items.map(it => {
+    const [cls, ico, tip] = CITA[it.estado] || CITA.fuera;
+    const extra = it.estado === 'vigente' && it.modificado ? ` · modificado ${fmtDate(it.modificado)}` : '';
+    const title = esc(tip + (it.modificado ? `. Última modificación: ${fmtDate(it.modificado)}` : ''));
+    return it.norma && !it.norma.startsWith('fuera:') && it.estado !== 'noEncontrado'
+      ? `<button class="cite ${cls}" data-action="ver-articulo" data-norma="${esc(it.norma)}" data-n="${esc(it.n)}" title="${title}">${ico} ${esc(it.label)}${esc(extra)}</button>`
+      : `<span class="cite ${cls}" title="${title}">${ico} ${esc(it.label)}</span>`;
+  }).join('');
+  const used = m.meta?.normas?.length ? `Consultó ${m.meta.normas.length} artículo${m.meta.normas.length === 1 ? '' : 's'} de tu biblioteca (textos al ${esc(fmtDate(c.corte))}).` : `Biblioteca legal al ${esc(fmtDate(c.corte))}.`;
+  const stale = c.age >= NORMAS_STALE_ALERT ? `<p class="cites-warn">⚠ Tu biblioteca legal tiene ${c.age} días sin actualizarse: puede no incluir cambios recientes.</p>` : '';
+  return `<div class="cites">${chips ? `<div class="cites-row">${chips}</div>` : ''}<p class="cites-note">${used} Verifica cada artículo en la fuente oficial antes de usarlo.</p>${stale}</div>`;
+}
+function showArticle(id, n) {
+  const a = Lib.article(id, n), m = Lib.meta(id); if (!a) return toast('Ese artículo no está en tu biblioteca.', true);
+  const hist = (a.historial || []).map(h => `<li>${esc(h.norma)}${h.publicada ? `, publicada el ${esc(fmtDate(h.publicada))}` : ''}${h.vigenteDesde ? `, vigente desde ${esc(fmtDate(h.vigenteDesde))}` : ''}</li>`).join('');
+  openDialog({ title: `${m?.titulo || id} · artículo ${a.n}`, wide: true, body: `
+    ${a.ubicacion ? `<p class="small muted">${esc(a.ubicacion)}</p>` : ''}
+    ${a.derogado ? '<div class="note danger"><p>Este artículo figura como <strong>derogado</strong>.</p></div>' : ''}
+    ${a.titulo ? `<h3 style="margin:.4rem 0">${esc(a.titulo)}</h3>` : ''}
+    <div class="payload" style="font-family:var(--ui);font-size:.95rem">${esc(a.texto)}</div>
+    ${a.proximo ? `<div class="note warn" style="margin-top:1rem"><p><strong>Cambio que aún no rige</strong> (desde ${esc(fmtDate(a.proximo.vigenteDesde))}, ${esc(a.proximo.norma)}):</p><p style="white-space:pre-wrap">${esc(a.proximo.texto)}</p></div>` : ''}
+    ${hist ? `<p class="payload-label">Modificaciones</p><ul class="small">${hist}</ul>` : ''}
+    <p class="small muted" style="margin-top:1rem">Texto de tu biblioteca legal, actualizada al ${esc(fmtDate(Lib.manifest.actualizadoAl))}. Folio no es una edición oficial.${m?.fuenteOficial ? ` <a href="${esc(m.fuenteOficial)}" target="_blank" rel="noopener noreferrer">Verificar en la fuente oficial</a>.` : ''}</p>`,
+    foot: `<button class="btn" data-action="dlg-close">Cerrar</button>` });
+}
+function normasSettingsHTML() {
+  const s = S.settings;
+  const head = `<div class="sheet-head"><h3>Biblioteca legal peruana</h3>${Lib.installed() ? libStatusHTML() : ''}</div>`;
+  if (!Lib.installed()) return `${head}<p class="hint">Textos vigentes de la Constitución, los códigos y las leyes principales. Con ella, el agente cita normas peruanas actualizadas y Folio verifica cada cita. Unos 2 MB desde el sitio público del proyecto; las búsquedas se hacen en tu equipo.</p>
+    <div class="row"><button class="btn primary sm" data-action="normas-install">Descargar biblioteca</button><span id="normas-status" class="small muted"></span></div>`;
+  const rows = Lib.manifest.normas.filter(n => Lib.normas[n.id]).map(n => `<tr><td>${esc(n.titulo)}</td><td class="mono">${esc(fmtDate(n.actualizadoAl || Lib.manifest.actualizadoAl))}</td><td>${Lib.normas[n.id].articulos.length.toLocaleString('es-PE')}</td></tr>`).join('');
+  const age = Lib.ageDays();
+  return `${head}<p class="hint">Textos al ${esc(fmtDate(Lib.manifest.actualizadoAl))}${age > 0 ? ` (hace ${age} día${age === 1 ? '' : 's'})` : ''}. Folio no es una edición oficial: verifica cada artículo en la fuente oficial antes de usarlo.</p>
+    ${age >= NORMAS_STALE_WARN ? `<div class="note warn" style="margin-bottom:1rem"><p>La biblioteca tiene ${age} días sin actualizarse. Pulsa “Buscar actualización”.</p></div>` : ''}
+    <div class="table-wrap"><table class="audit"><thead><tr><th>Norma</th><th>Actualizada al</th><th>Artículos</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <label class="switch" style="margin:1rem 0 .6rem"><input type="checkbox" data-setting="legalPlanner" ${s.legalPlanner !== false ? 'checked' : ''}><span><strong>Búsqueda legal asistida</strong><br><span class="small muted">Antes de responder, el agente indica qué artículos leer (una consulta corta extra a tu proveedor) y Folio los busca en tu equipo.</span></span></label>
+    <label class="switch" style="margin-bottom:1rem"><input type="checkbox" data-setting="normasAuto" ${s.normasAuto !== false ? 'checked' : ''}><span><strong>Actualizar la biblioteca automáticamente</strong><br><span class="small muted">Revisa si hay textos nuevos al abrir Folio, como máximo dos veces al día.</span></span></label>
+    <div class="row"><button class="btn sm" data-action="normas-install">Buscar actualización</button><button class="btn ghost sm" data-action="normas-changes">Ver cambios recientes</button><button class="btn ghost sm danger" data-action="normas-remove">Eliminar biblioteca</button><span id="normas-status" class="small muted"></span></div>`;
+}
+function refreshNormasUI() { const sec = $('#normas-section'); if (sec) sec.innerHTML = normasSettingsHTML(); if (S.exp && S.view !== 'settings') renderAgent(); }
+async function installNormas(quiet = false) {
+  const st = () => $('#normas-status');
+  try {
+    if (st()) st().textContent = 'Conectando…';
+    const r = await updateNormas(msg => { if (st()) st().textContent = msg; });
+    S.settings.normasLastCheck = Date.now(); await saveSettings();
+    refreshNormasUI();
+    if (r.firstInstall) toast(`Biblioteca legal descargada: textos al ${fmtDate(r.manifest.actualizadoAl)}.`);
+    else toast(r.changes.length ? `Biblioteca actualizada al ${fmtDate(r.manifest.actualizadoAl)}: ${r.changes.length} artículo${r.changes.length === 1 ? ' cambió' : 's cambiaron'}.` : `Tu biblioteca ya está al día (textos al ${fmtDate(r.manifest.actualizadoAl)}).`);
+  } catch (e) { if (st()) st().textContent = ''; if (quiet) toast('No se pudo descargar la biblioteca legal. Puedes intentarlo desde Ajustes.', true); else fail(e); }
+}
+async function maybeUpdateNormas() {
+  const s = S.settings; if (!s || s.normasAuto === false || !Lib.installed()) return;
+  if (Date.now() - (s.normasLastCheck || 0) < UPDATE_EVERY_MS) return;
+  const r = await updateNormas().catch(() => null);
+  if (!S.settings) return;
+  S.settings.normasLastCheck = Date.now(); await saveSettings();
+  if (r?.changes.length) { refreshNormasUI(); toast(`Biblioteca legal actualizada al ${fmtDate(r.manifest.actualizadoAl)}: ${r.changes.length} artículo${r.changes.length === 1 ? ' cambió' : 's cambiaron'}. Míralos en Ajustes.`); }
+}
+async function confirmRemoveNormas() {
+  if (!(await askDialog({ title: 'Eliminar biblioteca legal', ok: 'Eliminar', danger: true, body: '<p>El agente dejará de recibir textos de normas y Folio no podrá verificar citas. Tus expedientes no se tocan. Puedes volver a descargarla cuando quieras.</p>' }))) return;
+  await removeNormas(); refreshNormasUI(); toast('Biblioteca legal eliminada.');
+}
+async function showNormasChanges() {
+  const log = await NDB.get('changes') || [];
+  const T = { modificado: 'Modificado', nuevo: 'Nuevo', derogado: 'Derogado' };
+  openDialog({ title: 'Cambios recientes en tu biblioteca', wide: true, body: log.length
+    ? `<div class="table-wrap"><table class="audit"><thead><tr><th>Corte</th><th>Norma</th><th>Artículo</th><th>Cambio</th></tr></thead><tbody>${log.slice(0, 100).map(c => `<tr><td class="mono">${esc(fmtDate(c.corte))}</td><td>${esc(Lib.meta(c.norma)?.corto || c.norma)}</td><td>${Lib.article(c.norma, c.n) ? `<a href="#" data-action="ver-articulo" data-norma="${esc(c.norma)}" data-n="${esc(c.n)}">${esc(c.n)}</a>` : esc(c.n)}</td><td>${esc(T[c.tipo] || c.tipo)}</td></tr>`).join('')}</tbody></table></div>`
+    : '<p>Todavía no hay cambios registrados. Aparecerán aquí cuando la biblioteca se actualice.</p>', foot: `<button class="btn" data-action="dlg-close">Cerrar</button>` });
+}
+
 /* ---------- Aviso de nueva versión (no bloquea el trabajo) ---------- */
 function pendingUpdate() { const k = S.settings?.updateKnown; return k && cmpVersion(k.version, APP.version) > 0 ? k : null; }
 function updateBarHTML() {
@@ -524,7 +609,7 @@ function msgHTML(m, i) {
   if (m.role === 'user') return `<div class="msg user">${esc(m.content)}</div>`;
   if (m.role === 'error') return `<div class="msg error" role="alert">${esc(m.content)}</div>`;
   const meta = m.meta ? `Enviado a ${esc(provLabel(m.meta.provider))} (${esc(m.meta.model)})${m.meta.pseudo ? `, ${m.meta.replaced} dato${m.meta.replaced === 1 ? '' : 's'} reemplazado${m.meta.replaced === 1 ? '' : 's'}` : ', sin reemplazo de datos'}` : '';
-  return `<div class="msg assistant">${md(m.content)}<div class="foot"><span>${meta}</span><button class="btn ghost sm" data-action="copy-msg" data-i="${i}">Copiar</button></div></div>`;
+  return `<div class="msg assistant">${md(m.content)}${citasHTML(m)}<div class="foot"><span>${meta}</span><button class="btn ghost sm" data-action="copy-msg" data-i="${i}">Copiar</button></div></div>`;
 }
 function agentHTML() {
   const e = S.exp, s = S.settings, ready = isReady(s);
@@ -532,7 +617,7 @@ function agentHTML() {
   const line = !ready ? '' : abroad
     ? `<span class="dot ${s.pseudo ? '' : 'off'}"></span>${s.pseudo ? 'Se envía a ' + esc(provLabel(s.provider)) + ' con datos reemplazados' : 'Se envía a ' + esc(provLabel(s.provider)) + ' sin reemplazar datos'}`
     : `<span class="dot"></span>Se envía a tu servidor propio`;
-  return `<div class="agent-head"><div><h2>Agente del expediente</h2><div class="prov">${ready ? esc(provLabel(s.provider)) + ', ' + esc(s.model) : 'Sin proveedor conectado'}</div></div>
+  return `<div class="agent-head"><div><h2>Agente del expediente</h2><div class="prov">${ready ? esc(provLabel(s.provider)) + ', ' + esc(s.model) : 'Sin proveedor conectado'}</div>${libStatusHTML()}</div>
       <div class="row"><button class="btn sm" data-action="propose-memory" ${e.chat.some(m => m.role === 'assistant') && ready ? '' : 'disabled'} title="El agente propone cambios a la memoria del caso; tú decides cuáles aplicar">Actualizar memoria</button>${e.chat.length ? '<button class="btn ghost sm" data-action="clear-chat">Limpiar</button>' : ''}</div></div>
     <div class="msgs" id="msgs">${e.chat.length ? e.chat.map(msgHTML).join('') : `<div class="empty-agent"><p>Pregunta sobre este expediente. El agente ya conoce su memoria, movimientos y documentos.</p></div>`}</div>
     ${ready ? `<div class="quick">${QUICK.map(([l], i) => `<button data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}</div>
@@ -544,7 +629,7 @@ function renderAgent() { const a = $('#agent'); if (a) { a.innerHTML = agentHTML
 function scrollMsgs() { const m = $('#msgs'); if (m) m.scrollTop = m.scrollHeight; }
 
 function highlightTokens(s) { return esc(s).replace(/\[(?:PERSONA|DOC|CORREO|RUC|TELEFONO|DNI|DIRECCION)_\d+\]/g, t => `<mark>${t}</mark>`); }
-async function reviewPayload(system, messages, P, kind) {
+async function reviewPayload(system, messages, P, kind, plannerText = null, withNormas = false) {
   if (!S.settings.review) return true;
   const s = S.settings;
   let instr = system, data = '';
@@ -554,8 +639,10 @@ async function reviewPayload(system, messages, P, kind) {
   const r = await askDialog({ title: 'Revisa lo que se enviará', wide: true, ok: 'Enviar', collect: d => ({ skip: $('#rv-skip', d).checked }),
     body: `<p>Este es el texto exacto que saldrá de tu equipo hacia <strong>${esc(provLabel(s.provider))}</strong> (${esc(s.model)})${PROVIDERS[s.provider]?.abroad ? ', con servidores fuera del Perú' : ''}. ${P.enabled ? `Se reemplazaron <strong>${P.count()}</strong> datos personales; aparecen resaltados.` : '<strong>El reemplazo de datos está desactivado.</strong>'}</p>
       ${P.enabled ? '<p class="small muted">Revisa si queda algún nombre, apodo o dato que identifique a alguien. Si lo ves, cancela y agrégalo como parte en la memoria.</p>' : ''}
-      <p class="payload-label">Consulta y datos del caso</p>
+      ${plannerText ? `<p class="payload-label">1. Búsqueda de normas (consulta corta previa)</p><div class="payload">${highlightTokens(plannerText)}</div>` : ''}
+      <p class="payload-label">${plannerText ? '2. ' : ''}Consulta y datos del caso</p>
       <div class="payload">${highlightTokens(convo + (data ? '\n\n' + data : ''))}</div>
+      ${withNormas ? '<p class="small muted" style="margin-top:.5rem">Al final se agregarán los artículos encontrados en tu biblioteca legal: textos públicos de normas peruanas, sin datos del caso.</p>' : ''}
       <details class="instr"><summary>Instrucciones fijas de Folio para el modelo (no contienen datos del caso)</summary><div class="payload">${highlightTokens(instr)}</div></details>
       <label class="row small" style="margin-top:.8rem"><input type="checkbox" id="rv-skip"> No volver a mostrar antes de cada envío (puedes reactivarlo en Ajustes)</label>` });
   if (!r) return false;
@@ -572,20 +659,32 @@ async function sendChat(text) {
   const e = S.exp, s = S.settings; text = text.trim(); if (!text || S.sending) return;
   const P = makePseudo(e, s.pseudo);
   const ctx = buildContext(e, S.docTexts, text);
-  const system = P.apply(SYSTEM_PROMPT + '\n\n' + ctx.text);
+  await Lib.load(); const lib = Lib.installed();
+  const usePlanner = lib && s.legalPlanner !== false;
+  const plannerSystem = PLANNER_PROMPT + normasCatalogText();
+  const plannerUser = usePlanner ? P.apply(`Especialidad: ${e.especialidad || 'sin indicar'}\nMateria: ${e.materia || 'sin indicar'}\nEstado procesal: ${e.estado || 'sin indicar'}\n\nConsulta del abogado:\n${text}`) : '';
+  const system0 = P.apply(SYSTEM_PROMPT + (lib ? LEGAL_RULES : '') + '\n\n' + ctx.text);
   const hist = historyFor(e).map(m => ({ role: m.role, content: P.apply(m.content) }));
   let messages = [...hist, { role: 'user', content: P.apply(text) }];
   if (messages.length >= 2 && messages[messages.length - 2].role === 'user') { const last = messages.pop(); messages[messages.length - 1].content += '\n\n' + last.content; }
-  if (!(await reviewPayload(system, messages, P, 'chat'))) return;
+  if (!(await reviewPayload(system0, messages, P, 'chat', usePlanner ? plannerUser : null, lib))) return;
   e.chat.push({ role: 'user', content: text, at: new Date().toISOString() });
   S.sending = true; S.abort = new AbortController(); renderAgent();
   const box = $('#msgs'); box.insertAdjacentHTML('beforeend', `<div class="msg assistant" id="streaming"><span class="typing" aria-label="El agente está escribiendo"><i></i><i></i><i></i></span></div>`); scrollMsgs();
-  const chars = system.length + messages.reduce((a, m) => a + m.content.length, 0);
+  let system = system0, arts = [];
   try {
+    let plan = null;
+    if (usePlanner) {
+      try { plan = parseJSONLoose(await llm({ cfg: s, system: plannerSystem, messages: [{ role: 'user', content: plannerUser }], maxTokens: 1500, signal: S.abort.signal })); }
+      catch (err) { if (err.name === 'AbortError') throw err; plan = null; }
+      await logSend('Búsqueda de normas', plannerSystem.length + plannerUser.length, P);
+    }
+    if (lib) { arts = gatherArticles(e, text, plan); system = system0 + normasBlock(arts); }
+    const chars = system.length + messages.reduce((a, m) => a + m.content.length, 0);
     let pending = null;
     const full = await llm({ cfg: s, system, messages, stream: true, maxTokens: 6000, signal: S.abort.signal, onDelta: t => { pending = t; requestAnimationFrame(() => { if (pending == null) return; const el = $('#streaming'); if (el) { el.innerHTML = md(P.restore(pending)); scrollMsgs(); } pending = null; }); } });
     const content = P.restore(full).trim() || '(El modelo no devolvió texto.)';
-    e.chat.push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count() } });
+    e.chat.push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count(), normas: arts.map(({ id, a }) => id + ' ' + a.n) }, citas: checkCitations(content) });
     await logSend('Consulta', chars, P);
   } catch (err) {
     if (err.name === 'AbortError') e.chat.push({ role: 'error', content: 'Detuviste la respuesta.' });
@@ -757,6 +856,7 @@ function settingsHTML() {
       ${S.audit.length ? `<div class="table-wrap"><table class="audit"><thead><tr><th>Fecha</th><th>Acción</th><th>Expediente</th><th>Destino</th><th>Datos reemplazados</th></tr></thead><tbody>${S.audit.slice(0, 50).map(a => `<tr><td class="mono">${esc(fmtDateTime(a.at))}</td><td>${esc(a.kind)}</td><td class="mono">${esc(a.exp)}</td><td>${esc(provLabel(a.provider))}<br><span class="muted">${esc(a.model)}</span></td><td>${a.pseudo ? a.replaced : 'Desactivado'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="small muted">Aún no hay envíos.</p>'}</section>
     <section class="sheet"><h3>Documentos legales</h3><p class="hint" id="consent-line"></p>
       <div class="row"><button class="btn" data-action="show-policy">Política de privacidad</button><button class="btn" data-action="show-terms">Términos de uso</button><button class="btn" data-action="show-clause">Autorización para clientes</button></div></section>
+    <section class="sheet" id="normas-section">${normasSettingsHTML()}</section>
     <section class="sheet"><h3>Actualizaciones</h3><p class="hint">Estás usando Folio v${esc(APP.version)}.</p>
       <label class="switch" style="margin-bottom:1rem"><input type="checkbox" data-setting="updateCheck" ${s.updateCheck ? 'checked' : ''}><span><strong>Buscar nuevas versiones al abrir Folio</strong><br><span class="small muted">Consulta la página pública de versiones en GitHub como máximo dos veces al día. No envía datos tuyos ni de tus expedientes; GitHub ve tu dirección IP.</span></span></label>
       <div class="row"><button class="btn sm" data-action="check-update">Buscar ahora</button><span id="update-result" class="small muted">${pendingUpdate() ? `Hay una nueva versión: v${esc(pendingUpdate().version)}. <a href="#" data-action="update-how">Cómo actualizar</a>` : ''}</span></div></section>
@@ -795,7 +895,7 @@ async function wipeAll() {
     collect: d => $('#wipe-ok', d).checked ? true : ($('#wipe-err', d).textContent = 'Marca la casilla para confirmar.', null),
     body: `<p>Se borrarán de este navegador todos los expedientes, documentos, conversaciones, ajustes, tu API key y el registro de envíos. No se puede deshacer.</p><label class="check"><input type="checkbox" id="wipe-ok"><span>Entiendo que el borrado es definitivo.</span></label><p id="wipe-err" class="small" style="color:var(--danger)" role="alert"></p>` });
   if (!ok) return;
-  await DB.clear(); Vault.lock(); location.reload();
+  await DB.clear(); await NDB.clear().catch(() => {}); Vault.lock(); location.reload();
 }
 async function changePassFlow() {
   const r = await askDialog({ title: 'Cambiar contraseña', ok: 'Cambiar contraseña',
@@ -874,6 +974,10 @@ document.addEventListener('click', async ev => {
       case 'lock-now': lockNow(); break;
       case 'reconsent-accept': await acceptReconsent(); break;
       case 'update-how': showUpdateHow(); break;
+      case 'normas-install': await installNormas(); break;
+      case 'normas-remove': await confirmRemoveNormas(); break;
+      case 'normas-changes': await showNormasChanges(); break;
+      case 'ver-articulo': showArticle(a.dataset.norma, a.dataset.n); break;
       case 'update-later': S.updateHidden = true; $('.update-bar')?.remove(); toast('Te lo recordaremos la próxima vez que abras Folio.'); break;
       case 'check-update': await checkUpdateNow(); break;
       case 'reconsent-decline': lockNow('Folio quedó bloqueado. Para usarlo debes aceptar los avisos vigentes.'); break;
@@ -891,6 +995,7 @@ document.addEventListener('change', async ev => {
     if (t.dataset.onbCheck !== undefined) { S.onb.checks[t.dataset.onbCheck] = t.checked; updateOnbNav(); }
     else if (t.hasAttribute('data-reconsent-check')) { const b = $('[data-action="reconsent-accept"]'); if (b) b.disabled = !t.checked; }
     else if (t.hasAttribute('data-onb-pseudo')) S.onb.pseudo = t.checked;
+    else if (t.hasAttribute('data-onb-normas')) S.onb.normas = t.checked;
     else if (t.dataset.pf) {
       const cfg = curCfg(); const k = t.dataset.pf;
       cfg[k] = t.type === 'checkbox' ? t.checked : t.value;
