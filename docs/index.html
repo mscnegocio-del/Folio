@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Folio — agente de IA gratuito para abogados litigantes en el Perú</title>
+<meta name="description" content="Folio es un asistente de inteligencia artificial gratuito y de código abierto para abogados en el Perú. Memoria por expediente judicial, lectura de PDF y Word, seguimiento del CEJ, cifrado local y sin servidores.">
+<meta name="keywords" content="inteligencia artificial para abogados, IA legal Perú, asistente legal, expedientes judiciales, CEJ, abogado litigante, legaltech Perú, software para abogados gratis">
+<meta name="author" content="Milton Salcedo Cruz">
+<link rel="canonical" href="https://mscnegocio-del.github.io/Folio/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_PE">
+<meta property="og:title" content="Folio — agente de IA gratuito para abogados litigantes">
+<meta property="og:description" content="Cada expediente con su propia memoria. Cifrado en tu equipo, sin servidores, con tu propia cuenta de IA.">
+<meta property="og:url" content="https://mscnegocio-del.github.io/Folio/">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#5B3FC4">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%235B3FC4'/%3E%3Cpath d='M10 7h12v4H14v4h7v4h-7v6h-4z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"SoftwareApplication","name":"Folio","applicationCategory":"BusinessApplication","operatingSystem":"Windows, macOS, Linux (navegador web)","softwareVersion":"0.2.0","inLanguage":"es-PE","description":"Agente de IA gratuito y de código abierto para abogados litigantes en el Perú, con memoria por expediente y cifrado local.","offers":{"@type":"Offer","price":"0","priceCurrency":"PEN"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","downloadUrl":"https://github.com/mscnegocio-del/Folio/releases/latest","author":{"@type":"Person","name":"Milton Salcedo Cruz","address":"Huancayo, Perú"}},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"¿Folio es gratis?","acceptedAnswer":{"@type":"Answer","text":"Sí. Folio es gratuito y de código abierto. Solo pagas el uso de IA directamente a tu proveedor, según lo que consumas."}},
+{"@type":"Question","name":"¿Mis expedientes se suben a internet?","acceptedAnswer":{"@type":"Answer","text":"No. Se guardan cifrados en tu navegador. Solo sale hacia el proveedor de IA el texto de cada consulta, seudonimizado y después de que lo revises."}},
+{"@type":"Question","name":"¿Necesito instalar algo?","acceptedAnswer":{"@type":"Answer","text":"No. Descargas un archivo folio.html y lo abres con doble clic en Chrome, Edge o Firefox."}},
+{"@type":"Question","name":"¿Folio reemplaza al abogado?","acceptedAnswer":{"@type":"Answer","text":"No. Es un asistente que organiza información y propone borradores. La revisión y la decisión final son siempre del abogado."}}
+]}]}
+</script>
+<style>
+:root{
+  --paper:#F1F2EE; --sheet:#FFFFFF; --ink:#1E2230; --graphite:#5A6072; --rule:#DADCD5;
+  --stamp:#5B3FC4; --stamp-ink:#4A31AE; --stamp-soft:#ECE8FB; --manila-soft:#F5EEDC; --manila:#CDB27A;
+  --ui:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif; --type:"Courier Prime","Courier New",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#15171D; --sheet:#1D2029; --ink:#E8E9EE; --graphite:#A9AEBD; --rule:#2E3240;
+  --stamp:#A594FF; --stamp-ink:#B9ABFF; --stamp-soft:#2A2548; --manila-soft:#2B2618; --manila:#B99B5E; color-scheme:dark;}}
+:root[data-theme="dark"]{--paper:#15171D; --sheet:#1D2029; --ink:#E8E9EE; --graphite:#A9AEBD; --rule:#2E3240;
+  --stamp:#A594FF; --stamp-ink:#B9ABFF; --stamp-soft:#2A2548; --manila-soft:#2B2618; --manila:#B99B5E; color-scheme:dark;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.6 var(--ui);-webkit-font-smoothing:antialiased}
+a{color:var(--stamp-ink)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header.top{display:flex;justify-content:space-between;align-items:center;padding:20px 0}
+.brand{font:700 22px var(--type);color:var(--ink);text-decoration:none;letter-spacing:-.5px}
+.brand span{color:var(--stamp)}
+nav a{color:var(--graphite);text-decoration:none;margin-left:20px;font-size:15px}
+nav a:hover{color:var(--ink)}
+.hero{padding:56px 0 64px;display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+.eyebrow{font:700 13px var(--type);text-transform:uppercase;letter-spacing:1.5px;color:var(--stamp)}
+h1{font-size:clamp(34px,5vw,52px);line-height:1.08;margin:12px 0 18px;letter-spacing:-1px}
+.lead{font-size:19px;color:var(--graphite);margin:0 0 28px;max-width:34em}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-block;padding:13px 22px;border-radius:4px;font-weight:700;text-decoration:none;border:1px solid var(--stamp)}
+.btn.primary{background:var(--stamp);color:#fff}
+.btn.primary:hover{background:var(--stamp-ink)}
+:root[data-theme="dark"] .btn.primary{color:#15171D}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary{color:#15171D}}
+.btn.ghost{color:var(--stamp-ink)}
+.note{font-size:14px;color:var(--graphite);margin-top:14px}
+.folder{background:var(--manila-soft);border:1px solid var(--manila);border-radius:6px;padding:22px;font-family:var(--type);transform:rotate(1deg);box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
+.folder .tab{display:inline-block;background:var(--manila);color:#1E2230;padding:2px 10px;border-radius:4px 4px 0 0;font-size:13px;margin:-22px 0 14px}
+.folder dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
+.folder dt{color:var(--graphite)} .folder dd{margin:0}
+.stamp{display:inline-block;margin-top:16px;border:2px solid var(--stamp);color:var(--stamp);padding:3px 10px;font-weight:700;transform:rotate(-4deg);font-size:13px}
+section{padding:56px 0;border-top:1px solid var(--rule)}
+h2{font-size:30px;margin:0 0 10px;letter-spacing:-.5px}
+.sub{color:var(--graphite);margin:0 0 32px;max-width:40em}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:20px}
+.card h3{margin:0 0 6px;font-size:18px}
+.card p{margin:0;color:var(--graphite);font-size:15px}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:14px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
+ol.steps li::before{content:counter(s);font:700 20px var(--type);color:var(--stamp);background:var(--stamp-soft);border-radius:4px;text-align:center;line-height:40px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+ul.check{padding:0;list-style:none;margin:0}
+ul.check li{padding-left:26px;position:relative;margin-bottom:10px}
+ul.check li::before{content:"✓";position:absolute;left:0;color:var(--stamp);font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:15px;background:var(--sheet);border:1px solid var(--rule)}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+details{background:var(--sheet);border:1px solid var(--rule);border-radius:6px;padding:14px 18px;margin-bottom:10px}
+summary{cursor:pointer;font-weight:700}
+details p{color:var(--graphite);margin:10px 0 0}
+.warn{background:var(--stamp-soft);border-radius:6px;padding:16px 18px;font-size:15px}
+footer{border-top:1px solid var(--rule);padding:32px 0 48px;color:var(--graphite);font-size:14px}
+@media (max-width:820px){.hero,.two{grid-template-columns:1fr}.grid{grid-template-columns:1fr}nav a:not(.gh){display:none}.folder{transform:none}.table-wrap{overflow-x:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <a class="brand" href="./">Folio<span>.</span></a>
+  <nav><a href="#funciones">Funciones</a><a href="#privacidad">Privacidad</a><a href="#preguntas">Preguntas</a><a class="gh" href="https://github.com/mscnegocio-del/Folio">GitHub</a></nav>
+</header>
+
+<main>
+<div class="hero">
+  <div>
+    <div class="eyebrow">Gratis · código abierto · hecho en Perú</div>
+    <h1>El agente de IA que recuerda cada expediente</h1>
+    <p class="lead">Folio es un asistente de inteligencia artificial para <strong>abogados litigantes en el Perú</strong>. Cada expediente judicial tiene su propia memoria, todo queda cifrado en tu equipo y usas tu propia cuenta de IA.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/mscnegocio-del/Folio/releases/latest">Descargar Folio gratis</a>
+      <a class="btn ghost" href="#empezar">Cómo empezar</a>
+    </div>
+    <p class="note">Un solo archivo. Sin instalación, sin cuenta, sin servidores. Versión 0.2.0 de prueba.</p>
+  </div>
+  <div class="folder" aria-hidden="true">
+    <span class="tab">EXP. 00123-2026-0-1501-JR-PE-01</span>
+    <dl>
+      <dt>Estado</dt><dd>Etapa intermedia</dd>
+      <dt>Partes</dt><dd>[PERSONA_1] vs. [PERSONA_2]</dd>
+      <dt>Plazo</dt><dd>Absolver traslado · 5 días</dd>
+      <dt>Pendiente</dt><dd>Ofrecer pericia contable</dd>
+      <dt>Documentos</dt><dd>3 PDF · 1 DOCX</dd>
+    </dl>
+    <span class="stamp">CIFRADO EN TU EQUIPO</span>
+  </div>
+</div>
+
+<section id="funciones">
+  <h2>Lo que Folio hace por ti</h2>
+  <p class="sub">Deja de repetirle el caso a la IA en cada consulta. Folio lee la memoria del expediente antes de responder.</p>
+  <div class="grid">
+    <div class="card"><h3>Memoria por expediente</h3><p>Estado, resumen, partes, hechos, plazos, pendientes y estrategia, siempre a mano para el agente.</p></div>
+    <div class="card"><h3>Seguimiento del CEJ</h3><p>Pega los movimientos de la Consulta de Expedientes Judiciales y la IA los ordena para que los revises.</p></div>
+    <div class="card"><h3>Lectura de PDF y Word</h3><p>Carga escritos y resoluciones; el texto se extrae en tu equipo y se usa como contexto.</p></div>
+    <div class="card"><h3>Borradores y estrategia</h3><p>Pide resúmenes, esquemas de alegatos o listas de argumentos basados en los hechos del caso.</p></div>
+    <div class="card"><h3>Memoria que se actualiza</h3><p>El agente propone actualizar plazos y pendientes; nada cambia sin tu aprobación.</p></div>
+    <div class="card"><h3>Copia de seguridad</h3><p>Exporta tu bóveda cifrada en un archivo <code>.folio</code> para no perder nada.</p></div>
+  </div>
+</section>
+
+<section id="privacidad">
+  <div class="two">
+    <div>
+      <h2>Privacidad por diseño</h2>
+      <p class="sub">Pensado para el secreto profesional y la Ley N.° 29733 de Protección de Datos Personales.</p>
+      <p class="warn">Folio no tiene servidores. Tus expedientes nunca pasan por el autor y no hay telemetría. El código es público para que cualquiera lo audite.</p>
+    </div>
+    <ul class="check">
+      <li><strong>Cifrado local</strong> AES-GCM de 256 bits con clave derivada de tu contraseña.</li>
+      <li><strong>Seudonimización automática</strong>: nombres, DNI, RUC, teléfonos, correos y direcciones se reemplazan antes de enviar.</li>
+      <li><strong>Revisión previa</strong> del texto exacto que sale de tu equipo.</li>
+      <li><strong>Registro de envíos</strong> exportable a CSV.</li>
+      <li><strong>Modelo de autorización</strong> escrita para tus clientes.</li>
+      <li><strong>DeepSeek solo vía OpenRouter</strong> con proveedores sin retención de datos.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="empezar">
+  <div class="two">
+    <div>
+      <h2>Empieza en 5 minutos</h2>
+      <p class="sub">Funciona en Chrome, Edge o Firefox actualizados, en Windows, macOS o Linux.</p>
+      <a class="btn primary" href="https://github.com/mscnegocio-del/Folio/releases/latest">Descargar folio.html</a>
+    </div>
+    <ol class="steps">
+      <li><div><strong>Descarga</strong> <code>folio.html</code> desde la última versión.</div></li>
+      <li><div><strong>Ábrelo con doble clic.</strong> No se instala nada.</div></li>
+      <li><div><strong>Crea tu contraseña</strong> y acepta los avisos de privacidad.</div></li>
+      <li><div><strong>Conecta tu cuenta de IA.</strong> ¿No tienes key? Sigue la <a href="https://github.com/mscnegocio-del/Folio/blob/main/docs/guia-api-keys.md">guía paso a paso</a>.</div></li>
+      <li><div><strong>Prueba con el expediente de ejemplo</strong> antes de usar casos reales.</div></li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <h2>Proveedores de IA compatibles</h2>
+  <p class="sub">Folio es gratis. Pagas solo el uso de IA directamente a tu proveedor; una consulta normal suele costar centavos.</p>
+  <div class="table-wrap"><table>
+    <tr><th>Proveedor</th><th>Para quién</th></tr>
+    <tr><td><strong>OpenRouter</strong> (recomendado)</td><td>Una sola key para Claude, GPT, Gemini y DeepSeek.</td></tr>
+    <tr><td><strong>OpenAI</strong></td><td>Si ya tienes cuenta de OpenAI.</td></tr>
+    <tr><td><strong>Anthropic (Claude)</strong></td><td>Si prefieres los modelos Claude.</td></tr>
+    <tr><td><strong>Servidor propio</strong></td><td>Estudios con soporte técnico y un servidor compatible con la API de OpenAI.</td></tr>
+  </table></div>
+  <p class="note">Los modelos pertenecen a sus respectivas empresas; Folio solo se conecta a ellos con tu cuenta.</p>
+</section>
+
+<section id="preguntas">
+  <h2>Preguntas frecuentes</h2>
+  <details><summary>¿Folio es gratis?</summary><p>Sí. Es gratuito y de código abierto (AGPL-3.0). Solo pagas el uso de IA a tu proveedor.</p></details>
+  <details><summary>¿Mis expedientes se suben a internet?</summary><p>No. Se guardan cifrados en tu navegador. Solo sale hacia el proveedor de IA el texto de cada consulta, seudonimizado y después de que lo revises.</p></details>
+  <details><summary>¿Se conecta al CEJ o a SINOE?</summary><p>No de forma automática. Copias el seguimiento del CEJ, lo pegas y el agente lo ordena.</p></details>
+  <details><summary>¿Folio reemplaza al abogado?</summary><p>No. Organiza información y propone borradores. Verifica toda cita, norma y plazo antes de usarla.</p></details>
+  <details><summary>¿Qué pasa si borro los datos del navegador?</summary><p>Perderías la bóveda. Descarga periódicamente la copia de seguridad cifrada desde Ajustes.</p></details>
+</section>
+</main>
+
+<footer>
+  <p><strong>Folio</strong> es un proyecto personal y de código abierto de Milton Salcedo Cruz (Huancayo, Perú) · <a href="mailto:mscnegocio@gmail.com">mscnegocio@gmail.com</a> · <a href="https://github.com/mscnegocio-del/Folio">Código en GitHub</a></p>
+  <p>Versión de prueba. Folio no es asesoría legal. Los textos legales incluidos son borradores pendientes de validación.</p>
+</footer>
+</div>
+</body>
+</html>

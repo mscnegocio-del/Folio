@@ -4,13 +4,13 @@
 
 **Inteligencia artificial para tus expedientes judiciales, gratuita y de código abierto.<br>Tus expedientes no salen de tu equipo.**
 
-[![Descargar v0.2.0](https://img.shields.io/github/v/release/mscnegocio-del/Folio?label=descargar&color=1f4d3d)](https://github.com/mscnegocio-del/Folio/releases/latest)
+[![Descargar v0.2.0](https://img.shields.io/github/v/release/mscnegocio-del/Folio?label=descargar&color=5B3FC4)](https://github.com/mscnegocio-del/Folio/releases/latest)
 [![Licencia AGPL-3.0](https://img.shields.io/badge/licencia-AGPL--3.0-blue)](LICENSE)
 ![Sin instalación](https://img.shields.io/badge/instalación-ninguna-success)
 ![Sin servidores](https://img.shields.io/badge/servidores-ninguno-success)
 ![Hecho en Perú](https://img.shields.io/badge/hecho%20en-Perú-red)
 
-[Descargar](https://github.com/mscnegocio-del/Folio/releases/latest) · [Cómo empezar](#cómo-empezar-en-5-minutos) · [Privacidad](#privacidad-por-diseño) · [Preguntas frecuentes](#preguntas-frecuentes)
+[Sitio web](https://mscnegocio-del.github.io/Folio/) · [Descargar](https://github.com/mscnegocio-del/Folio/releases/latest) · [Cómo empezar](#cómo-empezar-en-5-minutos) · [Privacidad](#privacidad-por-diseño) · [Preguntas frecuentes](#preguntas-frecuentes)
 
 </div>
 
