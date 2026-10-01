@@ -24,8 +24,8 @@
 - [x] Repositorio estructurado (src/, build.py, dist/, docs/, process/, tests/) + harness
 
 ## 🔄 En progreso
-- [ ] Publicación en GitHub — repo creado por el usuario; falta subir archivos, LICENSE y Release v0.2.0
-- [ ] Completar src/config.js (nombre, correo personal, ciudad, URL del repo)
+- [x] Publicado en GitHub (público) con Release v0.2.0 — 2026-09-30
+- [x] src/config.js completado con datos del autor
 
 ## ⚠️ Decisiones vigentes (detalle en process/decisions.md)
 - Solo gratuito con BYOK; plan pagado descartado por ahora (exige RUC, encargo de datos y choca con el cargo en el PJ)
