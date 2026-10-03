@@ -36,7 +36,7 @@
 - [x] **v0.5.0 publicada — E9 rediseño UX (F1–F6)**: paleta marino/teal del logo, agente plegable (abierto/amplio/cerrado, `Ctrl+.`), pestaña Resumen, memoria sin tarjetas, línea de tiempo por mes, documentos en lista, ventana de privacidad, agenda agrupada. e2e TODO OK (65 comprobaciones). Capturas en `tests/shots/` (01, 02, 04, 10–13)
 
 ## ⏳ Pendiente (marcado por el usuario al cerrar la sesión 2026-10-03)
-- [ ] Anuncio en X: borrador de hilo (4 posts) en Typefully, cuenta @Miltonvwsb, https://typefully.com/?d=11056370&a=339409 — sin publicar; falta agregar el banner a mano (la red del PJ bloquea la subida). Publicar solo después de la consulta del cargo y la validación legal
+- [ ] Anuncio en X: borrador de hilo (4 posts) en Typefully, cuenta @Miltonvwsb, https://typefully.com/?d=11056370&a=339409 — sin publicar; banner ya adjunto al primer post (2026-10-03, subido vía API). Publicar solo después de la consulta del cargo y la validación legal
 - [ ] **E9**: recoger observaciones del usuario sobre v0.5.0 (ajustes en una v0.5.x) y aplicar la paleta marino/teal al sitio (T-411)
 - [ ] **T-304** Descargar del SPIJ las 4 normas que faltan → `normas/fuentes/`: `L30364.doc` (Ley 30364), `NLPT.doc` (Ley 29497), `LPAG.doc` (TUO Ley 27444), `LOPJ.doc` (TUO LOPJ). No están en "Normativa básica": usar el buscador del SPIJ. Luego: conversor + reporte (0 pendientes) + visto bueno + push (Folio las descarga solo)
 - [ ] **T-304b** Código Penal, segunda parte (arts. 201 en adelante) → `normas/fuentes/CP-2.doc`; al tenerla, quitar `parcial` del CP en `catalogo.json`
