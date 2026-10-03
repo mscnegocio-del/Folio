@@ -32,6 +32,7 @@
 - [x] **v0.4.0 biblioteca legal peruana (E8)**: 7 normas en `docs/normas` (CONST, CC, CPC, CP parcial 1–200-A, NCPP, NCPCO, CNA · 4 588 entradas), búsqueda local, búsqueda asistida, fichas de citas (vigente, texto distinto, por regir, derogado, reubicado, inexistente, extranjera, fuera), fecha de corte, actualización automática
 - [x] Revisión asistida del paquete contra el SPIJ: 510 artículos con cambios parciales → 0 pendientes (`normas/reporte-verificacion.md`, `normas/revision/`, `normas/ajustes/`); visto bueno del usuario 2026-10-03
 - [x] Logo oficial en el sitio y banner en el README (commit 4ce9f76)
+- [x] Sitio registrado en Google Search Console (propiedad por prefijo de URL, verificación por etiqueta meta en docs/index.html; no borrarla) y sitemap.xml enviado; indexación solicitada. Al inicio Google mostró "No se ha podido obtener" (normal); revisar en unos días
 - [x] **v0.5.0 publicada — E9 rediseño UX (F1–F6)**: paleta marino/teal del logo, agente plegable (abierto/amplio/cerrado, `Ctrl+.`), pestaña Resumen, memoria sin tarjetas, línea de tiempo por mes, documentos en lista, ventana de privacidad, agenda agrupada. e2e TODO OK (65 comprobaciones). Capturas en `tests/shots/` (01, 02, 04, 10–13)
 
 ## ⏳ Pendiente (marcado por el usuario al cerrar la sesión 2026-10-03)
@@ -40,7 +41,6 @@
 - [ ] **T-304b** Código Penal, segunda parte (arts. 201 en adelante) → `normas/fuentes/CP-2.doc`; al tenerla, quitar `parcial` del CP en `catalogo.json`
 - [ ] **T-307/T-308** F2: vigía diario de El Peruano (GitHub Actions + sitemap de busquedas.elperuano.pe) y alerta por expediente cuando cambia un artículo citado
 - [ ] **§12.2 del spec**: horas semanales del mantenedor para revisar cambios (define el ritmo de F2)
-- [ ] Registrar el sitio en Google Search Console y enviar `sitemap.xml` (usuario)
 - [ ] T-105/T-106 Probar con un PDF/DOCX reales y con OpenAI/Anthropic directos
 - [ ] Verificar en la red del PJ (proxy Forcepoint) el aviso de versión y la descarga de la biblioteca (GitHub Pages); probar el traspaso de datos en Firefox
 - [ ] T-205 Prueba con 3–5 abogados de confianza · T-206/T-309 prueba ciega de calidad (con y sin biblioteca)
@@ -80,3 +80,4 @@
 - 2026-10-03: spec E9 rediseño UX v0.5.0 a partir del análisis externo (Folio_Propuesta_Rediseño_UX_UI.md): se toma la mayor parte; se descartan 'Folio IA' (presentaría el modelo como propio), cambio de tipografías, contadores de memoria, barra superior con buscador y emojis; teal corregido a #0F766E en tema claro (contraste). Pendiente aprobación.
 - 2026-10-03: E9 implementado (F1–F6) sin publicar: tokens marino/teal (contraste AA verificado), logo WebP incluido por build.py desde `src/img`, panel del agente con 3 estados (`settings.agentPanel`), Resumen calculado en el equipo, memoria con campos tipo documento, línea de tiempo y documentos en lista. folio.html +47 KB. Pendiente: revisión del usuario y Release.
 - 2026-10-03: **v0.5.0 publicada** (Release en GitHub con dist/folio.html). Sin cambio de política (no hay salidas de red nuevas): los usuarios de v0.3.1+ reciben el aviso de nueva versión. Sitio: solo se actualizó el número de versión (la paleta queda para T-411).
+- 2026-10-03: Search Console: verificado con la cuenta correcta (la etiqueta de otra cuenta se quitó), sitemap enviado y comprobado en línea.
