@@ -1,5 +1,5 @@
 # Estado actual — Folio
-> Última actualización: 2026-10-03 (rediseño v0.5 implementado, sin publicar) · Versión publicada: 0.4.0
+> Última actualización: 2026-10-03 · Versión publicada: 0.5.0
 
 ## ✅ Completado
 - [x] Investigación de mercado (sept. 2026): BYOK existe globalmente; en Perú nadie combina BYOK + memoria por expediente → process/research.md
@@ -32,10 +32,10 @@
 - [x] **v0.4.0 biblioteca legal peruana (E8)**: 7 normas en `docs/normas` (CONST, CC, CPC, CP parcial 1–200-A, NCPP, NCPCO, CNA · 4 588 entradas), búsqueda local, búsqueda asistida, fichas de citas (vigente, texto distinto, por regir, derogado, reubicado, inexistente, extranjera, fuera), fecha de corte, actualización automática
 - [x] Revisión asistida del paquete contra el SPIJ: 510 artículos con cambios parciales → 0 pendientes (`normas/reporte-verificacion.md`, `normas/revision/`, `normas/ajustes/`); visto bueno del usuario 2026-10-03
 - [x] Logo oficial en el sitio y banner en el README (commit 4ce9f76)
-- [x] **E9 rediseño UX v0.5 (F1–F6, sin publicar)**: paleta marino/teal del logo, agente plegable (abierto/amplio/cerrado, `Ctrl+.`), pestaña Resumen, memoria sin tarjetas, línea de tiempo por mes, documentos en lista, ventana de privacidad, agenda agrupada. e2e TODO OK (65 comprobaciones). Capturas en `tests/shots/` (01, 02, 04, 10–13)
+- [x] **v0.5.0 publicada — E9 rediseño UX (F1–F6)**: paleta marino/teal del logo, agente plegable (abierto/amplio/cerrado, `Ctrl+.`), pestaña Resumen, memoria sin tarjetas, línea de tiempo por mes, documentos en lista, ventana de privacidad, agenda agrupada. e2e TODO OK (65 comprobaciones). Capturas en `tests/shots/` (01, 02, 04, 10–13)
 
 ## ⏳ Pendiente (marcado por el usuario al cerrar la sesión 2026-10-03)
-- [ ] **E9**: revisión del usuario de la app rediseñada (abrir `dist/folio.html`) → ajustes → `APP.version` 0.5.0 → Release v0.5.0 (T-412). Después: aplicar la paleta al sitio (T-411, el usuario quiere ver primero la app)
+- [ ] **E9**: recoger observaciones del usuario sobre v0.5.0 (ajustes en una v0.5.x) y aplicar la paleta marino/teal al sitio (T-411)
 - [ ] **T-304** Descargar del SPIJ las 4 normas que faltan → `normas/fuentes/`: `L30364.doc` (Ley 30364), `NLPT.doc` (Ley 29497), `LPAG.doc` (TUO Ley 27444), `LOPJ.doc` (TUO LOPJ). No están en "Normativa básica": usar el buscador del SPIJ. Luego: conversor + reporte (0 pendientes) + visto bueno + push (Folio las descarga solo)
 - [ ] **T-304b** Código Penal, segunda parte (arts. 201 en adelante) → `normas/fuentes/CP-2.doc`; al tenerla, quitar `parcial` del CP en `catalogo.json`
 - [ ] **T-307/T-308** F2: vigía diario de El Peruano (GitHub Actions + sitemap de busquedas.elperuano.pe) y alerta por expediente cuando cambia un artículo citado
@@ -57,7 +57,7 @@
 - Consulta escrita sobre incompatibilidades del cargo en el PJ (antes de difundir y, sobre todo, antes de cobrar cualquier servicio)
 
 ## 📌 Próximos pasos (próxima sesión)
-0. **E9**: recoger las observaciones del usuario sobre la app rediseñada, ajustar, subir `APP.version` a 0.5.0, build + e2e, Release v0.5.0 (sin cambio de política: no hay salidas de red nuevas). Luego T-411 (sitio)
+0. **E9**: observaciones del usuario sobre v0.5.0 → ajustes (v0.5.x) → T-411: llevar la paleta marino/teal al sitio (docs/index.html)
 1. Si el usuario trae las 4 normas o `CP-2.doc`: `python normas/build_normas.py --strict --reporte normas/reporte-verificacion.md` → revisar pendientes del reporte (los formatos del SPIJ ya conocidos están en normas/README.md) → visto bueno → commit + push (sin Release: la app actualiza la biblioteca sola)
 2. Si no: empezar F2 (spec §6 y T-307) o la prueba con abogados (T-205)
 3. Al cambiar normas, el sitio y el README mencionan "Pronto: Ley 30364, NLPT, LPAG y LOPJ": actualizar cuando se publiquen
@@ -79,3 +79,4 @@
 - 2026-10-03: logo oficial en el sitio (docs/img/folio-logo-blanco.webp, versión blanca para fondo oscuro; original recortado en folio-logo.webp; favicon folio-icono.png) y banner en el README (docs/img/folio-banner.webp).
 - 2026-10-03: spec E9 rediseño UX v0.5.0 a partir del análisis externo (Folio_Propuesta_Rediseño_UX_UI.md): se toma la mayor parte; se descartan 'Folio IA' (presentaría el modelo como propio), cambio de tipografías, contadores de memoria, barra superior con buscador y emojis; teal corregido a #0F766E en tema claro (contraste). Pendiente aprobación.
 - 2026-10-03: E9 implementado (F1–F6) sin publicar: tokens marino/teal (contraste AA verificado), logo WebP incluido por build.py desde `src/img`, panel del agente con 3 estados (`settings.agentPanel`), Resumen calculado en el equipo, memoria con campos tipo documento, línea de tiempo y documentos en lista. folio.html +47 KB. Pendiente: revisión del usuario y Release.
+- 2026-10-03: **v0.5.0 publicada** (Release en GitHub con dist/folio.html). Sin cambio de política (no hay salidas de red nuevas): los usuarios de v0.3.1+ reciben el aviso de nueva versión. Sitio: solo se actualizó el número de versión (la paleta queda para T-411).

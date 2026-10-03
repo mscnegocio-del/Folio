@@ -1,6 +1,6 @@
 # Changelog — Folio
 
-## [Sin publicar] — rediseño UX/UI v0.5 "el expediente primero"
+## [0.5.0] — 2026-10-03 — rediseño "el expediente primero"
 ### Cambiado
 - Identidad del logo: azul marino + teal en claro y oscuro (reemplaza el acento azul); logo e ícono incluidos en el HTML.
 - El expediente es el centro: carátula con número, partes, ficha de estado e indicador "Solo en este equipo · cifrado" (el sello girado sale de la carátula).

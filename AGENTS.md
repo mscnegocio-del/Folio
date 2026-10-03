@@ -1,4 +1,4 @@
-# AGENTS.md — Folio v0.4.0
+# AGENTS.md — Folio v0.5.0
 > Generado: 2026-09-30 · Actualizado: 2026-10-03 · Autor: Milton Alejandro Salcedo Cruz
 
 Folio es un agente de IA gratuito y de código abierto para abogados litigantes en el Perú.
