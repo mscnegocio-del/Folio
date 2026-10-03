@@ -46,7 +46,7 @@
 - [ ] Verificar en la red del PJ (proxy Forcepoint) el aviso de versión y la descarga de la biblioteca (GitHub Pages); probar el traspaso de datos en Firefox
 - [ ] T-205 Prueba con 3–5 abogados de confianza · T-206/T-309 prueba ciega de calidad (con y sin biblioteca)
 
-- 2026-10-03: anuncio v0.5.0 publicado en X (a mano: X bloquea por API posts con enlaces). Post 2 (citas) publicado; versión simple en borrador Typefully d=11059349. Guía para próximos posts: process/estrategia-x.md
+- 2026-10-03: anuncio v0.5.0 publicado en X (a mano: X bloquea por API posts con enlaces). Post 2 (citas) publicado; versión simple en borrador Typefully d=11059349. Guía para próximos posts: process/estrategia-x.md. Semana 5–11/10 en borradores Typefully (lun 11059349, mar 11059640, mié 11059642, jue 11059644, vie 11059645, sáb 11059646 video, dom 11059648); se publican a mano
 
 ## ⚠️ Decisiones vigentes (detalle en process/decisions.md)
 - Solo gratuito con BYOK; plan pagado descartado por ahora (exige RUC, encargo de datos y choca con el cargo en el PJ)
