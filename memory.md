@@ -36,6 +36,7 @@
 - [x] **v0.5.0 publicada — E9 rediseño UX (F1–F6)**: paleta marino/teal del logo, agente plegable (abierto/amplio/cerrado, `Ctrl+.`), pestaña Resumen, memoria sin tarjetas, línea de tiempo por mes, documentos en lista, ventana de privacidad, agenda agrupada. e2e TODO OK (65 comprobaciones). Capturas en `tests/shots/` (01, 02, 04, 10–13)
 
 ## ⏳ Pendiente (marcado por el usuario al cerrar la sesión 2026-10-03)
+- [ ] Anuncio en X: borrador de hilo (4 posts) en Typefully, cuenta @Miltonvwsb, https://typefully.com/?d=11056370&a=339409 — sin publicar; falta agregar el banner a mano (la red del PJ bloquea la subida). Publicar solo después de la consulta del cargo y la validación legal
 - [ ] **E9**: recoger observaciones del usuario sobre v0.5.0 (ajustes en una v0.5.x) y aplicar la paleta marino/teal al sitio (T-411)
 - [ ] **T-304** Descargar del SPIJ las 4 normas que faltan → `normas/fuentes/`: `L30364.doc` (Ley 30364), `NLPT.doc` (Ley 29497), `LPAG.doc` (TUO Ley 27444), `LOPJ.doc` (TUO LOPJ). No están en "Normativa básica": usar el buscador del SPIJ. Luego: conversor + reporte (0 pendientes) + visto bueno + push (Folio las descarga solo)
 - [ ] **T-304b** Código Penal, segunda parte (arts. 201 en adelante) → `normas/fuentes/CP-2.doc`; al tenerla, quitar `parcial` del CP en `catalogo.json`
@@ -54,7 +55,7 @@
 
 ## 🔴 Bloqueantes
 - Validación de textos legales por un especialista en datos personales (antes de difundir)
-- Consulta escrita sobre incompatibilidades del cargo en el PJ (antes de difundir y, sobre todo, antes de cobrar cualquier servicio)
+- Consulta escrita sobre incompatibilidades del cargo en el PJ (antes de difundir y, sobre todo, antes de cobrar cualquier servicio). Pregunta concreta: "desarrollo y publico en mi tiempo libre un software gratuito y de código abierto, sin fines de lucro ni recursos institucionales, ¿hay incompatibilidad?" → Gerencia de RR. HH. / Oficina de Integridad de la CSJ Junín. Análisis en process/legal-privacy.md §Incompatibilidad del cargo
 
 ## 📌 Próximos pasos (próxima sesión)
 0. **E9**: observaciones del usuario sobre v0.5.0 → ajustes (v0.5.x) → T-411: llevar la paleta marino/teal al sitio (docs/index.html)
@@ -81,3 +82,4 @@
 - 2026-10-03: E9 implementado (F1–F6) sin publicar: tokens marino/teal (contraste AA verificado), logo WebP incluido por build.py desde `src/img`, panel del agente con 3 estados (`settings.agentPanel`), Resumen calculado en el equipo, memoria con campos tipo documento, línea de tiempo y documentos en lista. folio.html +47 KB. Pendiente: revisión del usuario y Release.
 - 2026-10-03: **v0.5.0 publicada** (Release en GitHub con dist/folio.html). Sin cambio de política (no hay salidas de red nuevas): los usuarios de v0.3.1+ reciben el aviso de nueva versión. Sitio: solo se actualizó el número de versión (la paleta queda para T-411).
 - 2026-10-03: Search Console: verificado con la cuenta correcta (la etiqueta de otra cuenta se quitó), sitemap enviado y comprobado en línea.
+- 2026-10-03: Search Console verificado; Typefully conectado y borrador del anuncio v0.5.0 creado (no publicado). Análisis de incompatibilidad del cargo (Ley 30745 dedicación exclusiva salvo docencia; Ley 27588; Ley 27815; casos ODANC Ica y OCMA ODECMA Lima Norte) → process/legal-privacy.md. Regla nueva: trabajar Folio solo fuera de horario y en equipo personal, nunca en la red del PJ.

@@ -39,7 +39,8 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 | T-105 | Probar con un PDF y un DOCX reales (CDN) en la PC del usuario | ⏳ |
 | T-106 | Probar OpenAI y Anthropic directos con keys reales (solo OpenRouter está probado) | ⏳ |
 | T-107 | Validación de textos legales por especialista en datos personales | 💤 |
-| T-108 | Consulta escrita sobre incompatibilidades del cargo en el PJ | 💤 |
+| T-108 | Consulta escrita sobre incompatibilidades del cargo en el PJ (proyecto gratuito y de código abierto; ver legal-privacy.md) | 💤 |
+| T-109 | Anuncio v0.5.0 en X: borrador en Typefully (d=11056370); agregar banner; publicar tras T-107/T-108 | 💤 |
 
 ## E8 · Biblioteca legal peruana
 | # | Tarea | Estado |

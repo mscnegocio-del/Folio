@@ -30,6 +30,8 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 
 ## NUNCA
 - NUNCA enviar contenido de expedientes a servidores del autor, ni agregar telemetría
+- NUNCA vincular Folio al Poder Judicial (cargo, Corte, logos, correo institucional) ni sugerir respaldo institucional; Folio se desarrolla fuera de horario y con equipo personal (incompatibilidad del cargo: process/legal-privacy.md)
+- NUNCA publicar ni programar posts en redes (Typefully/X) sin confirmación explícita del usuario
 - NUNCA conectar directo con la API propia de DeepSeek (datos en China). DeepSeek solo vía OpenRouter + ZDR
 - NUNCA tocar el SIJ, ni accesos internos del Poder Judicial, ni romper captchas del CEJ/SINOE
 - NUNCA guardar credenciales de SINOE en un servidor

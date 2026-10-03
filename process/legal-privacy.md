@@ -50,3 +50,13 @@
 - Revisar incompatibilidades (Código de Ética de la Función Pública y normativa interna del PJ) **por escrito** antes de difundir y, sobre todo, antes de cobrar cualquier servicio a abogados.
 - Folio no toca el SIJ ni accesos internos; no usa información obtenida por el cargo.
 - Usar cuenta de GitHub y correo personales, nunca institucionales.
+
+## Incompatibilidad del cargo del autor (análisis 2026-10-03, no es asesoría legal)
+- **Ley 30745** (Carrera del Trabajador Judicial, art. VIII): dedicación exclusiva, salvo docencia universitaria. Aplica a jurisdiccionales y administrativos. No dice "fuera de horario": cualquier trabajo remunerado habitual es riesgoso sin autorización.
+- **Ley 27588** (incompatibilidades del empleo público): actividad privada solo sin conflicto de interés ni uso de información del cargo.
+- **Ley 27815** (Código de Ética): prohibido usar cargo, tiempo, equipos o información del Estado en beneficio propio.
+- **LOPJ**: prohíbe el patrocinio legal a trabajadores judiciales.
+- Casos sancionados: ODANC Ica (suspensión 6 meses por presunto patrocinio ilegal); OCMA, ODECMA Lima Norte (escritos de terceros hechos con equipos del Estado, falta muy grave). Patrón: actividad ligada a lo judicial + recursos del PJ.
+- **Conclusión para Folio:** ser conocido como autor de un software gratuito y de código abierto no es, por sí solo, incompatible (equivale a publicar). Riesgos: (1) sugerir respaldo del PJ; (2) desarrollarlo en horario o con red/equipos del PJ; (3) soporte personalizado o trato preferente a estudios; (4) cobrar servicios a partir de la reputación. El medio de pago (Yape, transferencia) no cambia la incompatibilidad y agrega riesgo tributario si no hay recibo por honorarios.
+- Pendiente: consulta escrita (T-108). Noticia nov. 2025: ley que pasa a los trabajadores del PJ al régimen privado; verificar su efecto en la dedicación exclusiva.
+- Fuentes: lpderecho.pe/ley-30745-ley-carrera-trabajador-judicial · busquedas.elperuano.pe/dispositivo/NL/1673543-3 · diariocorreo.pe (ODANC Ica) · anc.pj.gob.pe/prensa/DetalleNoticia/7371 · infobae.com/peru/2025/11/22
