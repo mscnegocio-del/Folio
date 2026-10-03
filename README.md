@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/img/folio-banner.webp" alt="Folio — tu expediente, con memoria. IA para abogados litigantes en el Perú" width="100%">
+
 # Folio — agente de IA para abogados litigantes en el Perú
 
 **Inteligencia artificial para tus expedientes judiciales, gratuita y de código abierto.<br>Tus expedientes no salen de tu equipo.**

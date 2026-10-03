@@ -15,7 +15,7 @@
 <meta property="og:url" content="https://mscnegocio-del.github.io/Folio/">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0a0a0a">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234d6bfe'/%3E%3Cpath d='M11 8h11v3.5h-7v3.5h6v3.5h-6V24h-4z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="img/folio-icono.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fragment+Mono&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
@@ -52,7 +52,7 @@ a{color:inherit}
 .top.scrolled{border-color:var(--card-bd)}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
 .logo{display:flex;align-items:center;gap:8px;text-decoration:none;font:500 19px var(--display);letter-spacing:-.4px}
-.logo svg{width:24px;height:24px}
+.logo img{height:32px;width:auto;display:block}
 .badge{font:500 9.5px var(--mono);letter-spacing:.6px;text-transform:uppercase;background:#fff;color:#0a0a0a;padding:1px 5px;border-radius:3px;margin-left:2px}
 .top nav{display:flex;align-items:center;gap:8px}
 .top nav .link{color:var(--desc);text-decoration:none;font-size:14px;padding:6px 10px;transition:color .15s}
@@ -87,7 +87,7 @@ h1{font:400 clamp(34px,5vw,48px)/1.25 var(--display);letter-spacing:-.02em;margi
 .dots span{width:11px;height:11px;border-radius:50%;background:#ff5f57}
 .dots span:nth-child(2){background:#febc2e}.dots span:nth-child(3){background:#28c840}
 .side .logo{font-size:15px;margin:0 4px 16px}
-.side .logo svg{width:19px;height:19px}
+.side .logo img{height:24px}
 .newbtn{display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(255,255,255,.08);border-radius:9px;padding:8px;margin-bottom:18px;color:#e6e6e6}
 .side small{display:block;color:var(--win-mute);font-size:11.5px;margin:0 6px 6px}
 .exp{padding:7px 8px;border-radius:7px;color:#d4d6da;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -202,7 +202,7 @@ footer nav a:hover{color:#fff}
 
 <header class="top" id="top">
   <div class="wrap">
-    <a class="logo" href="./" aria-label="Folio, inicio"><svg><use href="#mark"/></svg>folio<span class="badge">Beta</span></a>
+    <a class="logo" href="./" aria-label="Folio, inicio"><img src="img/folio-logo-blanco.webp" alt="Folio" width="83" height="32"><span class="badge">Beta</span></a>
     <nav>
       <a class="link" href="#capacidades">Capacidades</a>
       <a class="link" href="#empezar">Empezar</a>
@@ -229,7 +229,7 @@ footer nav a:hover{color:#fff}
     <div class="window reveal" role="img" aria-label="Vista de Folio: el agente responde sobre el estado de un expediente">
       <aside class="side">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="logo"><svg><use href="#mark"/></svg>folio<span class="badge">Beta</span></div>
+        <div class="logo"><img src="img/folio-logo-blanco.webp" alt="Folio" width="62" height="24"><span class="badge">Beta</span></div>
         <div class="newbtn">＋ Nuevo expediente</div>
         <small>Expedientes</small>
         <div class="exp on">00123-2026 · Etapa intermedia</div>
