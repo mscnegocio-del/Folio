@@ -72,7 +72,7 @@ def handle(route, request):
                                  body=json.dumps({"choices": [{"message": {"content": content}}]}))
         chunks = ["**MOCK.** [PERSONA_1] demanda alimentos contra [PERSONA_2].\n\n", "- Verifica plazos con tu SINOE.\n",
                   "- Según el artículo 481 del Código Civil, el juez regula los alimentos.\n- El artículo 472 del Código Civil dice: \"Se entiende por alimentos lo indispensable para el sustento y la vivienda digna del menor en todo momento del proceso\".\n",
-                  "- Revisa el artículo 108-B del Código Penal y el artículo 999 del Código Civil.\n- No apliques el Código Civil español ni la Ley N° 12345.\n"]
+                  "- Revisa el artículo 108-B del Código Penal, el artículo 296 del Código Penal y el artículo 999 del Código Civil.\n- No apliques el Código Civil español ni la Ley N° 12345.\n"]
         sse = "".join("data: " + json.dumps({"choices": [{"delta": {"content": c}}]}) + "\n\n" for c in chunks) + "data: [DONE]\n\n"
         return route.fulfill(status=200, headers={"content-type": "text/event-stream"}, body=sse)
     if "api.github.com" in url and url.endswith("/releases/latest"):
@@ -136,6 +136,7 @@ with sync_playwright() as p:
     check(pg.locator(".cite.bad", has_text="999").count() == 1, "citas: artículo inexistente marcado")
     check(pg.locator(".cite.bad", has_text="español").count() == 1, "citas: norma extranjera marcada")
     check(pg.locator(".cite.info", has_text="12345").count() == 1, "citas: norma fuera de la biblioteca marcada")
+    check(pg.locator(".cite.info", has_text="296").count() == 1 and pg.locator(".cite.bad", has_text="296").count() == 0, "citas: artículo de una norma incompleta no se marca como inexistente")
     pg.locator(".msg.assistant .cites").scroll_into_view_if_needed(); pg.screenshot(path=str(SHOTS / "08-citas.png"))
     pg.click(".cite.ok >> nth=0"); pg.wait_for_selector("#dlg .payload")
     check("Los alimentos se regulan" in pg.inner_text("#dlg") and "fuente oficial" in pg.inner_text("#dlg"), "citas: ver artículo con enlace a la fuente oficial")

@@ -3,6 +3,6 @@
  "actualizadoAl": "2026-09-28",
  "normas": [
   {"id": "CC", "titulo": "Código Civil", "corto": "CC", "alias": ["codigo civil", "c.c.", "cc"], "materias": ["civil", "familia"], "base": "Ficticio", "fuenteOficial": "https://spij.minjus.gob.pe/", "actualizadoAl": "2026-09-28"},
-  {"id": "CP", "titulo": "Código Penal", "corto": "CP", "alias": ["codigo penal", "c.p.", "cp"], "materias": ["penal"], "base": "Ficticio", "fuenteOficial": "https://spij.minjus.gob.pe/", "actualizadoAl": "2026-09-28"}
+  {"id": "CP", "titulo": "Código Penal", "corto": "CP", "alias": ["codigo penal", "c.p.", "cp"], "materias": ["penal"], "base": "Ficticio", "fuenteOficial": "https://spij.minjus.gob.pe/", "actualizadoAl": "2026-09-28", "parcial": "solo artículos 1 al 200-A"}
  ]
 }

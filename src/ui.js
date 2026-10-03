@@ -442,7 +442,7 @@ function normasSettingsHTML() {
   const head = `<div class="sheet-head"><h3>Biblioteca legal peruana</h3>${Lib.installed() ? libStatusHTML() : ''}</div>`;
   if (!Lib.installed()) return `${head}<p class="hint">Textos vigentes de la Constitución, los códigos y las leyes principales. Con ella, el agente cita normas peruanas actualizadas y Folio verifica cada cita. Unos 2 MB desde el sitio público del proyecto; las búsquedas se hacen en tu equipo.</p>
     <div class="row"><button class="btn primary sm" data-action="normas-install">Descargar biblioteca</button><span id="normas-status" class="small muted"></span></div>`;
-  const rows = Lib.manifest.normas.filter(n => Lib.normas[n.id]).map(n => `<tr><td>${esc(n.titulo)}</td><td class="mono">${esc(fmtDate(n.actualizadoAl || Lib.manifest.actualizadoAl))}</td><td>${Lib.normas[n.id].articulos.length.toLocaleString('es-PE')}</td></tr>`).join('');
+  const rows = Lib.manifest.normas.filter(n => Lib.normas[n.id]).map(n => `<tr><td>${esc(n.titulo)}${n.parcial ? `<br><span class="small" style="color:var(--warn)">Incompleta: ${esc(n.parcial)}</span>` : ''}</td><td class="mono">${esc(fmtDate(n.actualizadoAl || Lib.manifest.actualizadoAl))}</td><td>${Lib.normas[n.id].articulos.length.toLocaleString('es-PE')}</td></tr>`).join('');
   const age = Lib.ageDays();
   return `${head}<p class="hint">Textos al ${esc(fmtDate(Lib.manifest.actualizadoAl))}${age > 0 ? ` (hace ${age} día${age === 1 ? '' : 's'})` : ''}. Folio no es una edición oficial: verifica cada artículo en la fuente oficial antes de usarlo.</p>
     ${age >= NORMAS_STALE_WARN ? `<div class="note warn" style="margin-bottom:1rem"><p>La biblioteca tiene ${age} días sin actualizarse. Pulsa “Buscar actualización”.</p></div>` : ''}

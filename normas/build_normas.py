@@ -280,7 +280,7 @@ def main():
                 "actualizadoAl": n["actualizadoAl"], "articulos": arts}
         blob = gz(json.dumps(data, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
         (out / f"{n['id']}.json.gz").write_bytes(blob)
-        normas.append({k: n[k] for k in ("id", "titulo", "corto", "alias", "materias", "fuenteOficial", "actualizadoAl") if k in n} |
+        normas.append({k: n[k] for k in ("id", "titulo", "corto", "alias", "materias", "fuenteOficial", "actualizadoAl", "parcial") if k in n} |
                       {"archivo": f"{n['id']}.json.gz", "sha256": hashlib.sha256(blob).hexdigest(), "bytes": len(blob), "articulos": len(arts)})
         print(f"✓  {n['id']:6} {len(arts):5} artículos · {len(blob) // 1024} KB · ajustes: {nadj}" + (f" · saltos de numeración: {gaps[:12]}{'…' if len(gaps) > 12 else ''}" if gaps else ""))
         for i in issues: print(f"   ⚠ {i}")

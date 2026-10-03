@@ -194,6 +194,7 @@ function checkCitations(answer) {
     const meta = Lib.meta(c.norma); const corto = meta?.corto || c.norma;
     if (!c.n) continue;
     const a = Lib.article(c.norma, c.n);
+    if (!a && meta?.parcial) { items.push({ estado: 'fuera', label: `Art. ${c.n} ${corto} (${meta.parcial})` }); continue; }
     if (!a) { items.push({ estado: 'noEncontrado', norma: c.norma, n: c.n, label: `Art. ${c.n} ${corto}` }); continue; }
     let estado = a.derogado ? 'derogado' : a.proximo ? 'porRegir' : 'vigente';
     if (estado === 'vigente' && quotes.length) {
@@ -229,7 +230,8 @@ function gatherArticles(e, question, plan) {
 function normasBlock(arts) {
   if (!Lib.installed()) return '';
   const corte = fmtDate(Lib.manifest.actualizadoAl);
-  const head = `\n\n=== NORMAS PERUANAS (biblioteca legal de Folio, textos al ${corte}) ===\nTextos oficiales de normas peruanas (SPIJ / diario oficial El Peruano). Para citar artículos usa solo estos textos.`;
+  const parciales = (Lib.manifest.normas || []).filter(n => n.parcial && Lib.normas[n.id]).map(n => `${n.titulo}: ${n.parcial}`);
+  const head = `\n\n=== NORMAS PERUANAS (biblioteca legal de Folio, textos al ${corte}) ===\nTextos oficiales de normas peruanas (SPIJ / diario oficial El Peruano). Para citar artículos usa solo estos textos.${parciales.length ? `\nNormas incompletas en la biblioteca (lo que falte, dilo y sugiere verificarlo en el SPIJ): ${parciales.join('; ')}.` : ''}`;
   if (!arts.length) return head + '\n(No se encontraron artículos para esta consulta en la biblioteca. Si necesitas una norma, dilo y sugiere verificarla en el SPIJ.)';
   return head + '\n' + arts.map(({ id, a }) => {
     const m = Lib.meta(id); const last = (a.historial || []).slice(-1)[0];
