@@ -6,13 +6,13 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 - E1 Núcleo local-first (bóveda, expedientes, memoria) — ✅
 - E2 Agente y privacidad (seudonimización, revisión, registro) — ✅
 - E3 Proveedores y onboarding (BYOK, guía de keys) — ✅
-- E4 Publicación (GitHub, licencia, Release, legal) — 🔄
+- E4 Publicación (GitHub, licencia, Release, legal) — ✅ técnica (v0.4.0) · 💤 validación legal y consulta del cargo
 - E5 Validación con usuarios y calidad de modelos — ⏳
 - E6 App de escritorio (Electron) y conectores CEJ/SINOE — ⏳
 - E7 Endurecimiento de seguridad — ⏳
-- E8 Biblioteca legal peruana actualizada (normas vigentes, verificador de citas) — 🔄 spec aprobado; F0 ✅; F1 motor ✅, faltan los textos reales
+- E8 Biblioteca legal peruana actualizada (normas vigentes, verificador de citas) — 🔄 F0 ✅ · F1 ✅ publicada en v0.4.0 con 7 normas · ⏳ 4 normas + CP parte 2 · ⏳ F2
 
-## Sprint actual — Publicación v0.2.0
+## Publicación (v0.2.0 → v0.4.0)
 | # | Tarea | Estado |
 |---|---|---|
 | T-101 | Completar `src/config.js` (nombre, correo personal, ciudad, URL del repo) y `python build.py` | ✅ |
@@ -30,8 +30,8 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 | T-301 | F0: derechos (D. Leg. 822 art. 9), condiciones SPIJ/El Peruano, lista de normas | ✅ |
 | T-302 | Motor en Folio: descarga con sha256, búsqueda BM25, búsqueda asistida, bloque de normas, verificador de citas, fecha de corte y avisos de atraso | ✅ |
 | T-303 | Conversor `normas/build_normas.py` + catálogo + datos ficticios de prueba + e2e | ✅ |
-| T-304 | Descargar del SPIJ las 11 normas a `normas/fuentes/` (Word) y calibrar el conversor con los archivos reales | 🔄 7 de 11 listas (CONST, CC, CPC, CP parcial, NCPP, NCPCO, CNA); faltan L30364, NLPT, LPAG, LOPJ |
-| T-304b | Código Penal, segunda parte (arts. 201 en adelante): no se encontró en el SPIJ. Mientras tanto CP figura como incompleto (`parcial` en catalogo.json) | 💤 pendiente |
+| T-304 | Descargar del SPIJ las 11 normas a `normas/fuentes/` y calibrar el conversor | ⏳ pendiente (usuario): 7 de 11 publicadas; faltan L30364, NLPT, LPAG, LOPJ (buscador del SPIJ) |
+| T-304b | Código Penal, segunda parte (arts. 201 en adelante) → `CP-2.doc`; mientras tanto el CP figura como incompleto (`parcial` en catalogo.json) | ⏳ pendiente (usuario) |
 | T-305 | Revisión del primer paquete: revisión asistida (0 pendientes) + visto bueno del mantenedor (2026-10-03); publicado en `docs/normas/` | ✅ |
 | T-306 | Release v0.4.0 con la biblioteca (7 normas) | ✅ 2026-10-03 |
 | T-307 | F2: vigía diario (GitHub Actions + sitemap de busquedas.elperuano.pe) que abre un PR con el cambio propuesto | ⏳ |

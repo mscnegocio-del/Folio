@@ -1,5 +1,5 @@
 # Estado actual — Folio
-> Última actualización: 2026-10-03 · Versión: 0.4.0
+> Última actualización: 2026-10-03 (cierre de sesión) · Versión publicada: 0.4.0
 
 ## ✅ Completado
 - [x] Investigación de mercado (sept. 2026): BYOK existe globalmente; en Perú nadie combina BYOK + memoria por expediente → process/research.md
@@ -25,27 +25,37 @@
 - [x] Repo público en GitHub, Release v0.2.0, README con SEO y sitio en GitHub Pages (docs/index.html)
 - [x] v0.3.0: rediseño visual igual al sitio (claro y oscuro), tipografías incluidas en el HTML (T-203), política r2 → process/specs/rediseno-visual-v0.3.md
 
-## 🔄 En progreso
-- [ ] E8 Biblioteca legal peruana: spec aprobado, F0 hecha, motor + conversor + e2e listos (sin publicar). **Falta: el usuario descarga del SPIJ las 11 normas en Word a `normas/fuentes/` (T-304)**; luego calibrar, revisar y publicar v0.4.0
-- [x] Publicado en GitHub (público) con Release v0.2.0 — 2026-09-30
-- [x] src/config.js completado con datos del autor
+## ✅ Completado (sesión 2026-09-30 → 2026-10-03)
+- [x] Repo público + GitHub Pages (sitio con SEO) · v0.2.0
+- [x] v0.3.0 rediseño visual claro/oscuro, tipografías incluidas (sin Google Fonts)
+- [x] v0.3.1 re-aceptación de avisos (T-201) + aviso de nueva versión desde GitHub
+- [x] **v0.4.0 biblioteca legal peruana (E8)**: 7 normas en `docs/normas` (CONST, CC, CPC, CP parcial 1–200-A, NCPP, NCPCO, CNA · 4 588 entradas), búsqueda local, búsqueda asistida, fichas de citas (vigente, texto distinto, por regir, derogado, reubicado, inexistente, extranjera, fuera), fecha de corte, actualización automática
+- [x] Revisión asistida del paquete contra el SPIJ: 510 artículos con cambios parciales → 0 pendientes (`normas/reporte-verificacion.md`, `normas/revision/`, `normas/ajustes/`); visto bueno del usuario 2026-10-03
+
+## ⏳ Pendiente (marcado por el usuario al cerrar la sesión 2026-10-03)
+- [ ] **T-304** Descargar del SPIJ las 4 normas que faltan → `normas/fuentes/`: `L30364.doc` (Ley 30364), `NLPT.doc` (Ley 29497), `LPAG.doc` (TUO Ley 27444), `LOPJ.doc` (TUO LOPJ). No están en "Normativa básica": usar el buscador del SPIJ. Luego: conversor + reporte (0 pendientes) + visto bueno + push (Folio las descarga solo)
+- [ ] **T-304b** Código Penal, segunda parte (arts. 201 en adelante) → `normas/fuentes/CP-2.doc`; al tenerla, quitar `parcial` del CP en `catalogo.json`
+- [ ] **T-307/T-308** F2: vigía diario de El Peruano (GitHub Actions + sitemap de busquedas.elperuano.pe) y alerta por expediente cuando cambia un artículo citado
+- [ ] **§12.2 del spec**: horas semanales del mantenedor para revisar cambios (define el ritmo de F2)
+- [ ] Registrar el sitio en Google Search Console y enviar `sitemap.xml` (usuario)
+- [ ] T-105/T-106 Probar con un PDF/DOCX reales y con OpenAI/Anthropic directos
+- [ ] Verificar en la red del PJ (proxy Forcepoint) el aviso de versión y la descarga de la biblioteca (GitHub Pages); probar el traspaso de datos en Firefox
+- [ ] T-205 Prueba con 3–5 abogados de confianza · T-206/T-309 prueba ciega de calidad (con y sin biblioteca)
 
 ## ⚠️ Decisiones vigentes (detalle en process/decisions.md)
 - Solo gratuito con BYOK; plan pagado descartado por ahora (exige RUC, encargo de datos y choca con el cargo en el PJ)
 - DeepSeek solo vía OpenRouter con ZDR, nunca su API directa
-- Servicio de instalación de servidor propio: fuera de Folio; solo visible si se llena `OWNER.serviceContact`
-- Distribución: HTML en GitHub Releases (sin .exe sin firmar por ahora)
+- Biblioteca legal: fuente única = texto oficial del SPIJ (descarga manual, nunca extracción automática); foros/redes no son fuente; ningún paquete sin revisión + visto bueno del mantenedor (D-28 a D-33)
+- Distribución: HTML en GitHub Releases; biblioteca en GitHub Pages (`docs/normas`)
 
 ## 🔴 Bloqueantes
 - Validación de textos legales por un especialista en datos personales (antes de difundir)
 - Consulta escrita sobre incompatibilidades del cargo en el PJ (antes de difundir y, sobre todo, antes de cobrar cualquier servicio)
 
 ## 📌 Próximos pasos (próxima sesión)
-1. Registrar el sitio en Google Search Console y enviar sitemap.xml (lo hace el usuario)
-2. Probar con un PDF real (pdf.js por CDN nunca se probó en el entorno de desarrollo) y con OpenAI/Anthropic directos
-3. Verificar el aviso de nueva versión en la red del PJ (proxy Forcepoint puede bloquear api.github.com; falla en silencio) y probar el traspaso de datos en Firefox
-4. Prueba con 3–5 abogados de confianza; registrar fricciones en process/tasks.md
-5. Prueba ciega de calidad: 20 tareas reales anonimizadas, DeepSeek V4.1 Flash vs Gemini 3.8 Flash vs Sonnet 5.5
+1. Si el usuario trae las 4 normas o `CP-2.doc`: `python normas/build_normas.py --strict --reporte normas/reporte-verificacion.md` → revisar pendientes del reporte (los formatos del SPIJ ya conocidos están en normas/README.md) → visto bueno → commit + push (sin Release: la app actualiza la biblioteca sola)
+2. Si no: empezar F2 (spec §6 y T-307) o la prueba con abogados (T-205)
+3. Al cambiar normas, el sitio y el README mencionan "Pronto: Ley 30364, NLPT, LPAG y LOPJ": actualizar cuando se publiquen
 
 ## Historial
 - 2026-09-30: repo público, Release v0.2.0, README con SEO, sitio en GitHub Pages (docs/index.html → https://mscnegocio-del.github.io/Folio/). Pendiente: registrar el sitio en Google Search Console.
@@ -60,3 +70,4 @@
 - 2026-10-02: 7 normas convertidas desde el SPIJ: CONST 229 (incl. 16 DFT), CC 2149, CPC 903, CP 290 (parcial), NCPP 581, NCPCO 141, CNA 283. Conversor: disposiciones finales como entradas propias (DFT-CUARTA…), derogación solo si es del artículo completo, salta índices/cuadros de modificaciones/datos de Word, ignora artículos de otras normas citados (saltos >100). Pendiente: revisión humana de 213 artículos con modificaciones parciales; faltan L30364, NLPT, LPAG, LOPJ (buscador del SPIJ) y CP parte 2.
 - 2026-10-03: revisión asistida del paquete (7 normas, 4 588 entradas): 510 artículos con cambios parciales → 494 sobre marca, 14 verificados, 2 ajustes (CONST 2, CP 121), 0 pendientes. Se corrigieron ~10 errores del conversor (texto perdido, versiones viejas, notas (1)(2), reubicados Ley 31146, 129-Ñ). Reporte: normas/reporte-verificacion.md. **Falta: visto bueno del usuario para publicar docs/normas y v0.4.0**; faltan L30364, NLPT, LPAG, LOPJ y CP parte 2.
 - 2026-10-03: v0.4.0 publicada con la biblioteca legal (7 normas en docs/normas, GitHub Pages). Probada con el paquete real: instalación, búsqueda, fichas (152 ✓, 153 → 129-A, 296 ○ parcial). Siguiente: L30364, NLPT, LPAG, LOPJ y CP parte 2; luego F2 (vigía diario de El Peruano).
+- 2026-10-03: cierre de sesión. Pendientes marcados: 4 normas (L30364, NLPT, LPAG, LOPJ), CP parte 2, F2 vigía, §12.2, Search Console, pruebas con PDF/proveedores/red PJ/Firefox y con abogados.

@@ -1,5 +1,5 @@
-# AGENTS.md — Folio v0.3.0
-> Generado: 2026-09-30 · Autor: Milton Alejandro Salcedo Cruz
+# AGENTS.md — Folio v0.4.0
+> Generado: 2026-09-30 · Actualizado: 2026-10-03 · Autor: Milton Alejandro Salcedo Cruz
 
 Folio es un agente de IA gratuito y de código abierto para abogados litigantes en el Perú.
 Cada expediente tiene su propia memoria; todo se guarda cifrado en el equipo del abogado y
@@ -9,9 +9,10 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Frontend: HTML + CSS + JavaScript vanilla (sin frameworks, sin npm, sin bundler)
 - Backend: ninguno. Llamadas directas del navegador al proveedor de IA
 - DB: IndexedDB (`folio-mvp`, store `kv`), cifrada con AES-GCM 256 + PBKDF2-SHA-256 (310 000 it.)
+- Biblioteca legal (E8): `src/normas.js`; base aparte `folio-normas` SIN cifrar (textos públicos); paquete en `docs/normas/` (GitHub Pages) armado con `normas/build_normas.py` desde `normas/fuentes/` (exportaciones del SPIJ)
 - IA: OpenRouter (recomendado), OpenAI, Anthropic, o "Servidor propio" compatible con OpenAI
 - Build: `python build.py` → `dist/folio.html` (un solo archivo autocontenido)
-- Deploy: GitHub Releases con `dist/folio.html`; se abre con doble clic (file://)
+- Deploy: GitHub Releases con `dist/folio.html` (se abre con doble clic, file://); sitio y biblioteca por GitHub Pages (`docs/`)
 - Pruebas: Playwright (Python) con proveedor de IA simulado → `tests/e2e_test.py`
 
 ## Convenciones obligatorias
@@ -41,6 +42,8 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Leer memory.md al inicio de cada sesión
 - Actualizar memory.md y CHANGELOG.md al terminar cada sesión
 - Después de cambiar código: `python build.py` y `python tests/e2e_test.py` (deben pasar sin errores)
+- Después de cambiar normas: `python normas/build_normas.py --strict --reporte normas/reporte-verificacion.md` → 0 pendientes → visto bueno del usuario → push
+- Editar `normas/build_normas.py` con la herramienta de edición o con scripts en archivo: la consola convierte `\b` en un carácter de retroceso (ya pasó varias veces)
 - Para contexto profundo → ver process/ (rutas abajo)
 
 ## Contexto profundo → process/
@@ -50,5 +53,7 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Decisiones (ADR): process/decisions.md
 - Investigación de mercado, CEJ/SINOE, modelos y costos: process/research.md
 - Ley 29733, roles y riesgos: process/legal-privacy.md
+- Specs: process/specs/ (biblioteca-legal-peru.md, rediseno-visual-v0.3.md)
+- Biblioteca legal (mantenedor, formatos del SPIJ): normas/README.md · reporte: normas/reporte-verificacion.md
 
 ## Estado actual → memory.md

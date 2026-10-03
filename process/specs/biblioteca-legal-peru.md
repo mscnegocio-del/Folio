@@ -1,7 +1,7 @@
 # Spec — Biblioteca legal peruana (épica E8)
 
 > Estado: **aprobado** (2026-10-01): lista de §5, descarga recomendada y búsqueda asistida activada · Versión objetivo: v0.4.0 (F1)
-> F0 hecha (ver §13). F1: motor, conversor y pruebas listos; falta cargar los textos reales en `normas/fuentes/`.
+> F0 ✅ (§13) · F1 ✅ publicada en v0.4.0 (2026-10-03) con 7 normas y revisión asistida (§14) · Pendiente: 4 normas, CP parte 2 y F2.
 
 ## 1. Problema
 Hoy el agente de Folio conoce muy bien **el caso** (memoria, movimientos, documentos), pero **la ley la saca de la
