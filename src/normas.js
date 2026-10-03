@@ -65,7 +65,7 @@ const Lib = {
     const docs = [], post = new Map(); let total = 0;
     for (const [id, d] of Object.entries(this.normas)) {
       for (const a of d.articulos) {
-        if (a.derogado) continue;
+        if (a.derogado || a.reubicadoEn) continue;
         const toks = ntokens(`${a.titulo || ''} ${a.titulo || ''} ${a.texto}`);
         const tf = new Map(); toks.forEach(t => tf.set(t, (tf.get(t) || 0) + 1));
         const di = docs.length; docs.push({ id, n: a.n, len: toks.length }); total += toks.length;
@@ -156,16 +156,16 @@ function aliasRe() {
   return { list, re: list.length ? new RegExp(list.map(([a]) => escRe(a).replace(/ /g, '\\s+')).join('|'), 'g') : null };
 }
 function idForAlias(list, s) { const t = s.replace(/\s+/g, ' '); return (list.find(([a]) => a === t) || [])[1] || null; }
-const ART_LIST = '((?:\\d+(?:\\s*-\\s*[a-z])?(?:\\s*[°º])?(?:\\s*(?:,|y|e|o)\\s*)?)+)';
+const ART_LIST = '((?:\\d+(?:\\s*-\\s*[a-zñ])?(?:\\s*[°º])?(?:\\s*(?:,|y|e|o)\\s*)?)+)';
 function findCitations(text) {
   const t = citeText(text); const out = []; const seen = new Set();
   const add = (id, n, raw) => { const key = id + ':' + (n ? artKey(n) : ''); if (!seen.has(key)) { seen.add(key); out.push({ norma: id, n: n ? artKey(n) : null, raw }); } };
   const { list, re } = aliasRe();
   if (re) {
     const a = new RegExp(`\\bart(?:iculo|\\.)?s?\\s*${ART_LIST}\\s*(?:,?\\s*(?:inciso|numeral|literal|parrafo)s?\\s*[\\w.]+\\s*,?\\s*)?(?:del|de la|de)\\s+(?:la\\s+|el\\s+)?(?:texto unico ordenado de la\\s+|tuo de la\\s+)?(${re.source})`, 'g');
-    for (const m of t.matchAll(a)) { const id = idForAlias(list, m[2]); if (id) for (const n of m[1].match(/\d+(?:\s*-\s*[a-z])?/g) || []) add(id, n.replace(/\s+/g, ''), m[0]); }
+    for (const m of t.matchAll(a)) { const id = idForAlias(list, m[2]); if (id) for (const n of m[1].match(/\d+(?:\s*-\s*[a-zñ])?/g) || []) add(id, n.replace(/\s+/g, ''), m[0]); }
     const b = new RegExp(`(${re.source})\\s*,?\\s*(?:en\\s+su\\s+)?art(?:iculo|\\.)?s?\\s*${ART_LIST}`, 'g');
-    for (const m of t.matchAll(b)) { const id = idForAlias(list, m[1]); if (id) for (const n of m[2].match(/\d+(?:\s*-\s*[a-z])?/g) || []) add(id, n.replace(/\s+/g, ''), m[0]); }
+    for (const m of t.matchAll(b)) { const id = idForAlias(list, m[1]); if (id) for (const n of m[2].match(/\d+(?:\s*-\s*[a-zñ])?/g) || []) add(id, n.replace(/\s+/g, ''), m[0]); }
   }
   // Leyes y decretos peruanos que no están en la biblioteca
   for (const m of t.matchAll(/\b(ley|decreto legislativo|decreto supremo|decreto de urgencia)\s+(\d{3,5}(?:-\d{4}-[a-z]+)?)\b/g)) {
@@ -196,6 +196,7 @@ function checkCitations(answer) {
     const a = Lib.article(c.norma, c.n);
     if (!a && meta?.parcial) { items.push({ estado: 'fuera', label: `Art. ${c.n} ${corto} (${meta.parcial})` }); continue; }
     if (!a) { items.push({ estado: 'noEncontrado', norma: c.norma, n: c.n, label: `Art. ${c.n} ${corto}` }); continue; }
+    if (a.reubicadoEn) { items.push({ estado: 'reubicado', norma: c.norma, n: a.reubicadoEn, label: `Art. ${a.n} ${corto} → hoy art. ${a.reubicadoEn}` }); continue; }
     let estado = a.derogado ? 'derogado' : a.proximo ? 'porRegir' : 'vigente';
     if (estado === 'vigente' && quotes.length) {
       const best = Math.max(...quotes.map(q => norm(a.texto).replace(/\s+/g, ' ').includes(norm(q).replace(/\s+/g, ' ')) ? 1 : overlap(q, a.texto)));
@@ -216,7 +217,10 @@ function normasCatalogText() { return (Lib.manifest?.normas || []).map(n => `${n
 function gatherArticles(e, question, plan) {
   if (!Lib.installed()) return [];
   const want = [], seen = new Set();
-  const push = (id, n, why) => { const a = Lib.article(id, n); const k = id + ':' + artKey(n); if (a && !seen.has(k)) { seen.add(k); want.push({ id, a, why }); } };
+  const push = (id, n, why) => {
+    const a = Lib.article(id, n); const k = id + ':' + artKey(n);
+    if (a && !seen.has(k)) { seen.add(k); want.push({ id, a, why }); if (a.reubicadoEn) push(id, a.reubicadoEn, 'reubicado'); }
+  };
   for (const c of findCitations(question)) if (c.n && !c.norma.startsWith('fuera:')) push(c.norma, c.n, 'citado');
   for (const c of plan?.citas || []) if (c && c.norma && c.articulo) push(String(c.norma).toUpperCase(), String(c.articulo), 'plan');
   const memo = [e?.memoria?.estrategia, e?.memoria?.hechos].filter(Boolean).join('\n');
@@ -236,7 +240,7 @@ function normasBlock(arts) {
   return head + '\n' + arts.map(({ id, a }) => {
     const m = Lib.meta(id); const last = (a.historial || []).slice(-1)[0];
     const lines = [`--- ${m?.titulo || id}, artículo ${a.n}${a.titulo ? ' (' + a.titulo + ')' : ''}${a.ubicacion ? ' · ' + a.ubicacion : ''} ---`];
-    lines.push(a.derogado ? 'ESTADO: DEROGADO.' : `Vigente${a.vigenteDesde ? ' desde ' + a.vigenteDesde : ''}.${last ? ` Última modificación: ${last.norma}${last.publicada ? ', publicada el ' + last.publicada : ''}.` : ''}`);
+    lines.push(a.reubicadoEn ? `ESTADO: REUBICADO. Su contenido hoy es el artículo ${a.reubicadoEn} de esta norma; cita ese número.` : a.derogado ? 'ESTADO: DEROGADO.' : `Vigente${a.vigenteDesde ? ' desde ' + a.vigenteDesde : ''}.${last ? ` Última modificación: ${last.norma}${last.publicada ? ', publicada el ' + last.publicada : ''}.` : ''}`);
     lines.push(a.texto);
     if (a.proximo) lines.push(`CAMBIO QUE AÚN NO RIGE (regirá desde ${a.proximo.vigenteDesde}, ${a.proximo.norma}):\n${a.proximo.texto}`);
     return lines.join('\n');

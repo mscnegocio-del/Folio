@@ -209,3 +209,17 @@ Debajo de cada respuesta, una ficha por cada norma citada:
   permite todo y publica `sitemap-normas_legales.xml` actualizado a diario → fuente del vigía de F2.
 - **Lista de normas:** aprobada sin cambios.
 - **Pendiente:** tiempo semanal del mantenedor (§12.2), para fijar el ritmo real de F2.
+
+## 14. Revisión asistida del primer paquete (2026-10-02/03)
+- Fuente única de verdad: el texto oficial del SPIJ (normas/fuentes). Foros, redes y recopilaciones privadas **no** se usan
+  como fuente (circulan versiones viejas); LP Derecho tiene protección anti-robots y no se consulta de forma automática.
+- Método: cada cambio parcial se aplica sobre la línea que el SPIJ marca con (*) o (n); el conversor registra cómo aplicó
+  cada nota y genera `normas/reporte-verificacion.md`. Lo que no cuadra se revisa a mano contra el SPIJ:
+  correcto → `normas/revision/<ID>.json`; incorrecto → `normas/ajustes/<ID>.json` armado con líneas copiadas del SPIJ.
+- Resultado (7 normas, 4 588 entradas): 510 artículos con cambios parciales → 494 aplicados sobre la marca, 14 verificados a
+  mano, 2 corregidos con texto oficial (Const. art. 2 inc. 5; CP art. 121), 0 pendientes. Controles globales sin hallazgos reales.
+- Errores del conversor encontrados y corregidos durante la revisión (no estaban en el reporte inicial): texto perdido tras
+  etiquetas "JURISPRUDENCIA…/PROCESOS CONSTITUCIONALES" y tras notas informativas; 11 artículos del CPP escondidos dentro de
+  otros; versiones viejas cuando el SPIJ repite el encabezado sin comillas (p. ej., CP 152, 173; CPC 35, 425; CC 361); notas de
+  estilo antiguo "(1)(2)"; artículos reubicados por la Ley 31146 (153 → 129-A…) y el 129-Ñ; capítulos derogados completos.
+- Pendiente: visto bueno del mantenedor para publicar (regla: ningún paquete sin revisión humana).

@@ -27,8 +27,12 @@ Spec: [`process/specs/biblioteca-legal-peru.md`](../process/specs/biblioteca-leg
    ```json
    { "122-B": { "proximo": { "norma": "Ley N.° 3xxxx", "vigenteDesde": "2026-11-01", "texto": "…" } } }
    ```
-5. Ejecuta `python normas/build_normas.py --strict` y revisa el reporte: número de artículos, saltos de numeración y
-   artículos sin texto. Compara al menos los artículos que cambiaron con el texto del SPIJ.
+5. Ejecuta `python normas/build_normas.py --strict --reporte normas/reporte-verificacion.md` y revisa:
+   número de artículos, saltos de numeración y el reporte de cambios parciales (debe quedar en 0 pendientes).
+   - Si un artículo dudoso está bien: anótalo en `revision/<ID>.json` con el motivo.
+   - Si está mal: corrígelo en `ajustes/<ID>.json` **solo con líneas copiadas del SPIJ**.
+   - Formatos que el conversor ya entiende: notas (*) y (n), versiones repetidas, artículos incorporados y reubicados,
+     derogaciones de artículos, incisos, párrafos y capítulos completos, cambios de epígrafe y denominación.
 6. Commit con `docs(normas): <ID> al AAAA-MM-DD` y push: GitHub Pages publica el paquete y Folio lo descarga solo.
 
 ## Frecuencia (spec §6)

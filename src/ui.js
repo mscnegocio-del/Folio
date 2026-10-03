@@ -409,7 +409,7 @@ function libStatusHTML() {
   return `<span class="libstat ${cls}" title="${age >= NORMAS_STALE_WARN ? `La biblioteca tiene ${age} días sin actualizarse: puede no incluir cambios recientes.` : 'Textos de normas peruanas en tu equipo'}">Normas al ${esc(fmtDate(Lib.manifest.actualizadoAl))}</span>`;
 }
 const CITA = { vigente: ['ok', '✓', 'Vigente en tu biblioteca'], porRegir: ['warn', '⚠', 'Tiene un cambio que aún no rige'], textoDistinto: ['warn', '⚠', 'La cita textual no coincide con el texto vigente'],
-  derogado: ['bad', '✗', 'Derogado'], noEncontrado: ['bad', '✗', 'No existe en tu biblioteca'], fuera: ['info', '○', 'No está en tu biblioteca: verifícala en el SPIJ'], extranjera: ['bad', '🌐', 'Norma de otro país'] };
+  derogado: ['bad', '✗', 'Derogado'], reubicado: ['warn', '⚠', 'Artículo reubicado y renumerado: cita el número actual'], noEncontrado: ['bad', '✗', 'No existe en tu biblioteca'], fuera: ['info', '○', 'No está en tu biblioteca: verifícala en el SPIJ'], extranjera: ['bad', '🌐', 'Norma de otro país'] };
 function citasHTML(m) {
   const c = m.citas; if (!c) return '';
   const chips = c.items.map(it => {
@@ -430,6 +430,7 @@ function showArticle(id, n) {
   openDialog({ title: `${m?.titulo || id} · artículo ${a.n}`, wide: true, body: `
     ${a.ubicacion ? `<p class="small muted">${esc(a.ubicacion)}</p>` : ''}
     ${a.derogado ? '<div class="note danger"><p>Este artículo figura como <strong>derogado</strong>.</p></div>' : ''}
+    ${a.reubicadoEn ? `<div class="note warn"><p>Este artículo fue <strong>reubicado y renumerado</strong>: su contenido hoy es el <a href="#" data-action="ver-articulo" data-norma="${esc(id)}" data-n="${esc(a.reubicadoEn)}">artículo ${esc(a.reubicadoEn)}</a>.</p></div>` : ''}
     ${a.titulo ? `<h3 style="margin:.4rem 0">${esc(a.titulo)}</h3>` : ''}
     <div class="payload" style="font-family:var(--ui);font-size:.95rem">${esc(a.texto)}</div>
     ${a.proximo ? `<div class="note warn" style="margin-top:1rem"><p><strong>Cambio que aún no rige</strong> (desde ${esc(fmtDate(a.proximo.vigenteDesde))}, ${esc(a.proximo.norma)}):</p><p style="white-space:pre-wrap">${esc(a.proximo.texto)}</p></div>` : ''}

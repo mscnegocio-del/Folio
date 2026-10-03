@@ -32,7 +32,7 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 | T-303 | Conversor `normas/build_normas.py` + catálogo + datos ficticios de prueba + e2e | ✅ |
 | T-304 | Descargar del SPIJ las 11 normas a `normas/fuentes/` (Word) y calibrar el conversor con los archivos reales | 🔄 7 de 11 listas (CONST, CC, CPC, CP parcial, NCPP, NCPCO, CNA); faltan L30364, NLPT, LPAG, LOPJ |
 | T-304b | Código Penal, segunda parte (arts. 201 en adelante): no se encontró en el SPIJ. Mientras tanto CP figura como incompleto (`parcial` en catalogo.json) | 💤 pendiente |
-| T-305 | Revisión humana del primer paquete (artículos por norma, saltos, muestras contra el SPIJ) y publicación en `docs/normas/` | ⏳ |
+| T-305 | Revisión del primer paquete: ✅ revisión asistida (0 pendientes, ver normas/reporte-verificacion.md); ⏳ visto bueno del mantenedor y publicación en `docs/normas/` | 🔄 |
 | T-306 | Release v0.4.0 con la biblioteca | ⏳ |
 | T-307 | F2: vigía diario (GitHub Actions + sitemap de busquedas.elperuano.pe) que abre un PR con el cambio propuesto | ⏳ |
 | T-308 | F2: alerta por expediente cuando cambia un artículo citado en su memoria o chats | ⏳ |
