@@ -3,12 +3,13 @@
    ============================================================ */
 const S = {
   screen: 'boot', bootError: '', onb: null, settings: null, draftCfg: null, index: [], exp: null, docTexts: {},
-  tab: 'memoria', view: 'exp', sideOpen: false, sending: false, abort: null, audit: [], lastSend: null,
-  stampPress: false, lastActive: Date.now(), filter: '', consent: null, updateHidden: false
+  tab: 'resumen', view: 'exp', sideOpen: false, sending: false, abort: null, audit: [], lastSend: null,
+  stampPress: false, lastActive: Date.now(), filter: '', consent: null, updateHidden: false,
+  agent: 'cerrado', quick: [], agendaAll: false, movsAll: false, docFilter: ''
 };
 const root = () => $('#root');
-// Logo: el mismo del sitio web (ícono de documento + "folio" + insignia Beta)
-const BRAND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h9l5 5V20a.5.5 0 0 1-.5.5h-13A.5.5 0 0 1 5 20z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3.5V8.5h5M8.5 12.5h7M8.5 16h4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>folio<span class="badge">Beta</span>';
+// Logo de Folio (imagen incluida en el HTML por build.py, variante clara u oscura según el tema) + insignia Beta
+const BRAND = '<span class="brand-logo" role="img" aria-label="Folio"></span><span class="badge">Beta</span>';
 
 /* ---------- Utilidades de interfaz ---------- */
 function toast(msg, err = false) {
@@ -229,6 +230,7 @@ function showKeyGuide() {
    ============================================================ */
 function renderLock() {
   root().innerHTML = `<div class="screen-center"><div class="lock">
+    <div class="brand lock-brand">${BRAND}</div>
     <div class="stamp big ${S.stampPress ? 'press' : ''}"><b>Guardado solo en este equipo</b><span>Bóveda cifrada</span></div>
     <h1>Desbloquea Folio</h1><p class="muted">Ingresa la contraseña de tu bóveda.</p>
     <form data-form="unlock"><label class="field"><span>Contraseña</span><input class="input" type="password" name="pass" autocomplete="current-password" required autofocus></label>
@@ -297,7 +299,7 @@ async function acceptReconsent() {
    Aplicación
    ============================================================ */
 async function enterApp() {
-  S.screen = 'app'; S.stampPress = true; applyTheme();
+  S.screen = 'app'; S.stampPress = true; S.agent = initialAgent(); applyTheme();
   await Lib.load();
   const last = S.settings.lastExp && S.index.find(x => x.id === S.settings.lastExp);
   if (last) await openExp(last.id, true); else { S.exp = null; render(); }
@@ -328,8 +330,8 @@ async function addAudit(entry) { S.audit.unshift(entry); S.audit = S.audit.slice
 async function openExp(id, silent) {
   try {
     const e = await store.get('exp:' + id); if (!e) throw new FolioError('No se encontró el expediente.');
+    if (S.exp?.id !== id || !TABS.some(([k]) => k === S.tab)) Object.assign(S, { tab: 'resumen', movsAll: false, docFilter: '' });
     S.exp = e; S.docTexts = {}; S.view = 'exp'; S.sideOpen = false;
-    if (S.tab === 'agente' && window.innerWidth > 1180) S.tab = 'memoria';
     for (const d of e.docs) { const r = await store.get('doc:' + d.id); if (r) S.docTexts[d.id] = r.text; }
     if (S.settings.lastExp !== id) { S.settings.lastExp = id; saveSettings(); }
     render();
@@ -342,17 +344,57 @@ function blankExp(f) {
 }
 function addParte(e, nombre, rol, doc, esCliente) { e.partes.push({ id: uid(), tok: `PERSONA_${e.nextTok++}`, nombre: nombre.trim(), rol, doc: (doc || '').trim(), esCliente: !!esCliente }); }
 
-/* ---------- Sello ---------- */
-function stampHTML() {
-  const s = S.settings; let sub = 'Nada enviado en esta sesión';
-  if (s && s.provider === 'custom') sub = 'IA en tu servidor propio';
-  else if (S.lastSend) sub = `Último envío a ${provLabel(S.lastSend.provider)}, ${rel(S.lastSend.at)}${S.lastSend.pseudo ? ', con datos reemplazados' : ''}`;
-  return `<div class="stamp ${S.stampPress ? 'press' : ''}" role="status" title="Tus expedientes se guardan cifrados en este equipo. Folio no tiene servidores."><b>Guardado solo en este equipo</b><span>${esc(sub)}</span></div>`;
-}
-function updateStamp() { const sl = $('.stamp-slot'); if (sl) sl.innerHTML = stampHTML(); }
-setInterval(() => { if (S.screen === 'app' && S.lastSend) updateStamp(); }, 60000);
+/* ---------- Íconos de trazo fino (decorativos: aria-hidden) ---------- */
+const ICONS = {
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  expand: '<path d="M14 4h6v6M20 4l-6.5 6.5M10 20H4v-6M4 20l6.5-6.5"/>',
+  shrink: '<path d="M20 10h-6V4M14 10l6.5-6.5M4 14h6v6M10 14l-6.5 6.5"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  chat: '<path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4.5 3.5V16H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>'
+};
+const ico = n => `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
+const trunc = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s;
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+function fmtDayMon(iso) { const [, m, d] = iso.split('-'); return `${d} ${MESES[+m - 1].slice(0, 3)}`; }
+function whenLabel(iso) { const d = daysUntil(iso); return d < 0 ? `vencido hace ${plural(-d, 'día', 'días')}` : d === 0 ? 'vence hoy' : d === 1 ? 'mañana' : `en ${d} días`; }
+function urgency(iso) { const d = daysUntil(iso); return d <= 0 ? 'due' : d <= 3 ? 'soon' : ''; }
+function nextPlazos(e) { return e.memoria.plazos.filter(p => !p.done).sort((a, b) => a.fecha.localeCompare(b.fecha)); }
 
-/* ---------- Barra lateral ---------- */
+/* Campos con aspecto de documento: crecen con el texto (field-sizing donde existe; si no, JS) */
+const FIELD_SIZING = typeof CSS !== 'undefined' && CSS.supports?.('field-sizing', 'content');
+function autosize(t) { if (FIELD_SIZING || !t.offsetParent) return; t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; }
+function autosizeAll() { if (!FIELD_SIZING) $$('textarea.docfield').forEach(autosize); }
+
+/* ---------- Privacidad: indicador compacto + ventana de detalle (spec v0.5 §4.2 y §4.4) ---------- */
+function lastSendText() {
+  const s = S.settings;
+  if (s && s.provider === 'custom') return 'IA en tu servidor propio';
+  if (S.lastSend) return `Último envío a ${provLabel(S.lastSend.provider)}, ${rel(S.lastSend.at)}${S.lastSend.pseudo ? ', con datos reemplazados' : ''}`;
+  return 'Nada enviado en esta sesión';
+}
+function privacyPillHTML() { return `<button class="privacy-pill" data-action="privacy" title="${esc(lastSendText())}">${ico('lock')}<span>Solo en este equipo · cifrado</span></button>`; }
+function updateStamp() { const p = $('.privacy-pill'); if (p) p.title = lastSendText(); }
+setInterval(() => { if (S.screen === 'app' && S.lastSend) updateStamp(); }, 60000);
+function showPrivacy() {
+  const s = S.settings, e = S.view === 'exp' ? S.exp : null, ready = isReady(s);
+  const ok = t => `<li>${ico('check')}<span>${t}</span></li>`, warn = t => `<li class="warn"><span class="bang" aria-hidden="true">!</span><span>${t}</span></li>`;
+  const items = [
+    ok(`${e ? 'Este expediente se guarda cifrado' : 'Tus expedientes se guardan cifrados'} en este navegador, con tu contraseña. Folio no tiene servidores y no ve tus datos.`),
+    s.pseudo ? ok(`Antes de enviar al proveedor de IA, Folio reemplaza los nombres y documentos ${e ? `de ${plural(e.partes.length, 'parte registrada', 'partes registradas')}` : 'de las partes'}, además de DNI, RUC, teléfonos, correos y direcciones, por marcadores como <span class="tok">[PERSONA_1]</span>.`)
+      : warn('El reemplazo de datos está <strong>desactivado</strong>: el proveedor recibe los nombres y documentos reales.'),
+    s.review ? ok('Antes de cada envío ves el texto exacto que saldrá de tu equipo.') : warn('La revisión previa de cada envío está desactivada.')];
+  const prov = !ready ? 'Sin proveedor conectado: nada sale de tu equipo.' : `${esc(provLabel(s.provider))} · <span class="mono">${esc(s.model)}</span>${PROVIDERS[s.provider]?.abroad ? ', con servidores fuera del Perú' : ', en tu red'}`;
+  const sends = e ? S.audit.filter(a => a.exp === (e.numero || 's/n')).length : 0;
+  openDialog({ title: e ? 'Privacidad de este expediente' : 'Privacidad', body: `<ul class="checks">${items.join('')}</ul>
+    <dl class="kv"><dt>Proveedor de IA</dt><dd>${prov}</dd><dt>En esta sesión</dt><dd>${esc(lastSendText())}</dd>${e ? `<dt>Envíos registrados</dt><dd>${plural(sends, 'envío', 'envíos')} de este expediente en el registro de este equipo</dd>` : ''}</dl>`,
+    foot: `<button class="btn ghost" data-action="show-policy">Política de privacidad</button><button class="btn" data-action="privacy-settings">Ajustes de privacidad</button><button class="btn primary" data-action="dlg-close">Entendido</button>` });
+}
+
+/* ---------- Barra lateral: agenda y expedientes (spec v0.5 §4.3) ---------- */
 function deadlineChip(fecha, done) {
   if (done) return `<span class="chip ok">Cumplido</span>`;
   const d = daysUntil(fecha);
@@ -361,32 +403,63 @@ function deadlineChip(fecha, done) {
   if (d <= 3) return `<span class="chip soon">En ${d} día${d > 1 ? 's' : ''}</span>`;
   return `<span class="chip">En ${d} días</span>`;
 }
-function deadlinesHTML() {
+function agendaHTML() {
   const all = []; S.index.forEach(x => (x.plazos || []).forEach(p => all.push({ ...p, id: x.id, numero: x.numero })));
   all.sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const next = all.filter(p => daysUntil(p.fecha) <= 14).slice(0, 6);
-  if (!next.length) return `<p class="tiny muted" style="margin:0">Sin plazos en los próximos 14 días.</p>`;
-  return `<ul class="deadlines">${next.map(p => { const d = daysUntil(p.fecha); const color = d < 0 || d === 0 ? 'var(--danger)' : d <= 3 ? 'var(--warn)' : 'var(--ink)';
-    return `<li><button data-action="open-exp" data-id="${p.id}"><span class="d" style="color:${color}">${esc(fmtDate(p.fecha).slice(0, 5))}</span><span><strong>${esc(p.desc)}</strong><br><span class="muted mono">${esc(p.numero || 's/n')}</span></span></button></li>`; }).join('')}</ul>`;
+  const groups = [['Vencidos', p => daysUntil(p.fecha) < 0], ['Hoy', p => daysUntil(p.fecha) === 0], ['Próximos 7 días', p => { const d = daysUntil(p.fecha); return d > 0 && d <= 7; }]];
+  const item = p => `<li><button data-action="open-exp" data-id="${p.id}"><span class="d ${urgency(p.fecha)}">${esc(fmtDate(p.fecha).slice(0, 5))}</span><span class="w"><strong>${esc(p.desc)}</strong><span class="mono">${esc(p.numero || 's/n')}</span></span></button></li>`;
+  let html = '';
+  for (const [label, test] of groups) {
+    const list = all.filter(test); if (!list.length) continue;
+    const shown = S.agendaAll ? list : list.slice(0, 4);
+    html += `<div class="agenda-group"><h3>${label} <span class="n">${list.length}</span></h3><ul class="deadlines">${shown.map(item).join('')}</ul>${list.length > shown.length ? `<button class="linklike" data-action="agenda-more">Ver ${list.length - shown.length} más</button>` : ''}</div>`;
+  }
+  if (html) return html + (S.agendaAll ? '<button class="linklike" data-action="agenda-more">Ver menos</button>' : '');
+  const nxt = all.find(p => daysUntil(p.fecha) > 7);
+  return `<p class="agenda-empty">Sin plazos esta semana.${nxt ? ` Siguiente: <button class="linklike" data-action="open-exp" data-id="${nxt.id}">${esc(fmtDate(nxt.fecha).slice(0, 5))}, ${esc(trunc(nxt.desc, 40))}</button>` : ''}</p>`;
 }
 function listHTML() {
   const f = norm(S.filter);
-  const items = S.index.filter(x => !f || norm(`${x.numero} ${x.titulo} ${x.materia}`).includes(f));
-  if (!S.index.length) return `<li style="padding:1rem .5rem" class="small muted">Aún no tienes expedientes.</li>`;
-  if (!items.length) return `<li style="padding:1rem .5rem" class="small muted">Ningún expediente coincide con “${esc(S.filter)}”.</li>`;
+  const items = S.index.filter(x => !f || norm(`${x.numero} ${x.titulo} ${x.materia}`).includes(f)).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  if (!S.index.length) return `<li class="explist-empty">Aún no tienes expedientes.</li>`;
+  if (!items.length) return `<li class="explist-empty">Ningún expediente coincide con “${esc(S.filter)}”.</li>`;
   return items.map(x => { const next = (x.plazos || []).map(p => p.fecha).sort()[0];
     return `<li><button data-action="open-exp" data-id="${x.id}" aria-current="${S.exp?.id === x.id && S.view === 'exp'}"><span class="num">${esc(x.numero || 'Sin número')}</span><span class="tit">${esc(x.titulo)}</span><span class="meta">${esc(x.materia || '')}${next ? ' ' + deadlineChip(next) : ''}${x.ejemplo ? ' <span class="chip">Ejemplo</span>' : ''}</span></button></li>`; }).join('');
 }
 function sidebarHTML() {
-  return `<aside class="side" aria-label="Expedientes">
-    <div class="side-top"><div class="brand">${BRAND}</div><button class="btn primary sm" data-action="new-exp">Nuevo expediente</button></div>
-    <div class="search"><label class="sr-only" for="q-exp">Buscar expediente</label><input id="q-exp" class="input" data-search placeholder="Buscar por número o parte" value="${esc(S.filter)}"></div>
-    <div class="side-section"><h2>Próximos plazos</h2><div id="deadlines">${deadlinesHTML()}</div></div>
-    <ul class="explist" id="explist">${listHTML()}</ul>
-    <div class="side-bottom"><button class="btn ghost sm" data-action="open-settings">Ajustes</button><button class="btn ghost sm" data-action="lock-now">Bloquear</button></div>
+  return `<aside class="side" aria-label="Expedientes y agenda">
+    <div class="side-top"><div class="brand">${BRAND}</div></div>
+    <div class="side-actions"><button class="btn sm block" data-action="new-exp">${ico('plus')}Nuevo expediente</button>
+      <label class="sr-only" for="q-exp">Buscar expediente</label><input id="q-exp" class="input" data-search placeholder="Buscar por número o parte" value="${esc(S.filter)}"></div>
+    <div class="side-scroll">
+      <section class="side-section" aria-labelledby="h-agenda"><h2 id="h-agenda">Agenda</h2><div id="deadlines">${agendaHTML()}</div></section>
+      <section class="side-section" aria-labelledby="h-exps"><h2 id="h-exps">Expedientes</h2><ul class="explist" id="explist">${listHTML()}</ul></section>
+    </div>
+    <div class="side-bottom"><button class="btn ghost sm" data-action="open-settings">Ajustes</button><button class="btn ghost sm" data-action="privacy">Privacidad</button><button class="btn ghost sm" data-action="lock-now">Bloquear</button></div>
   </aside>`;
 }
-function renderSideParts() { const l = $('#explist'); if (l) l.innerHTML = listHTML(); const d = $('#deadlines'); if (d) d.innerHTML = deadlinesHTML(); }
+function renderSideParts() { const l = $('#explist'); if (l) l.innerHTML = listHTML(); const d = $('#deadlines'); if (d) d.innerHTML = agendaHTML(); }
+
+/* ---------- Panel del agente: abierto, amplio o cerrado (spec v0.5 §4.1) ---------- */
+const WIDE_MIN = 1180;   // por debajo, el agente se abre encima del expediente
+const isWide = () => window.innerWidth >= WIDE_MIN;
+function initialAgent() {
+  const s = S.settings;
+  if (!isWide() || !isReady(s)) return 'cerrado';
+  return s.agentPanel || (window.innerWidth >= 1280 ? 'abierto' : 'cerrado');
+}
+function setAgent(st) {
+  if (!isWide() && st === 'amplio') st = 'abierto';
+  const wasInside = document.activeElement?.closest?.('#agent');
+  S.agent = st;
+  const w = $('#expwrap'); if (w) w.dataset.agent = st;
+  const wb = $('[data-action="agent-wide"]');
+  if (wb) { const big = st === 'amplio'; wb.innerHTML = ico(big ? 'shrink' : 'expand'); wb.setAttribute('aria-label', big ? 'Reducir el agente' : 'Ampliar el agente'); wb.title = big ? 'Reducir' : 'Ampliar'; }
+  if (isWide() && S.settings && S.settings.agentPanel !== st) { S.settings.agentPanel = st; saveSettings().catch(fail); }
+  if (st === 'cerrado') { autosizeAll(); if (wasInside) $('.agent-fab')?.focus(); }
+  else { scrollMsgs(); setTimeout(() => $('#q')?.focus(), 30); }
+}
+function fabHTML() { return `<button class="agent-fab ${S.sending ? 'busy' : ''}" data-action="agent-open" title="Abrir el agente (Ctrl+.)">${ico('chat')}<span>Agente</span></button>`; }
 
 /* ---------- Estructura principal ---------- */
 function renderApp() {
@@ -395,12 +468,12 @@ function renderApp() {
     <div class="scrim" data-action="close-side"></div>
     ${sidebarHTML()}
     <div class="main">
-      <div class="topbar"><button class="btn ghost sm" data-action="open-side">☰ Expedientes</button><div class="brand" style="font-size:1.1rem">${BRAND}</div></div>
+      <div class="topbar"><button class="btn ghost sm" data-action="open-side">☰ Expedientes</button><div class="brand">${BRAND}</div></div>
       ${updateBarHTML()}
       ${main}
     </div></div>`;
   S.stampPress = false;
-  scrollMsgs();
+  scrollMsgs(); autosizeAll();
 }
 /* ---------- Biblioteca legal peruana (E8) ---------- */
 function libStatusHTML() {
@@ -521,66 +594,162 @@ function emptyHTML() {
     <div class="row"><button class="btn primary" data-action="new-exp">Crear expediente</button><button class="btn" data-action="load-sample">Probar con un expediente de ejemplo</button></div>
     <p class="tiny muted" style="margin-top:1rem">El ejemplo usa datos ficticios.</p></div>`;
 }
+/* ---------- Expediente: carátula + pestañas + agente (spec v0.5 §4.2 y §5) ---------- */
+const TABS = [['resumen', 'Resumen'], ['memoria', 'Memoria'], ['movimientos', 'Movimientos'], ['documentos', 'Documentos']];
+function tabCount(k) { const e = S.exp; return !e ? null : k === 'movimientos' ? e.movimientos.length : k === 'documentos' ? e.docs.length : null; }
+function tabsHTML() {
+  return `<nav class="tabs" role="tablist" aria-label="Secciones del expediente">${TABS.map(([k, l]) => { const n = tabCount(k);
+    return `<button role="tab" id="tab-${k}" aria-selected="${S.tab === k}" aria-controls="pane" data-action="tab" data-tab="${k}">${l}${n != null ? ` <span class="count">${n}</span>` : ''}</button>`; }).join('')}</nav>`;
+}
+function estadoChipHTML(e) {
+  if (!e.estado) return `<span class="estado unset"><i aria-hidden="true"></i><span>Estado procesal sin registrar</span></span>`;
+  const hot = nextPlazos(e).some(p => daysUntil(p.fecha) <= 7);
+  return `<span class="estado ${hot ? 'hot' : ''}" title="${esc(e.estado)}${hot ? '. Tiene un plazo en los próximos 7 días' : ''}"><i aria-hidden="true"></i><span>${esc(e.estado)}</span></span>`;
+}
 function expHTML() {
   const e = S.exp; const cli = e.partes.filter(p => p.esCliente), con = e.partes.filter(p => !p.esCliente);
   const nm = arr => arr.map(p => esc(p.nombre)).join(', ');
-  const tabs = [['memoria', 'Memoria del caso'], ['movimientos', `Movimientos (${e.movimientos.length})`], ['documentos', `Documentos (${e.docs.length})`], ['agente', 'Agente']];
-  return `<header class="caratula">
-      <div>
-        <div class="expnum">${esc(e.numero || 'Sin número')} ${e.ejemplo ? '<span class="chip">Ejemplo ficticio</span>' : ''}<button class="btn ghost sm" data-action="edit-exp">Editar datos</button></div>
-        <div class="partes"><strong>${nm(cli) || 'Tu cliente'}</strong><span class="vs">contra</span><strong>${nm(con) || 'Contraparte'}</strong></div>
-        <div class="org">${esc([e.materia, e.organo, e.distrito].filter(Boolean).join(', ') || 'Completa materia y órgano jurisdiccional en Editar datos.')}</div>
-      </div>
-      <div class="stamp-slot">${stampHTML()}</div>
-      <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" class="${k === 'agente' ? 'agent-tab' : ''}" aria-selected="${S.tab === k}" data-action="tab" data-tab="${k}">${esc(l)}</button>`).join('')}</nav>
-    </header>
-    <div class="work ${S.tab === 'agente' ? 'show-agent' : ''}" id="work">
-      <section class="pane" id="pane" role="tabpanel">${paneHTML()}</section>
-      <aside class="agent" id="agent" aria-label="Agente del expediente">${agentHTML()}</aside>
-    </div>`;
+  return `<div class="expwrap" id="expwrap" data-agent="${S.agent}">
+    <div class="expcol">
+      <header class="caratula">
+        <div class="car-top"><span class="expnum">${esc(e.numero || 'Sin número')}</span>${e.ejemplo ? '<span class="chip">Ejemplo ficticio</span>' : ''}<span class="car-actions">${privacyPillHTML()}<button class="btn ghost sm" data-action="edit-exp">Editar datos</button></span></div>
+        <h1 class="partes">${nm(cli) || 'Tu cliente'}<span class="vs">contra</span>${nm(con) || 'Contraparte'}</h1>
+        <div class="car-meta"><span id="estado-slot">${estadoChipHTML(e)}</span><span class="org">${esc([e.materia, e.organo, e.distrito].filter(Boolean).join(' · ') || 'Completa materia y órgano jurisdiccional en Editar datos')}</span></div>
+        ${tabsHTML()}
+      </header>
+      <section class="pane" id="pane" role="tabpanel" aria-labelledby="tab-${S.tab}">${paneHTML()}</section>
+    </div>
+    <aside class="agent" id="agent" aria-label="Agente del expediente">${agentHTML()}</aside>
+    ${fabHTML()}
+  </div>`;
 }
-function renderPane() { const p = $('#pane'); if (p) p.innerHTML = paneHTML(); }
-function paneHTML() { const t = S.tab === 'agente' ? 'memoria' : S.tab; return t === 'movimientos' ? movsHTML() : t === 'documentos' ? docsHTML() : memHTML(); }
+function refreshCaratula() { const s = $('#estado-slot'); if (s && S.exp) s.innerHTML = estadoChipHTML(S.exp); updateTabs(); }
+function renderPane() { const p = $('#pane'); if (!p) return; p.innerHTML = paneHTML(); p.setAttribute('aria-labelledby', 'tab-' + S.tab); refreshCaratula(); autosizeAll(); }
+function paneHTML() { return S.tab === 'movimientos' ? movsHTML() : S.tab === 'documentos' ? docsHTML() : S.tab === 'memoria' ? memHTML() : resumenHTML(); }
 
-/* ---------- Memoria ---------- */
-function memHTML() {
+/* ---------- Resumen: "¿qué está pasando?" calculado en el equipo, sin IA (spec v0.5 §5.1) ---------- */
+function recallItems(e) {
+  const m = e.memoria, have = [], missing = [];
+  if (e.partes.length) have.push(plural(e.partes.length, 'parte protegida', 'partes protegidas'));
+  (m.hechos.trim() ? have : missing).push('hechos clave');
+  (m.estrategia.trim() ? have : missing).push('tu estrategia');
+  const pl = nextPlazos(e).length; if (pl) have.push(plural(pl, 'plazo', 'plazos'));
+  if (e.movimientos.length) have.push(plural(e.movimientos.length, 'movimiento', 'movimientos'));
+  if (e.docs.length) have.push(plural(e.docs.length, 'documento', 'documentos'));
+  return { have, missing };
+}
+function resumenHTML() {
   const e = S.exp, m = e.memoria;
-  const plazos = [...m.plazos].sort((a, b) => a.fecha.localeCompare(b.fecha));
-  return `<div class="memgrid">
-    <div class="sheet span"><div class="sheet-head"><h3>Situación actual</h3><span class="tiny muted">El agente lee esta memoria en cada consulta</span></div>
-      <label class="field"><span>Estado procesal</span><input class="input" data-bind="estado" value="${esc(e.estado)}" placeholder="Ej.: demanda admitida, pendiente audiencia única"></label>
-      <label class="field" style="margin:0"><span>Resumen del caso</span><textarea class="textarea" data-bind="memoria.resumen" rows="3" placeholder="Qué se pide, a favor de quién y por qué">${esc(m.resumen)}</textarea></label></div>
-    <div class="sheet"><h3>Plazos</h3><p class="hint">Registra la fecha de vencimiento que confirmaste con la resolución y tu notificación SINOE.</p>
-      <ul class="list">${plazos.map(p => `<li><input type="checkbox" aria-label="Marcar cumplido" data-action="toggle-plazo" data-id="${p.id}" ${p.done ? 'checked' : ''}><span><span class="date">${esc(fmtDate(p.fecha))}</span> ${deadlineChip(p.fecha, p.done)}<br><span class="${p.done ? 'done' : ''}">${esc(p.desc)}</span></span><button class="iconbtn" aria-label="Eliminar plazo" data-action="del-plazo" data-id="${p.id}">✕</button></li>`).join('') || '<li class="small muted" style="display:block">Sin plazos registrados.</li>'}</ul>
-      <div class="addrow"><input class="input mono" type="date" id="nplazo-f" style="flex:0 0 10.5em" aria-label="Fecha de vencimiento"><input class="input" id="nplazo-d" placeholder="Qué vence" aria-label="Descripción del plazo"><button class="btn sm" data-action="add-plazo">Agregar</button></div></div>
-    <div class="sheet"><h3>Pendientes</h3><p class="hint">Tareas del caso para ti o tu equipo.</p>
-      <ul class="list">${m.pendientes.map(p => `<li><input type="checkbox" aria-label="Marcar hecho" data-action="toggle-pend" data-id="${p.id}" ${p.done ? 'checked' : ''}><span class="${p.done ? 'done' : ''}">${esc(p.text)}</span><button class="iconbtn" aria-label="Eliminar pendiente" data-action="del-pend" data-id="${p.id}">✕</button></li>`).join('') || '<li class="small muted" style="display:block">Sin pendientes.</li>'}</ul>
-      <div class="addrow"><input class="input" id="npend" placeholder="Nuevo pendiente" aria-label="Nuevo pendiente"><button class="btn sm" data-action="add-pend">Agregar</button></div></div>
-    <div class="sheet span"><div class="sheet-head"><h3>Partes y datos que se reemplazan</h3><span class="tiny muted">${S.settings.pseudo ? 'Reemplazo activado' : 'Reemplazo desactivado en Ajustes'}</span></div>
-      <p class="hint">Antes de enviar al proveedor, Folio cambia estos nombres y documentos por el marcador de la última columna.</p>
-      <div class="table-wrap"><table class="partes-table"><thead><tr><th>Nombre completo</th><th>Rol</th><th>Documento</th><th>Cliente</th><th>Se envía como</th><th></th></tr></thead><tbody>
-      ${e.partes.map(p => `<tr><td>${esc(p.nombre)}</td><td>${esc(p.rol)}</td><td class="mono">${esc(p.doc || '—')}</td><td><input type="checkbox" aria-label="Es mi cliente" data-action="toggle-cliente" data-id="${p.id}" ${p.esCliente ? 'checked' : ''}></td><td><span class="tok">[${esc(p.tok)}]</span></td><td><button class="iconbtn" aria-label="Eliminar parte" data-action="del-parte" data-id="${p.id}">✕</button></td></tr>`).join('') || '<tr><td colspan="6" class="small muted">Agrega las partes para que el agente las identifique sin ver sus datos reales.</td></tr>'}
-      </tbody></table></div>
-      <div class="addrow" style="flex-wrap:wrap"><input class="input" id="nparte-n" placeholder="Nombres y apellidos" style="flex:2 1 14em" aria-label="Nombre de la parte"><select class="select" id="nparte-r" style="flex:1 1 9em" aria-label="Rol">${['Demandante', 'Demandado', 'Agraviado(a)', 'Imputado(a)', 'Tercero', 'Testigo', 'Otro'].map(r => `<option>${r}</option>`).join('')}</select><input class="input mono" id="nparte-d" placeholder="DNI o RUC" style="flex:1 1 8em" aria-label="Documento"><label class="row small" style="flex:0 0 auto"><input type="checkbox" id="nparte-c"> Mi cliente</label><button class="btn sm" data-action="add-parte">Agregar</button></div></div>
-    <div class="sheet"><h3>Hechos clave</h3><textarea class="textarea" data-bind="memoria.hechos" rows="6" placeholder="Hechos relevantes y fechas">${esc(m.hechos)}</textarea></div>
-    <div class="sheet"><h3>Estrategia</h3><textarea class="textarea" data-bind="memoria.estrategia" rows="6" placeholder="Tu teoría del caso y próximos pasos">${esc(m.estrategia)}</textarea></div>
+  const plz = nextPlazos(e), next = plz[0];
+  const movs = sortedMovs(e).slice(0, 3);
+  const pend = m.pendientes.filter(p => !p.done);
+  const docs = [...e.docs].sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || '')).slice(0, 3);
+  const steps = [
+    [e.partes.length > 0, 'Agrega las partes', 'Sus nombres se reemplazan antes de consultar a la IA.', 'data-action="goto" data-tab="memoria" data-focus="#nparte-n"'],
+    [!!(e.estado || m.resumen), 'Escribe el estado y el resumen del caso', 'Es lo primero que lee el agente.', 'data-action="goto" data-tab="memoria" data-focus="[data-bind=estado]"'],
+    [e.movimientos.length > 0, 'Pega el seguimiento del CEJ', 'El agente lo ordena y tú lo revisas antes de guardar.', 'data-action="paste-cej"'],
+    [e.docs.length > 0, 'Sube la demanda u otros escritos', 'PDF, Word o texto; se leen en tu equipo.', 'data-action="pick-file"']];
+  const done = steps.filter(s => s[0]).length;
+  const start = done <= 2 ? `<section class="getstarted" aria-labelledby="h-start"><h2 id="h-start" class="eyebrow">Empieza por aquí · ${done} de 4</h2>
+    <ol>${steps.map(([ok, t, sub, act]) => `<li class="${ok ? 'done' : ''}"><button ${act}><span class="mark">${ok ? ico('check') : ''}</span><span><strong>${t}</strong><span class="sub">${sub}</span></span></button></li>`).join('')}</ol></section>` : '';
+  const { have, missing } = recallItems(e);
+  return `${start}<div class="rs-grid">
+    <div class="rs-main">
+      <section class="rs-block"><h2 class="eyebrow">Estado actual</h2>${e.estado ? `<p class="rs-estado">${esc(e.estado)}</p>` : `<p class="muted">Sin registrar. <button class="linklike" data-action="goto" data-tab="memoria" data-focus="[data-bind=estado]">Escríbelo en Memoria</button></p>`}</section>
+      <section class="rs-block"><h2 class="eyebrow">Resumen del caso</h2>${m.resumen ? `<p class="rs-text">${esc(m.resumen)}</p>` : `<p class="muted">Sin resumen. <button class="linklike" data-action="goto" data-tab="memoria" data-focus="[data-bind='memoria.resumen']">Escríbelo en Memoria</button></p>`}</section>
+      <section class="rs-block"><div class="rs-head"><h2 class="eyebrow">Últimos movimientos</h2>${e.movimientos.length > 3 ? `<button class="linklike" data-action="goto" data-tab="movimientos">Ver los ${e.movimientos.length}</button>` : ''}</div>
+        ${movs.length ? `<ol class="timeline mini">${movs.map((v, i) => movItemHTML(v, i === 0, false)).join('')}</ol>` : `<p class="muted">Sin movimientos. <button class="linklike" data-action="paste-cej">Pegar desde el CEJ</button></p>`}</section>
+      <section class="rs-block rs-recall"><h2 class="eyebrow">Folio recuerda de este caso</h2>
+        <p>${have.length ? esc(have.join(' · ')) : 'Todavía nada: completa la memoria del caso.'}</p>${missing.length ? `<p class="small muted">Aún no registras: ${esc(missing.join(' ni '))}.</p>` : ''}
+        <div class="row"><button class="btn sm" data-action="goto" data-tab="memoria">Ver memoria</button><button class="btn sm" data-action="ask-agent">${ico('chat')}Preguntar al agente</button></div></section>
+    </div>
+    <div class="rs-side">
+      <section class="rs-next"><h2 class="eyebrow">Próximo plazo</h2>
+        ${next ? `<div class="np"><div class="np-row"><span class="np-date ${urgency(next.fecha)}">${esc(fmtDayMon(next.fecha))}</span><span class="np-when ${urgency(next.fecha)}">${esc(whenLabel(next.fecha))}</span></div><p>${esc(next.desc)}</p></div>
+          ${plz.length > 1 ? `<button class="linklike" data-action="goto" data-tab="memoria" data-focus="#nplazo-f">${plz.length === 2 ? 'Un plazo más' : `${plz.length - 1} plazos más`}</button>` : ''}`
+        : `<p class="muted">Sin plazos pendientes.</p><button class="btn sm" data-action="goto" data-tab="memoria" data-focus="#nplazo-f">Registrar plazo</button>`}</section>
+      <section class="rs-block"><div class="rs-head"><h2 class="eyebrow">Pendientes</h2>${m.pendientes.length ? `<span class="tiny muted">${pend.length} de ${m.pendientes.length} por hacer</span>` : ''}</div>
+        ${pend.length ? `<ul class="list compact">${pend.slice(0, 5).map(p => `<li><input type="checkbox" aria-label="Marcar como hecho" data-action="toggle-pend" data-id="${p.id}"><span>${esc(p.text)}</span></li>`).join('')}</ul>${pend.length > 5 ? `<button class="linklike" data-action="goto" data-tab="memoria">Ver los ${pend.length}</button>` : ''}` : `<p class="muted">Nada pendiente.</p>`}</section>
+      <section class="rs-block"><div class="rs-head"><h2 class="eyebrow">Documentos</h2>${e.docs.length > 3 ? `<button class="linklike" data-action="goto" data-tab="documentos">Ver los ${e.docs.length}</button>` : ''}</div>
+        ${docs.length ? `<ul class="doclist mini">${docs.map(d => docRowHTML(d, true)).join('')}</ul>` : `<p class="muted">Sin documentos. <button class="linklike" data-action="pick-file">Agregar</button></p>`}</section>
+    </div>
   </div>`;
 }
 
-/* ---------- Movimientos ---------- */
-function movsHTML() {
-  const movs = [...S.exp.movimientos].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
-  return `<div class="sheet"><div class="sheet-head"><h3>Movimientos del expediente</h3><div class="row"><button class="btn sm" data-action="paste-cej">Pegar desde el CEJ</button><button class="btn primary sm" data-action="add-mov">Agregar movimiento</button></div></div>
-    <p class="hint">Copia el seguimiento del expediente desde la consulta del CEJ y pégalo: el agente lo ordena. Folio no se conecta al CEJ por ti.</p>
-    ${movs.length ? `<ol class="timeline" reversed>${movs.map(v => `<li><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span class="when">${esc(fmtDate(v.fecha))}</span><button class="iconbtn" aria-label="Eliminar movimiento" data-action="del-mov" data-id="${v.id}">✕</button></div><div class="acto">${esc(v.acto)}</div>${v.sumilla ? `<div class="sum">${esc(v.sumilla)}</div>` : ''}</li>`).join('')}</ol>` : '<p class="small muted">Sin movimientos. Agrega el primero o pega el seguimiento del CEJ.</p>'}</div>`;
+/* ---------- Memoria: lo que el abogado escribió o aprobó (spec v0.5 §5.2) ---------- */
+function memHTML() {
+  const e = S.exp, m = e.memoria, pseudo = S.settings.pseudo;
+  const plazos = [...m.plazos].sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const canPropose = isReady(S.settings) && e.chat.some(x => x.role === 'assistant');
+  return `<div class="mem">
+    <div class="mem-note">${ico('check')}<p>Todo lo que está aquí lo escribiste o aprobaste tú. El agente lo lee antes de cada respuesta.</p>${canPropose ? '<button class="btn sm" data-action="propose-memory" title="El agente propone cambios a partir de la conversación; tú decides cuáles guardar">Actualizar desde la conversación</button>' : ''}</div>
+    <section class="mem-sec"><h2 class="eyebrow">Situación actual</h2>
+      <label class="dfield"><span>Estado procesal</span><input class="docfield" data-bind="estado" value="${esc(e.estado)}" placeholder="Ej.: demanda admitida, pendiente audiencia única"></label>
+      <label class="dfield"><span>Resumen del caso</span><textarea class="docfield" data-bind="memoria.resumen" rows="2" placeholder="Qué se pide, a favor de quién y por qué">${esc(m.resumen)}</textarea></label></section>
+    <div class="mem-cols">
+      <section class="mem-sec"><h2 class="eyebrow" id="h-hechos">Hechos clave</h2><p class="sec-sub">Lo que consta en el expediente</p>
+        <textarea class="docfield" data-bind="memoria.hechos" rows="3" aria-labelledby="h-hechos" placeholder="Hechos relevantes y sus fechas">${esc(m.hechos)}</textarea></section>
+      <section class="mem-sec strategy"><h2 class="eyebrow" id="h-estrategia">Estrategia</h2><p class="sec-sub">Tu criterio y próximos pasos</p>
+        <textarea class="docfield" data-bind="memoria.estrategia" rows="3" aria-labelledby="h-estrategia" placeholder="Tu teoría del caso y próximos pasos">${esc(m.estrategia)}</textarea></section>
+    </div>
+    <div class="mem-cols">
+      <section class="mem-sec"><h2 class="eyebrow">Plazos</h2><p class="sec-sub">Registra el vencimiento que confirmaste con la resolución y tu notificación SINOE.</p>
+        <ul class="list">${plazos.map(p => `<li><input type="checkbox" aria-label="Marcar cumplido" data-action="toggle-plazo" data-id="${p.id}" ${p.done ? 'checked' : ''}><span><span class="date">${esc(fmtDate(p.fecha))}</span> ${deadlineChip(p.fecha, p.done)}<br><span class="${p.done ? 'done' : ''}">${esc(p.desc)}</span></span><button class="iconbtn" aria-label="Eliminar plazo" data-action="del-plazo" data-id="${p.id}">✕</button></li>`).join('') || '<li class="list-empty">Sin plazos registrados.</li>'}</ul>
+        <div class="addrow"><input class="input mono" type="date" id="nplazo-f" aria-label="Fecha de vencimiento"><input class="input" id="nplazo-d" placeholder="Qué vence" aria-label="Descripción del plazo"><button class="btn sm" data-action="add-plazo">Agregar</button></div></section>
+      <section class="mem-sec"><h2 class="eyebrow">Pendientes</h2><p class="sec-sub">Tareas del caso para ti o tu equipo.</p>
+        <ul class="list">${m.pendientes.map(p => `<li><input type="checkbox" aria-label="Marcar hecho" data-action="toggle-pend" data-id="${p.id}" ${p.done ? 'checked' : ''}><span class="${p.done ? 'done' : ''}">${esc(p.text)}</span><button class="iconbtn" aria-label="Eliminar pendiente" data-action="del-pend" data-id="${p.id}">✕</button></li>`).join('') || '<li class="list-empty">Sin pendientes.</li>'}</ul>
+        <div class="addrow"><input class="input" id="npend" placeholder="Nuevo pendiente" aria-label="Nuevo pendiente"><button class="btn sm" data-action="add-pend">Agregar</button></div></section>
+    </div>
+    <section class="mem-sec"><div class="sec-head"><h2 class="eyebrow">Datos protegidos antes de consultar a la IA</h2><span class="chip ${pseudo ? 'ok' : 'soon'}">${pseudo ? 'Reemplazo activado' : 'Reemplazo desactivado en Ajustes'}</span></div>
+      <p class="sec-sub">Antes de cada envío, Folio cambia estos nombres y documentos por el marcador. El proveedor de IA ve <span class="tok">[PERSONA_1]</span>, no el nombre.</p>
+      <div class="table-wrap"><table class="partes-table"><thead><tr><th>Nombre completo</th><th>Rol</th><th>Documento</th><th>Cliente</th><th>Se envía como</th><th><span class="sr-only">Quitar</span></th></tr></thead><tbody>
+      ${e.partes.map(p => `<tr><td>${esc(p.nombre)}</td><td>${esc(p.rol)}</td><td class="mono">${esc(p.doc || '—')}</td><td><input type="checkbox" aria-label="Es mi cliente" data-action="toggle-cliente" data-id="${p.id}" ${p.esCliente ? 'checked' : ''}></td><td>${pseudo ? `<span class="tok">[${esc(p.tok)}]</span>` : '<span class="chip soon">Sin reemplazo</span>'}</td><td><button class="iconbtn" aria-label="Quitar a ${esc(p.nombre)}" data-action="del-parte" data-id="${p.id}">✕</button></td></tr>`).join('') || '<tr><td colspan="6" class="small muted">Agrega las partes para que el agente las identifique sin ver sus datos reales.</td></tr>'}
+      </tbody></table></div>
+      <div class="addrow"><input class="input" id="nparte-n" placeholder="Nombres y apellidos" style="flex:2 1 14em" aria-label="Nombre de la parte"><select class="select" id="nparte-r" style="flex:1 1 9em" aria-label="Rol">${['Demandante', 'Demandado', 'Agraviado(a)', 'Imputado(a)', 'Tercero', 'Testigo', 'Otro'].map(r => `<option>${r}</option>`).join('')}</select><input class="input mono" id="nparte-d" placeholder="DNI o RUC" style="flex:1 1 8em" aria-label="Documento"><label class="row small" style="flex:0 0 auto"><input type="checkbox" id="nparte-c"> Mi cliente</label><button class="btn sm" data-action="add-parte">Agregar</button></div></section>
+  </div>`;
 }
 
-/* ---------- Documentos ---------- */
+/* ---------- Movimientos: línea de tiempo por mes (spec v0.5 §5.3) ---------- */
+const MOVS_LIMIT = 30;
+function sortedMovs(e) { return [...e.movimientos].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')); }
+function movItemHTML(v, latest, del = true) {
+  return `<li class="${latest ? 'latest' : ''}"><div class="mv-top"><span class="when">${esc(fmtDate(v.fecha))}</span>${del ? `<button class="iconbtn" aria-label="Eliminar movimiento" data-action="del-mov" data-id="${v.id}">✕</button>` : ''}</div><div class="acto">${esc(v.acto)}</div>${v.sumilla ? `<div class="sum">${esc(v.sumilla)}</div>` : ''}</li>`;
+}
+function movsHTML() {
+  const all = sortedMovs(S.exp), movs = S.movsAll ? all : all.slice(0, MOVS_LIMIT);
+  const groups = []; let cur = null;
+  movs.forEach(v => { const k = v.fecha ? v.fecha.slice(0, 7) : ''; if (!cur || cur.k !== k) groups.push(cur = { k, items: [] }); cur.items.push(v); });
+  const label = k => k ? `${MESES[+k.slice(5, 7) - 1]} ${k.slice(0, 4)}` : 'Sin fecha';
+  return `<div class="pane-head"><div><h2 class="eyebrow">Movimientos del expediente</h2><p class="sec-sub">Copia el seguimiento desde la consulta del CEJ y pégalo: el agente lo ordena. Folio no se conecta al CEJ por ti.</p></div>
+      <div class="row"><button class="btn primary sm" data-action="paste-cej">Pegar desde el CEJ</button><button class="btn sm" data-action="add-mov">Agregar movimiento</button></div></div>
+    ${all.length ? groups.map((g, gi) => `<h3 class="tl-month">${label(g.k)}</h3><ol class="timeline">${g.items.map((v, i) => movItemHTML(v, gi === 0 && i === 0)).join('')}</ol>`).join('')
+      + (all.length > movs.length ? `<button class="btn sm" data-action="movs-all">Ver anteriores (${all.length - movs.length})</button>` : '')
+      : '<p class="muted">Sin movimientos. Agrega el primero o pega el seguimiento del CEJ.</p>'}`;
+}
+
+/* ---------- Documentos: lista con buscador (spec v0.5 §5.4) ---------- */
+const DOC_TYPE = { pdf: 'PDF', docx: 'DOCX', txt: 'TXT' };
+function docRowHTML(d, mini = false) {
+  const meta = [d.type === 'pdf' ? `<span class="mono">Fs. ${d.pages || '?'}</span>` : '', mini ? '' : `${(d.chars || 0).toLocaleString('es-PE')} caracteres`, `agregado el ${esc(fmtDate(d.addedAt))}`].filter(Boolean).join(' · ');
+  if (mini) return `<li class="docrow"><span class="dtype">${DOC_TYPE[d.type] || 'TXT'}</span><span class="dmain"><button class="linkname" data-action="view-doc" data-id="${d.id}" title="Ver el texto extraído">${esc(d.name)}</button><span class="dmeta">${meta}</span></span></li>`;
+  return `<li class="docrow"><span class="dtype">${DOC_TYPE[d.type] || 'TXT'}</span><span class="dmain"><span class="name">${esc(d.name)}</span><span class="dmeta">${meta}${d.scanned ? ' <span class="chip soon">Parece escaneado</span>' : ''}</span></span>
+    <span class="dact"><button class="btn ghost sm" data-action="view-doc" data-id="${d.id}">Ver texto</button><button class="iconbtn" aria-label="Eliminar ${esc(d.name)}" data-action="del-doc" data-id="${d.id}">✕</button></span></li>`;
+}
+function docListHTML() {
+  const f = norm(S.docFilter);
+  const docs = [...S.exp.docs].sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || '')).filter(d => !f || norm(d.name).includes(f));
+  if (!S.exp.docs.length) return '<p class="muted">Sin documentos. Agrega la demanda, resoluciones o escritos clave para que el agente pueda citarlos.</p>';
+  return docs.length ? `<ul class="doclist">${docs.map(d => docRowHTML(d)).join('')}</ul>` : `<p class="muted">Ningún documento coincide con “${esc(S.docFilter)}”.</p>`;
+}
 function docsHTML() {
   const e = S.exp;
-  return `<div class="dropzone" data-action="pick-file" tabindex="0" role="button" aria-label="Agregar documentos"><strong>Arrastra aquí PDF, Word (.docx) o texto (.txt), o haz clic para elegir.</strong><br><span class="small">El texto se extrae en tu equipo y se guarda cifrado. El archivo original no se copia.</span></div>
-    <div class="note" style="margin-bottom:1rem"><p>Los PDF escaneados como imagen no tienen texto que leer; esta versión no hace reconocimiento óptico (OCR).</p></div>
-    ${e.docs.length ? `<div class="docs">${e.docs.map(d => `<article class="doc"><span class="folio" title="${d.pages || '?'} páginas">${d.type === 'pdf' ? 'Fs.' : '≈'} ${d.pages || '?'}</span><span class="name">${esc(d.name)}</span><span class="tiny muted">${(d.chars || 0).toLocaleString('es-PE')} caracteres, agregado el ${esc(fmtDate(d.addedAt))}</span>${d.scanned ? '<span class="chip soon">Parece escaneado</span>' : ''}<div class="actions"><button class="btn sm" data-action="view-doc" data-id="${d.id}">Ver texto</button><button class="btn ghost sm" data-action="del-doc" data-id="${d.id}">Eliminar</button></div></article>`).join('')}</div>` : '<p class="small muted">Sin documentos. Agrega la demanda, resoluciones o escritos clave para que el agente pueda citarlos.</p>'}`;
+  const drop = e.docs.length
+    ? `<div class="dropzone slim" data-action="pick-file" tabindex="0" role="button" aria-label="Agregar documentos">${ico('plus')}<span><strong>Agregar documentos</strong> <span class="small">PDF, Word (.docx) o texto. Arrástralos aquí o haz clic.</span></span></div>`
+    : `<div class="dropzone" data-action="pick-file" tabindex="0" role="button" aria-label="Agregar documentos"><strong>Arrastra aquí PDF, Word (.docx) o texto (.txt), o haz clic para elegir.</strong><br><span class="small">El texto se extrae en tu equipo y se guarda cifrado. El archivo original no se copia.</span></div>`;
+  return `<div class="pane-head"><div><h2 class="eyebrow">Documentos</h2><p class="sec-sub">El texto se extrae en tu equipo y se guarda cifrado; el archivo original no se copia. Los PDF escaneados como imagen no tienen texto que leer (esta versión no hace OCR).</p></div></div>
+    ${drop}
+    ${e.docs.length >= 6 ? `<input class="input docsearch" data-docsearch placeholder="Buscar documento por nombre" value="${esc(S.docFilter)}" aria-label="Buscar documento por nombre">` : ''}
+    <div id="doclist">${docListHTML()}</div>`;
 }
 async function addFiles(files) {
   const e = S.exp; if (!e) return;
@@ -592,25 +761,39 @@ async function addFiles(files) {
       await store.put('doc:' + id, { id, expId: e.id, name: f.name, text });
       S.docTexts[id] = text;
       e.docs.push({ id, name: f.name, type: r.type, pages: r.pages, chars: text.length, addedAt: todayISO(), scanned: !!r.scanned });
-      await saveExp(); if (S.tab === 'documentos') renderPane(); updateTabs();
+      await saveExp(); if (S.tab !== 'memoria') renderPane(); else updateTabs();
       toast(r.scanned ? `${f.name}: casi no tiene texto. Puede ser un escaneo.` : `${f.name} agregado.`, !!r.scanned);
     } catch (err) { fail(err); }
   }
 }
-function updateTabs() { const e = S.exp; if (!e) return; const t = $$('.tabs button'); if (t.length >= 3) { t[1].textContent = `Movimientos (${e.movimientos.length})`; t[2].textContent = `Documentos (${e.docs.length})`; } }
+function updateTabs() { $$('.tabs [data-tab]').forEach(b => { const n = tabCount(b.dataset.tab), c = b.querySelector('.count'); if (c && n != null) c.textContent = n; b.setAttribute('aria-selected', b.dataset.tab === S.tab); }); }
 
 /* ============================================================
    Agente
    ============================================================ */
-const QUICK = [['Resume el expediente', 'Resume el expediente en pocas líneas: qué se discute, en qué etapa está y qué viene.'],
-  ['Plazos y qué preparar', '¿Qué plazos tengo registrados y qué debería preparar para cada uno?'],
-  ['Riesgos del caso', 'Identifica los puntos débiles y riesgos de mi posición, y cómo mitigarlos.'],
-  ['Borrador de escrito', 'Prepara un borrador de escrito para: ']];
+/* Acciones rápidas según el expediente (spec v0.5 §6): si un plazo vence en 7 días o menos, va primero */
+function quickActions(e) {
+  const next = nextPlazos(e).find(p => daysUntil(p.fecha) >= 0), acts = [];
+  if (next && daysUntil(next.fecha) <= 7) acts.push([`Preparar: ${trunc(next.desc, 32)}`, `Ayúdame a preparar lo que vence el ${fmtDate(next.fecha)}: ${next.desc}. Indica qué debo presentar o hacer, qué revisar antes y en qué orden. Recuérdame verificar la fecha con la resolución y mi notificación.`]);
+  acts.push(['Resumir expediente', 'Resume el expediente en pocas líneas: qué se discute, en qué etapa está y qué viene.']);
+  if (acts.length === 1) acts.push(['Preparar próximos plazos', '¿Qué plazos tengo registrados y qué debería preparar para cada uno?']);
+  acts.push(['Analizar riesgos', 'Identifica los puntos débiles y riesgos de mi posición, y cómo mitigarlos.']);
+  acts.push(['Preparar borrador', 'Prepara un borrador de escrito para: ', true]);
+  return acts;
+}
 function msgHTML(m, i) {
   if (m.role === 'user') return `<div class="msg user">${esc(m.content)}</div>`;
   if (m.role === 'error') return `<div class="msg error" role="alert">${esc(m.content)}</div>`;
   const meta = m.meta ? `Enviado a ${esc(provLabel(m.meta.provider))} (${esc(m.meta.model)})${m.meta.pseudo ? `, ${m.meta.replaced} dato${m.meta.replaced === 1 ? '' : 's'} reemplazado${m.meta.replaced === 1 ? '' : 's'}` : ', sin reemplazo de datos'}` : '';
   return `<div class="msg assistant">${md(m.content)}${citasHTML(m)}<div class="foot"><span>${meta}</span><button class="btn ghost sm" data-action="copy-msg" data-i="${i}">Copiar</button></div></div>`;
+}
+/* Antes de la primera consulta: lo que el agente ya sabe, calculado en el equipo (no gasta consultas) */
+function recallHTML(e) {
+  const next = nextPlazos(e)[0], s = S.settings;
+  const partes = !e.partes.length ? 'ninguna todavía' : s.pseudo ? `${e.partes.length}; se envían como ${e.partes.slice(0, 3).map(p => `[${p.tok}]`).join(', ')}${e.partes.length > 3 ? '…' : ''}` : `${e.partes.length}; reemplazo desactivado en Ajustes`;
+  const rows = [['Estado', e.estado || 'sin registrar'], ['Próximo plazo', next ? `${fmtDate(next.fecha)}, ${next.desc}` : 'ninguno registrado'], ['Partes protegidas', partes],
+    ['Fuentes', `${plural(e.movimientos.length, 'movimiento', 'movimientos')} · ${plural(e.docs.length, 'documento', 'documentos')}`]];
+  return `<div class="recall"><h3 class="eyebrow">Folio recuerda de este caso</h3><dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl><p>No tienes que repetir el contexto: el agente lo lee antes de responder.</p></div>`;
 }
 function agentHTML() {
   const e = S.exp, s = S.settings, ready = isReady(s);
@@ -618,10 +801,20 @@ function agentHTML() {
   const line = !ready ? '' : abroad
     ? `<span class="dot ${s.pseudo ? '' : 'off'}"></span>${s.pseudo ? 'Se envía a ' + esc(provLabel(s.provider)) + ' con datos reemplazados' : 'Se envía a ' + esc(provLabel(s.provider)) + ' sin reemplazar datos'}`
     : `<span class="dot"></span>Se envía a tu servidor propio`;
-  return `<div class="agent-head"><div><h2>Agente del expediente</h2><div class="prov">${ready ? esc(provLabel(s.provider)) + ', ' + esc(s.model) : 'Sin proveedor conectado'}</div>${libStatusHTML()}</div>
-      <div class="row"><button class="btn sm" data-action="propose-memory" ${e.chat.some(m => m.role === 'assistant') && ready ? '' : 'disabled'} title="El agente propone cambios a la memoria del caso; tú decides cuáles aplicar">Actualizar memoria</button>${e.chat.length ? '<button class="btn ghost sm" data-action="clear-chat">Limpiar</button>' : ''}</div></div>
-    <div class="msgs" id="msgs">${e.chat.length ? e.chat.map(msgHTML).join('') : `<div class="empty-agent"><p>Pregunta sobre este expediente. El agente ya conoce su memoria, movimientos y documentos.</p></div>`}</div>
-    ${ready ? `<div class="quick">${QUICK.map(([l], i) => `<button data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}</div>
+  const big = S.agent === 'amplio', last = e.chat[e.chat.length - 1];
+  S.quick = ready ? quickActions(e) : [];
+  const who = !ready ? 'Sin proveedor conectado' : s.provider === 'custom' ? `En tu servidor propio · <span class="mono">${esc(s.model)}</span>` : `Con tu cuenta de ${esc(provLabel(s.provider))} · <span class="mono">${esc(s.model.split('/').pop())}</span>`;
+  const suggest = ready && last?.role === 'assistant' && !S.sending ? `<div class="mem-suggest"><span>¿Algo de esto debe quedar en la memoria del caso?</span><button class="btn sm" data-action="propose-memory" title="El agente propone cambios a la memoria; tú decides cuáles guardar">Actualizar memoria</button></div>` : '';
+  return `<div class="agent-head">
+      <button class="iconbtn agent-back" data-action="agent-close" aria-label="Volver al expediente">${ico('back')}</button>
+      <div class="agent-title"><h2>Agente</h2><p>Conoce la memoria de este expediente</p></div>
+      <div class="agent-ctrl"><button class="iconbtn" data-action="agent-wide" aria-label="${big ? 'Reducir el agente' : 'Ampliar el agente'}" title="${big ? 'Reducir' : 'Ampliar'}">${ico(big ? 'shrink' : 'expand')}</button><button class="iconbtn" data-action="agent-close" aria-label="Cerrar el agente" title="Cerrar (Ctrl+.)">${ico('close')}</button></div>
+    </div>
+    <details class="agent-info"><summary>${who}</summary>
+      <div class="agent-info-body">${ready ? `<p>Proveedor: ${esc(provLabel(s.provider))}<br>Modelo: <span class="mono">${esc(s.model)}</span></p>` : ''}${libStatusHTML()}
+        <div class="row">${e.chat.length ? '<button class="btn ghost sm" data-action="clear-chat">Limpiar conversación</button>' : ''}<button class="btn ghost sm" data-action="open-settings">${ready ? 'Cambiar proveedor' : 'Conectar proveedor'}</button></div></div></details>
+    <div class="msgs" id="msgs">${e.chat.length ? e.chat.map(msgHTML).join('') + suggest : recallHTML(e)}</div>
+    ${ready ? `<div class="quick" role="group" aria-label="Acciones rápidas">${S.quick.map(([l], i) => `<button data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}</div>
     <form class="composer" data-form="chat"><label class="sr-only" for="q">Tu consulta</label><textarea id="q" class="textarea" rows="2" placeholder="Escribe tu consulta. Enter envía, Mayús+Enter salta de línea." ${S.sending ? 'disabled' : ''}></textarea>
       <div class="row"><span class="privacy-line">${line}</span>${S.sending ? '<button class="btn" type="button" data-action="stop">Detener</button>' : '<button class="btn primary" type="submit">Enviar</button>'}</div></form>`
     : `<div class="composer"><div class="note warn"><p>Conecta tu proveedor de IA para conversar con el agente.</p><button class="btn sm" data-action="open-settings">Conectar proveedor</button></div></div>`}`;
@@ -670,7 +863,7 @@ async function sendChat(text) {
   if (messages.length >= 2 && messages[messages.length - 2].role === 'user') { const last = messages.pop(); messages[messages.length - 1].content += '\n\n' + last.content; }
   if (!(await reviewPayload(system0, messages, P, 'chat', usePlanner ? plannerUser : null, lib))) return;
   e.chat.push({ role: 'user', content: text, at: new Date().toISOString() });
-  S.sending = true; S.abort = new AbortController(); renderAgent();
+  S.sending = true; S.abort = new AbortController(); renderAgent(); $('.agent-fab')?.classList.add('busy');
   const box = $('#msgs'); box.insertAdjacentHTML('beforeend', `<div class="msg assistant" id="streaming"><span class="typing" aria-label="El agente está escribiendo"><i></i><i></i><i></i></span></div>`); scrollMsgs();
   let system = system0, arts = [];
   try {
@@ -690,7 +883,7 @@ async function sendChat(text) {
   } catch (err) {
     if (err.name === 'AbortError') e.chat.push({ role: 'error', content: 'Detuviste la respuesta.' });
     else e.chat.push({ role: 'error', content: err instanceof FolioError ? err.message : 'Error inesperado: ' + err.message });
-  } finally { S.sending = false; S.abort = null; await saveExp().catch(fail); renderAgent(); updateStamp(); $('#q')?.focus(); }
+  } finally { S.sending = false; S.abort = null; $('.agent-fab')?.classList.remove('busy'); await saveExp().catch(fail); renderAgent(); updateStamp(); if (S.agent !== 'cerrado') $('#q')?.focus(); }
 }
 async function logSend(kind, chars, P) {
   const s = S.settings; S.lastSend = { at: Date.now(), provider: s.provider, pseudo: P.enabled };
@@ -698,7 +891,7 @@ async function logSend(kind, chars, P) {
 }
 
 /* ---------- La memoria se actualiza con tu aprobación ---------- */
-async function proposeMemory() {
+async function proposeMemory(btn) {
   const e = S.exp, s = S.settings; const P = makePseudo(e, s.pseudo);
   const convo = e.chat.filter(m => m.role !== 'error').slice(-8).map(m => `${m.role === 'user' ? 'ABOGADO' : 'AGENTE'}: ${m.content}`).join('\n\n');
   const system = `Eres el módulo de memoria de Folio. Propón cambios a la memoria de un expediente judicial peruano a partir de la conversación reciente. Devuelve SOLO un objeto JSON válido, sin texto adicional, con esta forma:
@@ -706,7 +899,7 @@ async function proposeMemory() {
 Incluye solo información nueva que aparezca de forma explícita en la conversación. No inventes fechas: un plazo nuevo solo se propone si la conversación menciona una fecha concreta. Usa null o listas vacías si no hay nada. Conserva los marcadores como [PERSONA_1] tal cual.`;
   const user = P.apply(`FECHA DE HOY: ${todayISO()}\n\nMEMORIA ACTUAL:\n${memoryText(e)}\n\nCONVERSACIÓN RECIENTE:\n${convo}`);
   if (!(await reviewPayload(system, [{ role: 'user', content: user }], P, 'memoria'))) return;
-  const btn = $('[data-action="propose-memory"]'); if (btn) { btn.disabled = true; btn.textContent = 'Analizando…'; }
+  btn = btn || $('[data-action="propose-memory"]'); if (btn) { btn.disabled = true; btn.textContent = 'Analizando…'; }
   try {
     const out = await llm({ cfg: s, system, messages: [{ role: 'user', content: user }], maxTokens: 4000 });
     await logSend('Actualizar memoria', system.length + user.length, P);
@@ -730,7 +923,7 @@ Incluye solo información nueva que aparezca de forma explícita en la conversac
       else if (it.k === 'plazo') m.plazos.push({ id: uid(), fecha: it.fecha, desc: it.v, done: false });
       else m[it.k] = (m[it.k] ? m[it.k].trimEnd() + '\n' : '') + it.v; }
     await saveExp(); renderPane(); toast(`Memoria actualizada: ${sel.length} cambio${sel.length > 1 ? 's' : ''}.`);
-  } catch (err) { fail(err); } finally { renderAgent(); updateStamp(); }
+  } catch (err) { fail(err); } finally { renderAgent(); updateStamp(); if (S.tab === 'memoria') renderPane(); }
 }
 
 /* ---------- Movimientos pegados del CEJ ---------- */
@@ -786,7 +979,7 @@ async function expForm(e) {
     const ne = blankExp(r);
     if (r.cliente) addParte(ne, r.cliente, r.rolCliente, '', true);
     if (r.contraparte) addParte(ne, r.contraparte, r.rolContra, '', false);
-    S.exp = ne; S.docTexts = {}; S.tab = 'memoria'; S.view = 'exp'; S.sideOpen = false;
+    S.exp = ne; S.docTexts = {}; S.tab = 'resumen'; S.movsAll = false; S.docFilter = ''; S.view = 'exp'; S.sideOpen = false;
     await saveExp(); S.settings.lastExp = ne.id; await saveSettings(); render(); toast('Expediente creado.');
   } else {
     Object.assign(S.exp, { numero: r.numero, materia: r.materia, especialidad: r.especialidad, organo: r.organo, distrito: r.distrito, estado: r.estado });
@@ -829,7 +1022,7 @@ async function loadSample() {
   S.exp = e; S.docTexts = { [id]: docText };
   await store.put('doc:' + id, { id, expId: e.id, name: 'Demanda de alimentos (ejemplo).txt', text: docText });
   e.docs.push({ id, name: 'Demanda de alimentos (ejemplo).txt', type: 'txt', pages: 1, chars: docText.length, addedAt: todayISO() });
-  S.tab = 'memoria'; S.view = 'exp';
+  S.tab = 'resumen'; S.view = 'exp'; S.movsAll = false; S.docFilter = '';
   await saveExp(); S.settings.lastExp = e.id; await saveSettings(); render(); toast('Expediente de ejemplo cargado. Todos sus datos son ficticios.');
 }
 
@@ -948,7 +1141,19 @@ document.addEventListener('click', async ev => {
       case 'edit-exp': await expForm(S.exp); break;
       case 'del-exp': await deleteExp(); break;
       case 'load-sample': await loadSample(); break;
-      case 'tab': S.tab = a.dataset.tab; $$('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === S.tab)); $('#work')?.classList.toggle('show-agent', S.tab === 'agente'); renderPane(); if (S.tab === 'agente') scrollMsgs(); break;
+      case 'tab': S.tab = a.dataset.tab; renderPane(); $('#pane').scrollTop = 0; break;
+      case 'goto': {
+        S.tab = a.dataset.tab; renderPane(); $('#pane').scrollTop = 0;
+        const f = a.dataset.focus; if (f) setTimeout(() => { const el = $(f); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); } }, 30);
+        break; }
+      case 'agent-open': setAgent('abierto'); break;
+      case 'agent-close': setAgent('cerrado'); break;
+      case 'agent-wide': setAgent(S.agent === 'amplio' ? 'abierto' : 'amplio'); break;
+      case 'ask-agent': if (S.agent === 'cerrado') setAgent('abierto'); else $('#q')?.focus(); break;
+      case 'privacy': showPrivacy(); break;
+      case 'privacy-settings': closeDialog(); await settingsView(); fillConsentLine(); break;
+      case 'agenda-more': S.agendaAll = !S.agendaAll; $('#deadlines').innerHTML = agendaHTML(); break;
+      case 'movs-all': S.movsAll = true; renderPane(); break;
       case 'add-plazo': { const f = $('#nplazo-f').value, d = $('#nplazo-d').value.trim(); if (!f || !d) { toast('Indica la fecha y qué vence.', true); break; } S.exp.memoria.plazos.push({ id: uid(), fecha: f, desc: d, done: false }); await saveExp(); renderPane(); break; }
       case 'toggle-plazo': { const p = S.exp.memoria.plazos.find(x => x.id === id); p.done = !p.done; await saveExp(); renderPane(); break; }
       case 'del-plazo': S.exp.memoria.plazos = S.exp.memoria.plazos.filter(x => x.id !== id); await saveExp(); renderPane(); break;
@@ -964,11 +1169,11 @@ document.addEventListener('click', async ev => {
       case 'pick-file': $('#file-docs').click(); break;
       case 'view-doc': { const d = S.exp.docs.find(x => x.id === id); const t = S.docTexts[id] || ''; openDialog({ title: d.name, wide: true, body: `<p class="small muted">Texto extraído en tu equipo${t.length > 40000 ? ', primeros 40 000 caracteres' : ''}.</p><div class="payload">${esc(t.slice(0, 40000)) || 'Sin texto.'}</div>`, foot: '<button class="btn primary" data-action="dlg-close">Cerrar</button>' }); break; }
       case 'del-doc': { const d = S.exp.docs.find(x => x.id === id); const ok = await askDialog({ title: 'Eliminar documento', ok: 'Eliminar', danger: true, body: `<p>Se eliminará el texto de <strong>${esc(d.name)}</strong> de este equipo.</p>` }); if (!ok) break; await store.del('doc:' + id); delete S.docTexts[id]; S.exp.docs = S.exp.docs.filter(x => x.id !== id); await saveExp(); renderPane(); updateTabs(); break; }
-      case 'quick': { const q = QUICK[+a.dataset.i][1]; if (+a.dataset.i === 3) { const t = $('#q'); t.value = q; t.focus(); t.setSelectionRange(q.length, q.length); } else await sendChat(q); break; }
+      case 'quick': { const [, q, fill] = S.quick[+a.dataset.i] || []; if (!q) break; if (fill) { const t = $('#q'); t.value = q; t.focus(); t.setSelectionRange(q.length, q.length); } else await sendChat(q); break; }
       case 'stop': S.abort?.abort(); break;
       case 'copy-msg': await navigator.clipboard.writeText(S.exp.chat[+a.dataset.i].content); toast('Respuesta copiada.'); break;
       case 'clear-chat': { const ok = await askDialog({ title: 'Limpiar conversación', ok: 'Limpiar', body: '<p>Se borra la conversación de este expediente. La memoria del caso se mantiene.</p>' }); if (!ok) break; S.exp.chat = []; await saveExp(); renderAgent(); break; }
-      case 'propose-memory': await proposeMemory(); break;
+      case 'propose-memory': await proposeMemory(a); break;
       case 'open-settings': await settingsView(); fillConsentLine(); break;
       case 'close-settings': S.view = 'exp'; render(); break;
       case 'save-provider': Object.assign(S.settings, pickCfg(S.draftCfg)); await saveSettings(); toast(isReady(S.settings) ? 'Proveedor guardado.' : 'Guardado. Falta la key o el modelo para usar el agente.', !isReady(S.settings)); break;
@@ -1016,7 +1221,12 @@ document.addEventListener('input', ev => {
   if (t.dataset.onbField) { S.onb[t.dataset.onbField] = t.value; updateOnbNav(); }
   else if (t.dataset.pf && t.type !== 'checkbox' && t.tagName !== 'SELECT') curCfg()[t.dataset.pf] = t.value;
   else if (t.hasAttribute('data-search')) { S.filter = t.value; const l = $('#explist'); if (l) l.innerHTML = listHTML(); }
-  else if (t.dataset.bind && S.exp) { setPath(S.exp, t.dataset.bind, t.value); saveSoon(); }
+  else if (t.hasAttribute('data-docsearch')) { S.docFilter = t.value; const l = $('#doclist'); if (l) l.innerHTML = docListHTML(); }
+  else if (t.dataset.bind && S.exp) {
+    setPath(S.exp, t.dataset.bind, t.value); saveSoon();
+    if (t.tagName === 'TEXTAREA') autosize(t);
+    if (t.dataset.bind === 'estado') refreshCaratula();
+  }
 });
 document.addEventListener('submit', async ev => {
   const f = ev.target.closest('[data-form]'); if (!f) return; ev.preventDefault();
@@ -1028,6 +1238,15 @@ document.addEventListener('keydown', ev => {
   if (t.id === 'q' && ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); t.closest('form')?.requestSubmit(); }
   if (t.classList?.contains('dropzone') && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); $('#file-docs').click(); }
   if (ev.key === 'Enter' && (t.id === 'npend' || t.id === 'nplazo-d' || t.id === 'nparte-n' || t.id === 'nparte-d')) { ev.preventDefault(); $(`[data-action="${t.id === 'npend' ? 'add-pend' : t.id === 'nplazo-d' ? 'add-plazo' : 'add-parte'}"]`)?.click(); }
+  // Panel del agente: Ctrl+. lo abre o cierra; Esc reduce el modo amplio o cierra el panel superpuesto
+  if (S.screen !== 'app' || S.view !== 'exp' || !S.exp || $('#dlg').open) return;
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === '.') { ev.preventDefault(); setAgent(S.agent === 'cerrado' ? 'abierto' : 'cerrado'); }
+  else if (ev.key === 'Escape' && (S.agent === 'amplio' || (S.agent === 'abierto' && !isWide()))) { ev.preventDefault(); setAgent(S.agent === 'amplio' ? 'abierto' : 'cerrado'); }
+});
+let wasWide = isWide();
+window.addEventListener('resize', () => {
+  const w = isWide(); if (w === wasWide) return; wasWide = w;
+  if (S.screen === 'app' && S.settings && S.exp && S.view === 'exp') setAgent(w ? initialAgent() : 'cerrado');
 });
 document.addEventListener('dragover', ev => { const z = ev.target.closest?.('.dropzone'); if (z) { ev.preventDefault(); z.classList.add('over'); } });
 document.addEventListener('dragleave', ev => { const z = ev.target.closest?.('.dropzone'); if (z) z.classList.remove('over'); });

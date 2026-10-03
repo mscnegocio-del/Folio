@@ -22,9 +22,10 @@ folio/
 ├── memory.md              ← estado entre sesiones
 ├── CHANGELOG.md           ← historial de versiones
 ├── README.md              ← presentación pública del proyecto
-├── build.py               ← ensambla src/ → dist/folio.html
+├── build.py               ← ensambla src/ → dist/folio.html (inserta el logo y el favicon de src/img en base64)
 ├── src/
-│   ├── shell.html         ← esqueleto HTML con marcadores /*__CSS__*/ y /*__JS__*/
+│   ├── shell.html         ← esqueleto HTML con marcadores /*__CSS__*/, /*__JS__*/ y __ICON__
+│   ├── img/               ← logo claro/oscuro (WebP, 64 px de alto) e ícono (PNG 32 px), generados desde docs/img/folio-logo.webp
 │   ├── normas.js          ← biblioteca legal peruana: descarga, búsqueda, citas (E8)
 │   ├── fonts.css          ← tipografías WOFF2 en base64 (DM Sans, Montserrat, Fragment Mono; OFL)
 │   ├── styles.css         ← tokens, layout, componentes, temas claro/oscuro
@@ -72,18 +73,19 @@ folio/
 - **Arranque** (`boot`): sin crypto.subtle/IndexedDB → error; con bóveda → bloqueo; sin bóveda → bienvenida.
 - **Bienvenida** (5 pasos): Así funciona · Tus datos (3 checks) · Envío al extranjero (seudonimización + check) · Contraseña (≥10 car. + check) · Proveedor (opcional, con guía). `finishOnb` crea bóveda, guarda settings cifrados y `consent` en claro.
 - **Consulta** (`sendChat`): `buildContext` → `makePseudo.apply` (sistema + historial + pregunta) → `reviewPayload` (si está activo) → `llm` streaming → `restore` → guarda chat → `logSend` (registro de envíos).
-- **Actualizar memoria** (`proposeMemory`): conversación reciente → JSON de cambios → el abogado aprueba ítem por ítem (los plazos vienen desmarcados).
+- **Actualizar memoria** (`proposeMemory`): conversación reciente → JSON de cambios → el abogado aprueba ítem por ítem (los plazos vienen desmarcados). Se ofrece bajo la última respuesta del agente y en la pestaña Memoria.
 - **Pegar CEJ** (`pasteCEJ`): texto copiado → JSON de movimientos → revisión → agregar.
 - **Diálogos**: un solo `<dialog>`; `askDialog` + `dlgPending/settleDlg/onDlgButton` (evita el bug de eventos `close` asíncronos que cancelaban el siguiente diálogo).
 - **Auto-bloqueo**: inactividad configurable (5/15/30/60 min); no bloquea mientras hay una respuesta en curso.
 
-## Diseño visual
-- Desde v0.3.0 comparte el sistema visual del sitio web (spec: `process/specs/rediseno-visual-v0.3.md`).
-- Tokens claro: fondo `#F5F5F4`, hoja `#FFFFFF`, tinta `#111114`. Oscuro: fondo `#0A0A0A`, hoja `#121214`, tinta `#F4F4F5`. Acento azul `#3D5AF1` / `#8B9DFF`.
-- Componentes: botones en píldora (primario negro en claro, blanco en oscuro), tarjetas de 16 px, campos de 10 px, pestañas en segmento, brillo azul en pantallas de entrada.
-- Tipografías incluidas en el HTML (`src/fonts.css`, sin Google Fonts): Montserrat (títulos), DM Sans (interfaz), Fragment Mono (números de expediente, fechas, foliador).
-- Elemento distintivo: sello azul "Guardado solo en este equipo" con animación de estampado única; foliador "Fs. N" en documentos.
-- Responsive: <1180 px el agente pasa a pestaña; <820 px la barra lateral es un cajón. Grillas con `minmax(0,1fr)` para evitar desbordes.
+## Diseño visual (v0.5, "el expediente primero" — spec: `process/specs/rediseno-ux-v0.5.md`)
+- Paleta del logo: azul marino + teal. Claro: fondo `#F7F5F0`, hoja `#FFFFFF`, tinta `#0B1220`, acento `#0F766E`. Oscuro: fondo `#0B1220`, superficie `#111B2A`, tinta `#F4F1EA`, acento `#35C7B3`. El teal (`--accent`) es solo para acción principal, activo, foco, enlaces e identidad.
+- Estructura: barra lateral (agenda agrupada + expedientes) | expediente (carátula + pestañas Resumen · Memoria · Movimientos · Documentos) | agente.
+- Agente con tres estados (`S.agent` = abierto/amplio/cerrado; `setAgent`, `initialAgent`); la preferencia en pantallas anchas se guarda en `settings.agentPanel`. Cerrado → botón flotante; `Ctrl+.` abre o cierra; `Esc` reduce o cierra.
+- Resumen y "Folio recuerda" se calculan en el equipo (sin IA). Memoria con campos `.docfield` (aspecto de documento, crecen con el texto: `field-sizing` o `autosize()`).
+- Privacidad: indicador compacto en la carátula + ventana `showPrivacy()`. El sello animado queda en el desbloqueo y en el estado vacío.
+- Tipografías incluidas en el HTML (`src/fonts.css`, sin Google Fonts): Montserrat (títulos grandes), DM Sans (interfaz), Fragment Mono (número de expediente, fechas, marcadores).
+- Responsive: desde 1180 px el agente es columna; por debajo se abre encima del expediente; bajo 820 px ocupa la pantalla completa y la barra lateral es un cajón. El contenido usa container queries (`.pane`).
 
 ## Biblioteca legal (E8) — `src/normas.js`
 - Paquete en `docs/normas/` (GitHub Pages): `manifest.json` + `<ID>.json.gz` con `sha256`; lo arma `normas/build_normas.py`

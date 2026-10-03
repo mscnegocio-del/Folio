@@ -23,9 +23,9 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Toda nueva salida de red debe declararse en la política (`src/legal.js`, sección 9)
 - Si cambias textos legales: sube `APP.policyVersion` (src/core.js), agrega la entrada en `POLICY_CHANGES` (src/legal.js) y anótalo en process/decisions.md. Al desbloquear, Folio pide aceptar de nuevo
 - Datos del autor solo en `src/config.js` (nunca correo institucional del PJ)
-- Orden del bundle: CSS fonts.css → styles.css; JS config.js → core.js → normas.js → legal.js → ui.js (ver build.py)
+- Orden del bundle: CSS fonts.css → styles.css (+ logo de src/img); JS config.js → core.js → normas.js → legal.js → ui.js (ver build.py)
 - Biblioteca legal: solo texto oficial de normas y datos de modificación; nunca concordancias del SPIJ ni extracción automática del SPIJ (ver normas/README.md)
-- UI: usar solo los tokens de `src/styles.css` (claro y oscuro); nunca volver a cargar fuentes desde Google Fonts
+- UI: usar solo los tokens de `src/styles.css` (claro y oscuro); teal (`--accent`) solo para acción principal, activo, foco y enlaces; nunca volver a cargar fuentes desde Google Fonts
 - Commits: `tipo(alcance): descripción en español` — tipos: feat, fix, docs, style, refactor, test, chore
 
 ## NUNCA
@@ -53,7 +53,7 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Decisiones (ADR): process/decisions.md
 - Investigación de mercado, CEJ/SINOE, modelos y costos: process/research.md
 - Ley 29733, roles y riesgos: process/legal-privacy.md
-- Specs: process/specs/ (biblioteca-legal-peru.md, rediseno-visual-v0.3.md)
+- Specs: process/specs/ (biblioteca-legal-peru.md, rediseno-visual-v0.3.md, rediseno-ux-v0.5.md)
 - Biblioteca legal (mantenedor, formatos del SPIJ): normas/README.md · reporte: normas/reporte-verificacion.md
 
 ## Estado actual → memory.md

@@ -1,5 +1,19 @@
 # Changelog — Folio
 
+## [Sin publicar] — rediseño UX/UI v0.5 "el expediente primero"
+### Cambiado
+- Identidad del logo: azul marino + teal en claro y oscuro (reemplaza el acento azul); logo e ícono incluidos en el HTML.
+- El expediente es el centro: carátula con número, partes, ficha de estado e indicador "Solo en este equipo · cifrado" (el sello girado sale de la carátula).
+- Agente plegable: abierto, amplio o cerrado (botón flotante); recuerda la elección; `Ctrl+.` y `Esc`. En celular ocupa la pantalla completa.
+- Nueva pestaña **Resumen** (estado, próximo plazo, últimos movimientos, pendientes, documentos y "Folio recuerda"), con pasos guiados en expedientes nuevos.
+- Memoria sin tarjetas: hechos ("lo que consta") separados de la estrategia ("tu criterio"), campos con aspecto de documento y "Datos protegidos antes de consultar a la IA".
+- Movimientos en línea de tiempo por mes (30 últimos + "Ver anteriores"); documentos en lista con buscador.
+- Agente: detalle del proveedor plegable, "Folio recuerda" antes de la primera consulta, acciones rápidas según el plazo más cercano y "Actualizar memoria" bajo la última respuesta.
+- Barra lateral: agenda agrupada (vencidos, hoy, próximos 7 días) y expedientes ordenados por última modificación.
+- Ventana "Privacidad de este expediente" (también desde la barra lateral).
+### Pruebas
+- e2e: estados del agente (amplio, Esc, cerrado, se recuerda tras bloquear, Ctrl+.), Resumen, privacidad, línea de tiempo, documentos, expediente nuevo con pasos guiados, agente a pantalla completa y sin desbordes en celular.
+
 ## [0.4.0] — 2026-10-03
 ### Agregado
 - Biblioteca legal peruana (E8): descarga recomendada desde la bienvenida o Ajustes, búsqueda local, búsqueda legal asistida, bloque de normas vigentes en cada consulta, fichas de verificación de citas, fecha de corte y avisos de atraso, actualización automática incremental y "Ver cambios recientes".

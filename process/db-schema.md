@@ -16,7 +16,8 @@ Base `folio-mvp` · versión 1 · object store `kv` (clave → valor). Todo regi
 ## Settings
 ```js
 { provider: 'openrouter'|'openai'|'anthropic'|'custom', baseUrl, apiKey, model,
-  zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto'|'light'|'dark', lastExp }
+  zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto'|'light'|'dark', lastExp,
+  agentPanel?: 'abierto'|'amplio'|'cerrado' }   // v0.5: panel del agente en pantallas anchas; si falta, abierto desde 1280 px
 ```
 
 ## Expediente (`exp:<uuid>`)

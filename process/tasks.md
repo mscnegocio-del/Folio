@@ -11,6 +11,23 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 - E6 App de escritorio (Electron) y conectores CEJ/SINOE — ⏳
 - E7 Endurecimiento de seguridad — ⏳
 - E8 Biblioteca legal peruana actualizada (normas vigentes, verificador de citas) — 🔄 F0 ✅ · F1 ✅ publicada en v0.4.0 con 7 normas · ⏳ 4 normas + CP parte 2 · ⏳ F2
+- E9 Rediseño UX/UI v0.5.0 "el expediente primero" — 🔄 spec aprobado; F1–F6 hechas (sin publicar) · ⏳ revisión del usuario, Release y sitio → process/specs/rediseno-ux-v0.5.md
+
+## E9 · Rediseño UX/UI v0.5.0 (spec aprobado 2026-10-03)
+| # | Tarea | Fase | Estado |
+|---|---|---|---|
+| T-401 | Tokens marino/teal claro+oscuro, menos sombras, logo y favicon en base64 | F1 | ✅ |
+| T-402 | Panel del agente con 3 estados (abierto/amplio/cerrado) + `settings.agentPanel` + atajo + móvil a pantalla completa | F2 | ✅ |
+| T-403 | Carátula con ficha de estado + indicador de privacidad + ventana "Privacidad de este expediente" | F2 | ✅ |
+| T-404 | Barra lateral: agenda agrupada (vencidos/hoy/7 días), lista con marca teal, pie con Privacidad | F2 | ✅ |
+| T-405 | Pestaña Resumen (con estado vacío guiado) | F3 | ✅ |
+| T-406 | Memoria sin tarjetas: hechos vs estrategia, "datos protegidos", campos con aspecto de documento | F3 | ✅ |
+| T-407 | Movimientos: línea de tiempo agrupada por mes + "ver anteriores" | F4 | ✅ |
+| T-408 | Documentos en lista con insignias y buscador | F4 | ✅ |
+| T-409 | Agente: detalle técnico plegable, "Folio recuerda", acciones rápidas contextuales | F5 | ✅ |
+| T-410 | Microinteracciones + accesibilidad + e2e y capturas nuevas | F6 | ✅ |
+| T-411 | Sitio web con la paleta nueva | F7 | 💤 después de que el usuario revise la app |
+| T-412 | Revisión del usuario → `APP.version` 0.5.0 → Release v0.5.0 + prueba de 10 segundos con abogados (en T-205) | — | ⏳ |
 
 ## Publicación (v0.2.0 → v0.4.0)
 | # | Tarea | Estado |
