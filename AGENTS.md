@@ -55,6 +55,7 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Decisiones (ADR): process/decisions.md
 - Investigación de mercado, CEJ/SINOE, modelos y costos: process/research.md
 - Ley 29733, roles y riesgos: process/legal-privacy.md
+- Cómo escribir posts en X (fórmula, ganchos, calendario): process/estrategia-x.md
 - Specs: process/specs/ (biblioteca-legal-peru.md, rediseno-visual-v0.3.md, rediseno-ux-v0.5.md)
 - Biblioteca legal (mantenedor, formatos del SPIJ): normas/README.md · reporte: normas/reporte-verificacion.md
 
