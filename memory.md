@@ -36,7 +36,9 @@
 - [x] **v0.5.0 publicada — E9 rediseño UX (F1–F6)**: paleta marino/teal del logo, agente plegable (abierto/amplio/cerrado, `Ctrl+.`), pestaña Resumen, memoria sin tarjetas, línea de tiempo por mes, documentos en lista, ventana de privacidad, agenda agrupada. e2e TODO OK (65 comprobaciones). Capturas en `tests/shots/` (01, 02, 04, 10–13)
 
 ## ⏳ Pendiente (marcado por el usuario al cerrar la sesión 2026-10-03)
-- [ ] Anuncio en X: borrador de hilo (4 posts) en Typefully, cuenta @Miltonvwsb, https://typefully.com/?d=11056370&a=339409 — sin publicar; falta agregar el banner a mano (la red del PJ bloquea la subida). Publicar solo después de la consulta del cargo y la validación legal
+- [x] Anuncio v0.5.0 en X publicado por el usuario (2026-10-03, con banner). Post de citas publicado.
+- [ ] Semana 5–11/10 en X: 7 borradores en Typefully (ver Historial); publicar a mano (X bloquea por API posts con enlaces); jueves como encuesta nativa; sábado grabar video con datos ficticios
+- [ ] Post corto para grupos de Facebook de abogados (texto en la sesión 2026-10-03; revisar reglas del grupo sobre enlaces)
 - [ ] **E9**: recoger observaciones del usuario sobre v0.5.0 (ajustes en una v0.5.x) y aplicar la paleta marino/teal al sitio (T-411)
 - [ ] **T-304** Descargar del SPIJ las 4 normas que faltan → `normas/fuentes/`: `L30364.doc` (Ley 30364), `NLPT.doc` (Ley 29497), `LPAG.doc` (TUO Ley 27444), `LOPJ.doc` (TUO LOPJ). No están en "Normativa básica": usar el buscador del SPIJ. Luego: conversor + reporte (0 pendientes) + visto bueno + push (Folio las descarga solo)
 - [ ] **T-304b** Código Penal, segunda parte (arts. 201 en adelante) → `normas/fuentes/CP-2.doc`; al tenerla, quitar `parcial` del CP en `catalogo.json`
@@ -46,6 +48,8 @@
 - [ ] Verificar en la red del PJ (proxy Forcepoint) el aviso de versión y la descarga de la biblioteca (GitHub Pages); probar el traspaso de datos en Firefox
 - [ ] T-205 Prueba con 3–5 abogados de confianza · T-206/T-309 prueba ciega de calidad (con y sin biblioteca)
 
+- 2026-10-03: anuncio v0.5.0 publicado en X (a mano: X bloquea por API posts con enlaces). Post 2 (citas) publicado; versión simple en borrador Typefully d=11059349. Guía para próximos posts: process/estrategia-x.md. Semana 5–11/10 en borradores Typefully (lun 11059349, mar 11059640, mié 11059642, jue 11059644, vie 11059645, sáb 11059646 video, dom 11059648); se publican a mano
+
 ## ⚠️ Decisiones vigentes (detalle en process/decisions.md)
 - Solo gratuito con BYOK; plan pagado descartado por ahora (exige RUC, encargo de datos y choca con el cargo en el PJ)
 - DeepSeek solo vía OpenRouter con ZDR, nunca su API directa
@@ -54,10 +58,12 @@
 - Rediseño v0.5 (D-34 a D-37): el expediente es el centro; panel "Agente" (nunca "Folio IA"); destino de los datos siempre visible al enviar; teal `#0F766E` en claro; se mantienen DM Sans y Fragment Mono
 
 ## 🔴 Bloqueantes
+- Nota: el anuncio se publicó antes de resolver los dos bloqueantes siguientes (decisión del usuario, 2026-10-03); siguen pendientes
 - Validación de textos legales por un especialista en datos personales (antes de difundir)
 - Consulta escrita sobre incompatibilidades del cargo en el PJ (antes de difundir y, sobre todo, antes de cobrar cualquier servicio). Pregunta concreta: "desarrollo y publico en mi tiempo libre un software gratuito y de código abierto, sin fines de lucro ni recursos institucionales, ¿hay incompatibilidad?" → Gerencia de RR. HH. / Oficina de Integridad de la CSJ Junín. Análisis en process/legal-privacy.md §Incompatibilidad del cargo
 
 ## 📌 Próximos pasos (próxima sesión)
+- Redes: revisar qué post tuvo más respuestas y preparar la semana siguiente con process/estrategia-x.md
 0. **E9**: observaciones del usuario sobre v0.5.0 → ajustes (v0.5.x) → T-411: llevar la paleta marino/teal al sitio (docs/index.html)
 1. Si el usuario trae las 4 normas o `CP-2.doc`: `python normas/build_normas.py --strict --reporte normas/reporte-verificacion.md` → revisar pendientes del reporte (los formatos del SPIJ ya conocidos están en normas/README.md) → visto bueno → commit + push (sin Release: la app actualiza la biblioteca sola)
 2. Si no: empezar F2 (spec §6 y T-307) o la prueba con abogados (T-205)
@@ -83,3 +89,4 @@
 - 2026-10-03: **v0.5.0 publicada** (Release en GitHub con dist/folio.html). Sin cambio de política (no hay salidas de red nuevas): los usuarios de v0.3.1+ reciben el aviso de nueva versión. Sitio: solo se actualizó el número de versión (la paleta queda para T-411).
 - 2026-10-03: Search Console: verificado con la cuenta correcta (la etiqueta de otra cuenta se quitó), sitemap enviado y comprobado en línea.
 - 2026-10-03: Search Console verificado; Typefully conectado y borrador del anuncio v0.5.0 creado (no publicado). Análisis de incompatibilidad del cargo (Ley 30745 dedicación exclusiva salvo docencia; Ley 27588; Ley 27815; casos ODANC Ica y OCMA ODECMA Lima Norte) → process/legal-privacy.md. Regla nueva: trabajar Folio solo fuera de horario y en equipo personal, nunca en la red del PJ.
+- 2026-10-03: cierre. Redes: anuncio y post de citas publicados en X; guía process/estrategia-x.md; 7 borradores semanales; post para Facebook. Sin cambios de código.

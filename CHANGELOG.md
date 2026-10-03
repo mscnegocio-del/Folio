@@ -1,5 +1,9 @@
 # Changelog — Folio
 
+## [Sin publicar] — 2026-10-03
+### Documentación
+- `process/estrategia-x.md`: guía para escribir en X (algoritmo, referentes, fórmula, ganchos, calendario semanal); enlazada desde AGENTS.md.
+
 ## [0.5.0] — 2026-10-03 — rediseño "el expediente primero"
 ### Cambiado
 - Identidad del logo: azul marino + teal en claro y oscuro (reemplaza el acento azul); logo e ícono incluidos en el HTML.
