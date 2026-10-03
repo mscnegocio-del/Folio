@@ -1,11 +1,14 @@
 # Changelog — Folio
 
-## [Sin publicar] — 0.4.0
+## [0.4.0] — 2026-10-03
 ### Agregado
 - Biblioteca legal peruana (E8): descarga recomendada desde la bienvenida o Ajustes, búsqueda local, búsqueda legal asistida, bloque de normas vigentes en cada consulta, fichas de verificación de citas, fecha de corte y avisos de atraso, actualización automática incremental y "Ver cambios recientes".
 - Conversor `normas/build_normas.py` con reporte de calidad y catálogo de las 11 normas aprobadas; lee las exportaciones del SPIJ (HTML con extensión .doc), aplica cada cambio sobre la marca (*) o (n), registra la verificación en `normas/reporte-verificacion.md` y admite correcciones con texto oficial (`normas/ajustes/`) y revisiones (`normas/revision/`).
 - Artículos reubicados y renumerados (p. ej., CP 153 → 129-A por la Ley 31146): ficha ⚠ con el número actual y el artículo de destino en el contexto del agente.
 - Términos de uso §7 (la biblioteca no es edición oficial) y política sección 9 (descarga desde GitHub Pages). Versión de avisos "2026-10-01 r2".
+### Cambiado
+- Paquete inicial: 7 normas (4 588 entradas) con revisión asistida contra el SPIJ (`normas/reporte-verificacion.md`). El Código Penal llega hasta el art. 200-A (falta la segunda parte en el SPIJ) y Folio lo indica.
+- Carga atómica de la biblioteca y búsqueda con más peso al título de cada artículo.
 ### Pruebas
 - e2e con paquete ficticio armado por el conversor real: instalación, revisión previa, envío sin datos reales, fichas de citas, actualización incremental y aviso de atraso.
 

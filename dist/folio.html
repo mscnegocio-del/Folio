@@ -901,7 +901,7 @@ const NDB = {
 };
 
 /* ---------- Texto: normalización y raíces simples ---------- */
-const NSTOP = new Set('para como pero sobre entre cuando tambien donde quien desde todo durante todos contra otros ante ellos esto antes algunos unos otro otras otra tanto estos mucho quienes nada muchos cual poco ella estar estas algunas algo este esta estan esos esas eso sera seria puede pueden debe deben hacer tiene tienen articulo articulos codigo segun caso favor dime quiero necesito cual cuales tengo hacer sobre aplica aplicable norma normas ley leyes'.split(' '));
+const NSTOP = new Set('los las del con por que una uno sus son ser han fue sin mas este para como pero sobre entre cuando tambien donde quien desde todo durante todos contra otros ante ellos esto antes algunos unos otro otras otra tanto estos mucho quienes nada muchos cual poco ella estar estas algunas algo este esta estan esos esas eso sera seria puede pueden debe deben hacer tiene tienen articulo articulos codigo segun caso favor dime quiero necesito cual cuales tengo hacer sobre aplica aplicable norma normas ley leyes'.split(' '));
 function nstem(w) { return w.length > 6 ? w.slice(0, 6) : w.replace(/(es|s)$/, ''); }
 function ntokens(s) { return norm(s).split(/[^a-z0-9ñ]+/).filter(w => w.length > 2 && !NSTOP.has(w)).map(nstem); }
 function artKey(n) { return String(n).toUpperCase().replace(/\s+/g, '').replace(/[°º]/g, '').replace(/^0+(?=\d)/, ''); }
@@ -911,14 +911,14 @@ const Lib = {
   manifest: null, normas: {}, index: null, loaded: false,
   async load() {
     if (this.loaded) return this;
-    try {
-      this.manifest = await NDB.get('manifest') || null;
-      this.normas = {};
-      for (const n of this.manifest?.normas || []) {
+    try {   // se arma aparte y se publica de una vez: nadie ve la biblioteca a medio cargar
+      const manifest = await NDB.get('manifest') || null, normas = {};
+      for (const n of manifest?.normas || []) {
         const d = await NDB.get('norma:' + n.id); if (!d) continue;
         d.byN = new Map(d.articulos.map(a => [artKey(a.n), a]));
-        this.normas[n.id] = d;
+        normas[n.id] = d;
       }
+      this.manifest = manifest; this.normas = normas;
     } catch { this.manifest = null; this.normas = {}; }
     this.index = null; this.loaded = true;
     return this;
@@ -934,7 +934,7 @@ const Lib = {
     for (const [id, d] of Object.entries(this.normas)) {
       for (const a of d.articulos) {
         if (a.derogado || a.reubicadoEn) continue;
-        const toks = ntokens(`${a.titulo || ''} ${a.titulo || ''} ${a.texto}`);
+        const tit = a.titulo || ''; const toks = ntokens(`${tit} ${tit} ${tit} ${tit} ${a.texto}`);   // el título (sumilla) pesa más
         const tf = new Map(); toks.forEach(t => tf.set(t, (tf.get(t) || 0) + 1));
         const di = docs.length; docs.push({ id, n: a.n, len: toks.length }); total += toks.length;
         for (const [t, f] of tf) { if (!post.has(t)) post.set(t, []); post.get(t).push([di, f]); }
@@ -1368,7 +1368,7 @@ function onbBody() {
     <p class="lead">Usas tu propia cuenta: pagas directo al proveedor y solo por lo que consumes. Puedes hacerlo ahora o después desde Ajustes.</p>
     <button type="button" class="btn" data-action="show-keyguide" style="margin-bottom:1rem">¿Es tu primera vez? Ver guía paso a paso</button>
     <div class="sheet" id="pf-block">${providerFieldsHTML(o.cfg)}</div>
-    <label class="check"><input type="checkbox" data-onb-normas ${o.normas ? 'checked' : ''}><span><strong>Descargar la biblioteca legal peruana (recomendado)</strong><br><span class="small muted">Textos vigentes de la Constitución, los códigos y leyes principales, para que el agente cite normas peruanas actualizadas y Folio verifique sus citas. Unos 2 MB desde el sitio público del proyecto; las búsquedas se hacen en tu equipo.</span></span></label>
+    <label class="check"><input type="checkbox" data-onb-normas ${o.normas ? 'checked' : ''}><span><strong>Descargar la biblioteca legal peruana (recomendado)</strong><br><span class="small muted">Textos vigentes de la Constitución, los códigos y leyes principales, para que el agente cite normas peruanas actualizadas y Folio verifique sus citas. Menos de 1 MB desde el sitio público del proyecto; las búsquedas se hacen en tu equipo.</span></span></label>
     <div class="note"><p>Tu key se guarda cifrada en este equipo y solo se usa para llamar al proveedor directamente desde aquí.</p></div>`;
 }
 function renderOnb() {
@@ -1695,7 +1695,7 @@ function showArticle(id, n) {
 function normasSettingsHTML() {
   const s = S.settings;
   const head = `<div class="sheet-head"><h3>Biblioteca legal peruana</h3>${Lib.installed() ? libStatusHTML() : ''}</div>`;
-  if (!Lib.installed()) return `${head}<p class="hint">Textos vigentes de la Constitución, los códigos y las leyes principales. Con ella, el agente cita normas peruanas actualizadas y Folio verifica cada cita. Unos 2 MB desde el sitio público del proyecto; las búsquedas se hacen en tu equipo.</p>
+  if (!Lib.installed()) return `${head}<p class="hint">Textos vigentes de la Constitución, los códigos y las leyes principales. Con ella, el agente cita normas peruanas actualizadas y Folio verifica cada cita. Menos de 1 MB desde el sitio público del proyecto; las búsquedas se hacen en tu equipo.</p>
     <div class="row"><button class="btn primary sm" data-action="normas-install">Descargar biblioteca</button><span id="normas-status" class="small muted"></span></div>`;
   const rows = Lib.manifest.normas.filter(n => Lib.normas[n.id]).map(n => `<tr><td>${esc(n.titulo)}${n.parcial ? `<br><span class="small" style="color:var(--warn)">Incompleta: ${esc(n.parcial)}</span>` : ''}</td><td class="mono">${esc(fmtDate(n.actualizadoAl || Lib.manifest.actualizadoAl))}</td><td>${Lib.normas[n.id].articulos.length.toLocaleString('es-PE')}</td></tr>`).join('');
   const age = Lib.ageDays();

@@ -60,6 +60,13 @@ Está pensado para el **abogado litigante peruano**, el estudio pequeño y el ab
 
 Folio es **gratis**. Lo único que pagas es el uso de IA directamente a tu proveedor, según lo que consumas. Con modelos económicos, una consulta normal suele costar centavos de sol. Revisa los precios vigentes en la página de tu proveedor.
 
+## Biblioteca legal peruana (nuevo en v0.4.0)
+
+- **Normas vigentes en tu equipo:** Constitución, Código Civil, Código Procesal Civil, Código Penal (arts. 1 al 200-A), Código Procesal Penal, Nuevo Código Procesal Constitucional y Código de los Niños y Adolescentes, tomados del SPIJ.
+- **El agente cita la ley, no la recuerda:** antes de responder busca los artículos aplicables y se los entrega al modelo con su fecha.
+- **Cada cita verificada:** ✓ vigente · ⚠ cita textual distinta, cambio por regir o artículo reubicado (p. ej., CP 153 → 129-A) · ✗ derogado o inexistente · 🌐 norma de otro país · ○ fuera de la biblioteca.
+- **Se actualiza sola** y muestra siempre la fecha de los textos. No es una edición oficial: verifica en la fuente antes de usar un artículo.
+
 ## Privacidad por diseño
 
 Folio se diseñó pensando en el secreto profesional y en la **Ley N.° 29733, Ley de Protección de Datos Personales**.

@@ -1,5 +1,5 @@
 # Estado actual — Folio
-> Última actualización: 2026-10-01 · Versión: 0.3.1
+> Última actualización: 2026-10-03 · Versión: 0.4.0
 
 ## ✅ Completado
 - [x] Investigación de mercado (sept. 2026): BYOK existe globalmente; en Perú nadie combina BYOK + memoria por expediente → process/research.md
@@ -59,3 +59,4 @@
 - 2026-10-02: CP segunda parte queda pendiente (el usuario no la encontró). CP marcado `parcial` en el catálogo: Folio no marca como inexistentes los artículos que faltan y avisa al modelo. Siguiente: descargar CONST, CC, CPC, NCPCO y CNA.
 - 2026-10-02: 7 normas convertidas desde el SPIJ: CONST 229 (incl. 16 DFT), CC 2149, CPC 903, CP 290 (parcial), NCPP 581, NCPCO 141, CNA 283. Conversor: disposiciones finales como entradas propias (DFT-CUARTA…), derogación solo si es del artículo completo, salta índices/cuadros de modificaciones/datos de Word, ignora artículos de otras normas citados (saltos >100). Pendiente: revisión humana de 213 artículos con modificaciones parciales; faltan L30364, NLPT, LPAG, LOPJ (buscador del SPIJ) y CP parte 2.
 - 2026-10-03: revisión asistida del paquete (7 normas, 4 588 entradas): 510 artículos con cambios parciales → 494 sobre marca, 14 verificados, 2 ajustes (CONST 2, CP 121), 0 pendientes. Se corrigieron ~10 errores del conversor (texto perdido, versiones viejas, notas (1)(2), reubicados Ley 31146, 129-Ñ). Reporte: normas/reporte-verificacion.md. **Falta: visto bueno del usuario para publicar docs/normas y v0.4.0**; faltan L30364, NLPT, LPAG, LOPJ y CP parte 2.
+- 2026-10-03: v0.4.0 publicada con la biblioteca legal (7 normas en docs/normas, GitHub Pages). Probada con el paquete real: instalación, búsqueda, fichas (152 ✓, 153 → 129-A, 296 ○ parcial). Siguiente: L30364, NLPT, LPAG, LOPJ y CP parte 2; luego F2 (vigía diario de El Peruano).

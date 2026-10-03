@@ -4,6 +4,69 @@
  "actualizadoAl": "2026-10-01",
  "normas": [
   {
+   "id": "CONST",
+   "titulo": "Constitución Política del Perú",
+   "corto": "Const.",
+   "alias": [
+    "constitucion",
+    "constitucion politica",
+    "constitucion politica del peru",
+    "carta magna"
+   ],
+   "materias": [
+    "todas"
+   ],
+   "fuenteOficial": "https://spij.minjus.gob.pe/",
+   "actualizadoAl": "2026-10-02",
+   "archivo": "CONST.json.gz",
+   "sha256": "1cf33d3210fae658cc6f5f7d4162fe578ae0bbe521896b36a80946d13dda1c1c",
+   "bytes": 44631,
+   "articulos": 229
+  },
+  {
+   "id": "CC",
+   "titulo": "Código Civil",
+   "corto": "CC",
+   "alias": [
+    "codigo civil",
+    "c.c.",
+    "cc",
+    "decreto legislativo 295"
+   ],
+   "materias": [
+    "civil",
+    "familia"
+   ],
+   "fuenteOficial": "https://spij.minjus.gob.pe/",
+   "actualizadoAl": "2026-10-02",
+   "archivo": "CC.json.gz",
+   "sha256": "1b753afbda38998e38b0ff689e07d67d08376e4bb9d4a1d05ff97c9f8b487bad",
+   "bytes": 211032,
+   "articulos": 2149
+  },
+  {
+   "id": "CPC",
+   "titulo": "Código Procesal Civil",
+   "corto": "CPC",
+   "alias": [
+    "codigo procesal civil",
+    "c.p.c.",
+    "cpc",
+    "decreto legislativo 768"
+   ],
+   "materias": [
+    "civil",
+    "familia",
+    "laboral"
+   ],
+   "fuenteOficial": "https://spij.minjus.gob.pe/",
+   "actualizadoAl": "2026-10-02",
+   "archivo": "CPC.json.gz",
+   "sha256": "1ec634d437a087ceeccbd1a130e160602fe3580d1ec79edf1e6661e9f8974fda",
+   "bytes": 130898,
+   "articulos": 903
+  },
+  {
    "id": "CP",
    "titulo": "Código Penal",
    "corto": "CP",
@@ -20,9 +83,9 @@
    "actualizadoAl": "2026-10-01",
    "parcial": "solo artículos 1 al 200-A; falta la segunda parte",
    "archivo": "CP.json.gz",
-   "sha256": "e3a73e72a424ff325223cebd12c2e5b756335d43afffa8d62d01123ad3d1be7a",
-   "bytes": 56214,
-   "articulos": 290
+   "sha256": "9c72d3bba01d1be3674f58697656a19395c367683eca0fd67c9071d48e52ee9c",
+   "bytes": 59422,
+   "articulos": 291
   },
   {
    "id": "NCPP",
@@ -42,9 +105,48 @@
    "fuenteOficial": "https://spij.minjus.gob.pe/",
    "actualizadoAl": "2026-10-01",
    "archivo": "NCPP.json.gz",
-   "sha256": "d6783047a4dbd4697ab861b268ddc93224b2a9269cf44868f41d718e8ef20743",
-   "bytes": 162094,
-   "articulos": 574
+   "sha256": "61673bc862c5939253013bbe71aa5b6c02d1a99c9b8fba8a93debdb24874e709",
+   "bytes": 175481,
+   "articulos": 592
+  },
+  {
+   "id": "NCPCO",
+   "titulo": "Nuevo Código Procesal Constitucional",
+   "corto": "CPConst.",
+   "alias": [
+    "nuevo codigo procesal constitucional",
+    "codigo procesal constitucional",
+    "ley 31307"
+   ],
+   "materias": [
+    "constitucional"
+   ],
+   "fuenteOficial": "https://spij.minjus.gob.pe/",
+   "actualizadoAl": "2026-10-02",
+   "archivo": "NCPCO.json.gz",
+   "sha256": "35cccd123b8666380422868d5ef6382347a6015fc1982c93f219371740e176e6",
+   "bytes": 29744,
+   "articulos": 141
+  },
+  {
+   "id": "CNA",
+   "titulo": "Código de los Niños y Adolescentes",
+   "corto": "CNA",
+   "alias": [
+    "codigo de los ninos y adolescentes",
+    "codigo del nino y adolescente",
+    "cna",
+    "ley 27337"
+   ],
+   "materias": [
+    "familia"
+   ],
+   "fuenteOficial": "https://spij.minjus.gob.pe/",
+   "actualizadoAl": "2026-10-02",
+   "archivo": "CNA.json.gz",
+   "sha256": "5dffb547b944cfa1ea8218a0cac678d6b6c7681784da7c85de9cbdbd461dadf9",
+   "bytes": 45035,
+   "articulos": 283
   }
  ]
 }

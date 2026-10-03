@@ -21,7 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fragment+Mono&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"SoftwareApplication","name":"Folio","applicationCategory":"BusinessApplication","operatingSystem":"Windows, macOS, Linux (navegador web)","softwareVersion":"0.3.1","inLanguage":"es-PE","description":"Agente de IA gratuito y de código abierto para abogados litigantes en el Perú, con memoria por expediente y cifrado local.","offers":{"@type":"Offer","price":"0","priceCurrency":"PEN"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","downloadUrl":"https://github.com/mscnegocio-del/Folio/releases/latest","author":{"@type":"Person","name":"Milton Salcedo Cruz","address":"Huancayo, Perú"}},
+{"@type":"SoftwareApplication","name":"Folio","applicationCategory":"BusinessApplication","operatingSystem":"Windows, macOS, Linux (navegador web)","softwareVersion":"0.4.0","inLanguage":"es-PE","description":"Agente de IA gratuito y de código abierto para abogados litigantes en el Perú, con memoria por expediente y cifrado local.","offers":{"@type":"Offer","price":"0","priceCurrency":"PEN"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","downloadUrl":"https://github.com/mscnegocio-del/Folio/releases/latest","author":{"@type":"Person","name":"Milton Salcedo Cruz","address":"Huancayo, Perú"}},
 {"@type":"FAQPage","mainEntity":[
 {"@type":"Question","name":"¿Folio es gratis?","acceptedAnswer":{"@type":"Answer","text":"Sí. Folio es gratuito y de código abierto. Solo pagas el uso de IA directamente a tu proveedor, según lo que consumas."}},
 {"@type":"Question","name":"¿Mis expedientes se suben a internet?","acceptedAnswer":{"@type":"Answer","text":"No. Se guardan cifrados en tu navegador. Solo sale hacia el proveedor de IA el texto de cada consulta, seudonimizado y después de que lo revises."}},
@@ -217,7 +217,7 @@ footer nav a:hover{color:#fff}
 <div class="hero">
   <div class="glow" aria-hidden="true"><i></i></div>
   <div class="wrap">
-    <span class="eyebrow"><svg><use href="#spark"/></svg>Versión de prueba · v0.3.1</span>
+    <span class="eyebrow"><svg><use href="#spark"/></svg>Versión de prueba · v0.4.0</span>
     <h1>Folio<br>Tu expediente, con memoria.</h1>
     <p>Consultas, escritos, seguimiento del CEJ: empieza aquí.</p>
     <p>Folio es un agente de IA gratuito y de código abierto para abogados litigantes en el Perú. Todo queda cifrado en tu equipo y usas tu propia cuenta de IA.</p>
@@ -313,6 +313,27 @@ footer nav a:hover{color:#fff}
   </div>
 </section>
 
+<section id="biblioteca">
+  <div class="wrap">
+    <div class="head reveal">
+      <h2>Leyes peruanas vigentes, no de memoria</h2>
+      <p>Folio trae una biblioteca legal peruana que se guarda en tu equipo. Antes de responder, el agente lee los artículos vigentes que aplican y Folio verifica cada cita.</p>
+    </div>
+    <article class="card reveal" style="padding-bottom:40px">
+      <h3>Cada cita, verificada</h3>
+      <p>Debajo de cada respuesta, una ficha por norma citada: vigente, cita textual distinta, cambio por regir, derogada, reubicada, fuera de la biblioteca o de otro país. Siempre con la fecha de los textos y el enlace a la fuente oficial.</p>
+      <div class="preview" style="min-height:0;border-bottom:1px solid var(--win-bd);border-radius:12px;display:flex;flex-wrap:wrap;gap:8px">
+        <span class="tag" style="margin:0;color:#9be3b4;border-color:rgba(155,227,180,.4)">✓ Art. 152 CP · vigente</span>
+        <span class="tag" style="margin:0;color:#f2c35b;border-color:rgba(242,195,91,.4)">⚠ Art. 153 CP → hoy art. 129-A</span>
+        <span class="tag" style="margin:0;color:#f2c35b;border-color:rgba(242,195,91,.4)">⚠ Cita textual distinta</span>
+        <span class="tag" style="margin:0;color:#ff8a80;border-color:rgba(255,138,128,.4)">✗ Artículo inexistente</span>
+        <span class="tag" style="margin:0;color:#ff8a80;border-color:rgba(255,138,128,.4)">🌐 Código Civil español</span>
+      </div>
+      <p style="margin:24px 0 0;font-size:14px">Incluye la Constitución, el Código Civil, el Procesal Civil, el Penal (artículos 1 al 200-A), el Procesal Penal, el Procesal Constitucional y el de los Niños y Adolescentes, tomados del SPIJ. Pronto: Ley 30364, Nueva Ley Procesal del Trabajo, LPAG y LOPJ. No es una edición oficial: verifica en la fuente antes de usar un artículo.</p>
+    </article>
+  </div>
+</section>
+
 <section id="empezar">
   <div class="wrap">
     <div class="head reveal">
@@ -323,7 +344,7 @@ footer nav a:hover{color:#fff}
       <article class="card reveal">
         <h3>Descarga y abre con doble clic</h3>
         <p style="margin-bottom:12px">Sin instalación, sin cuenta y sin servidores.</p>
-        <div class="code"><a href="https://github.com/mscnegocio-del/Folio/releases/latest">↓ folio.html</a><span class="hint">v0.3.1 · 293 KB</span></div>
+        <div class="code"><a href="https://github.com/mscnegocio-del/Folio/releases/latest">↓ folio.html</a><span class="hint">v0.4.0 · 326 KB</span></div>
         <div class="code"><a href="https://github.com/mscnegocio-del/Folio/blob/main/docs/guia-api-keys.md">→ ¿Cómo obtengo mi key?</a><span class="hint">guía paso a paso</span></div>
       </article>
       <article class="card reveal">
@@ -361,6 +382,7 @@ footer nav a:hover{color:#fff}
     <div class="faq reveal">
       <details><summary>¿Folio es gratis?</summary><p>Sí. Es gratuito y de código abierto (AGPL-3.0). Solo pagas el uso de IA a tu proveedor.</p></details>
       <details><summary>¿Mis expedientes se suben a internet?</summary><p>No. Se guardan cifrados en tu navegador. Solo sale hacia el proveedor de IA el texto de cada consulta, seudonimizado y después de que lo revises.</p></details>
+      <details><summary>¿Folio usa leyes actualizadas?</summary><p>Sí, con su biblioteca legal peruana: el agente cita artículos vigentes tomados del SPIJ y Folio verifica cada cita. La fecha de los textos siempre está a la vista y la biblioteca se actualiza sola. No es una edición oficial: verifica en la fuente antes de usar un artículo en un escrito.</p></details>
       <details><summary>¿Se conecta al CEJ o a SINOE?</summary><p>No de forma automática. Copias el seguimiento del CEJ, lo pegas y el agente lo ordena.</p></details>
       <details><summary>¿Folio reemplaza al abogado?</summary><p>No. Organiza información y propone borradores. Verifica toda cita, norma y plazo antes de usarla.</p></details>
       <details><summary>¿Qué pasa si borro los datos del navegador?</summary><p>Perderías la bóveda. Descarga periódicamente la copia de seguridad cifrada desde Ajustes.</p></details>

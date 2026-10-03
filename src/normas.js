@@ -33,7 +33,7 @@ const NDB = {
 };
 
 /* ---------- Texto: normalización y raíces simples ---------- */
-const NSTOP = new Set('para como pero sobre entre cuando tambien donde quien desde todo durante todos contra otros ante ellos esto antes algunos unos otro otras otra tanto estos mucho quienes nada muchos cual poco ella estar estas algunas algo este esta estan esos esas eso sera seria puede pueden debe deben hacer tiene tienen articulo articulos codigo segun caso favor dime quiero necesito cual cuales tengo hacer sobre aplica aplicable norma normas ley leyes'.split(' '));
+const NSTOP = new Set('los las del con por que una uno sus son ser han fue sin mas este para como pero sobre entre cuando tambien donde quien desde todo durante todos contra otros ante ellos esto antes algunos unos otro otras otra tanto estos mucho quienes nada muchos cual poco ella estar estas algunas algo este esta estan esos esas eso sera seria puede pueden debe deben hacer tiene tienen articulo articulos codigo segun caso favor dime quiero necesito cual cuales tengo hacer sobre aplica aplicable norma normas ley leyes'.split(' '));
 function nstem(w) { return w.length > 6 ? w.slice(0, 6) : w.replace(/(es|s)$/, ''); }
 function ntokens(s) { return norm(s).split(/[^a-z0-9ñ]+/).filter(w => w.length > 2 && !NSTOP.has(w)).map(nstem); }
 function artKey(n) { return String(n).toUpperCase().replace(/\s+/g, '').replace(/[°º]/g, '').replace(/^0+(?=\d)/, ''); }
@@ -43,14 +43,14 @@ const Lib = {
   manifest: null, normas: {}, index: null, loaded: false,
   async load() {
     if (this.loaded) return this;
-    try {
-      this.manifest = await NDB.get('manifest') || null;
-      this.normas = {};
-      for (const n of this.manifest?.normas || []) {
+    try {   // se arma aparte y se publica de una vez: nadie ve la biblioteca a medio cargar
+      const manifest = await NDB.get('manifest') || null, normas = {};
+      for (const n of manifest?.normas || []) {
         const d = await NDB.get('norma:' + n.id); if (!d) continue;
         d.byN = new Map(d.articulos.map(a => [artKey(a.n), a]));
-        this.normas[n.id] = d;
+        normas[n.id] = d;
       }
+      this.manifest = manifest; this.normas = normas;
     } catch { this.manifest = null; this.normas = {}; }
     this.index = null; this.loaded = true;
     return this;
@@ -66,7 +66,7 @@ const Lib = {
     for (const [id, d] of Object.entries(this.normas)) {
       for (const a of d.articulos) {
         if (a.derogado || a.reubicadoEn) continue;
-        const toks = ntokens(`${a.titulo || ''} ${a.titulo || ''} ${a.texto}`);
+        const tit = a.titulo || ''; const toks = ntokens(`${tit} ${tit} ${tit} ${tit} ${a.texto}`);   // el título (sumilla) pesa más
         const tf = new Map(); toks.forEach(t => tf.set(t, (tf.get(t) || 0) + 1));
         const di = docs.length; docs.push({ id, n: a.n, len: toks.length }); total += toks.length;
         for (const [t, f] of tf) { if (!post.has(t)) post.set(t, []); post.get(t).push([di, f]); }
