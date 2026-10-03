@@ -1,0 +1,50 @@
+{
+ "formato": "folio-normas",
+ "version": 1,
+ "actualizadoAl": "2026-10-01",
+ "normas": [
+  {
+   "id": "CP",
+   "titulo": "Código Penal",
+   "corto": "CP",
+   "alias": [
+    "codigo penal",
+    "c.p.",
+    "cp",
+    "decreto legislativo 635"
+   ],
+   "materias": [
+    "penal"
+   ],
+   "fuenteOficial": "https://spij.minjus.gob.pe/",
+   "actualizadoAl": "2026-10-01",
+   "parcial": "solo artículos 1 al 200-A; falta la segunda parte",
+   "archivo": "CP.json.gz",
+   "sha256": "e3a73e72a424ff325223cebd12c2e5b756335d43afffa8d62d01123ad3d1be7a",
+   "bytes": 56214,
+   "articulos": 290
+  },
+  {
+   "id": "NCPP",
+   "titulo": "Código Procesal Penal",
+   "corto": "CPP",
+   "alias": [
+    "codigo procesal penal",
+    "nuevo codigo procesal penal",
+    "c.p.p.",
+    "cpp",
+    "ncpp",
+    "decreto legislativo 957"
+   ],
+   "materias": [
+    "penal"
+   ],
+   "fuenteOficial": "https://spij.minjus.gob.pe/",
+   "actualizadoAl": "2026-10-01",
+   "archivo": "NCPP.json.gz",
+   "sha256": "d6783047a4dbd4697ab861b268ddc93224b2a9269cf44868f41d718e8ef20743",
+   "bytes": 162094,
+   "articulos": 574
+  }
+ ]
+}

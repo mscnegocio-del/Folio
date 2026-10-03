@@ -41,7 +41,19 @@ def match_art(line: str):
         q, n, tit, rest = m.group(1), m.group(2), m.group(3).strip(), m.group(4).strip()
     n = re.sub(r"\s*[-–]?\s*([A-Z])$", r"-\1", re.sub(r"\s+", " ", n.strip()).upper()) if re.match(r"\d", n) else n.upper()
     return bool(q), n, unquote(tit), unquote(rest)
-SKIPHDR = re.compile(r"^\s*(CONCORDANCIAS?|JURISPRUDENCIA|PROCESOS CONSTITUCIONALES|DOCTRINA|NOTA DE ACLARACI|FE DE ERRATAS)", re.I)
+SKIPHDR = re.compile(r"^\s*(?:[A-Z]\s)?(CONCORDANCIAS?|JURISPRUDENCIA|PROCESOS CONSTITUCIONALES|DOCTRINA|NOTA DE ACLARACI|FE DE ERRATAS)", re.I)
+DISPHDR = re.compile(r"^(?:[ÚU]NICA\s+)?DISPOSICI[OÓ]N(?:ES)?\s+[A-ZÁÉÍÓÚ ,Y]{4,80}$")
+ORD = re.compile(r"^((?:D[ÉE]CIM[OA]\s*)?(?:PRIMER[OA]?|SEGUND[OA]|TERCER[OA]?|CUART[OA]|QUINT[OA]|SEXT[OA]|S[ÉE]PTIM[OA]|S[ÉE]TIM[OA]|OCTAV[OA]|NOVEN[OA])|D[ÉE]CIM[OA]|UND[ÉE]CIM[OA]|DUOD[ÉE]CIM[OA]|VIG[ÉE]SIM[OA](?:\s+[A-ZÁÉÍÓÚ]+)?|[ÚU]NIC[OA])\s*(?:\.\s*-?|-|–|:)\s*(.*)$", re.I)
+WORDJUNK = re.compile(r"^(Normal|false|true|X-NONE|ES-PE|EN-US|\d{1,3})$")
+ENDTXT = re.compile(r"^(POR TANTO|Mando se publique|Dado en la Casa de Gobierno|Comun[íi]quese al se[ñn]or Presidente|En Lima, a los)", re.I)
+
+
+def disp_abbr(head: str) -> str:
+    """'DISPOSICIONES FINALES Y TRANSITORIAS' -> 'DFT'; 'DISPOSICIONES COMPLEMENTARIAS FINALES' -> 'DCF'."""
+    w = [x for x in re.sub(r"[^A-ZÁÉÍÓÚ ]", " ", head.upper()).split() if x not in ("Y", "DE", "LA", "LAS", "UNICA", "ÚNICA")]
+    return "".join(x[0] for x in w).replace("Á", "A").replace("É", "E").replace("Í", "I").replace("Ó", "O").replace("Ú", "U")
+
+
 FULLMOD = re.compile(r"^\s*\(\*+\)\s*Art[íi]culo\s+(modificad|sustituid|incorporad)", re.I)
 HEAD = re.compile(r"^\s*(LIBRO|SECCI[ÓO]N|T[ÍI]TULO|SUBT[ÍI]TULO|CAP[ÍI]TULO|SUBCAP[ÍI]TULO)\b(.*)$")
 NOTE = re.compile(r"^\s*\(\*+\)")
@@ -129,6 +141,8 @@ def parse(text: str):
     arts, ctx, cur, skip, pending_head, prev = [], {}, None, False, None, ""
     expect = None  # None | "full" | "partial"
     frag, frag_incorp = None, False
+    disp = None  # abreviatura de la sección de disposiciones en curso ("DFT", "DCF"…)
+    last_num = None  # último número de artículo leído, para detectar citas de otras normas
 
     def close_frag():
         nonlocal frag
@@ -147,8 +161,29 @@ def parse(text: str):
         cur["lineas"].extend(body)
 
     for line in lines:
-        if arts and re.match(r"^FE DE ERRATAS\b", line): break   # anexo final del SPIJ: no es texto vigente
+        if re.match(r"^(FE DE ERRATAS|CUADRO DE MODIFICACIONES)\b", line): close_frag(); cur = None; skip = True; continue   # anexos del SPIJ: no son texto vigente
+        if WORDJUNK.match(line): continue   # restos internos del exportador de Word
+        if arts and ENDTXT.match(line): close_frag(); cur = None; skip = True; continue   # fórmula de promulgación
+        if arts and DISPHDR.match(line) and line.upper() == line:
+            close_frag(); disp = disp_abbr(line); disp_title = head_fmt(line); cur = None; skip = False; expect = None; continue
+        if disp:
+            om = ORD.match(line)
+            if om and not NOTE.match(line):
+                close_frag()
+                body = unquote(om.group(2))
+                cur = {"n": f"{disp}-{om.group(1).upper().replace(' ', '')}", "titulo": f"{om.group(1).capitalize()} {disp_title.lower()}",
+                       "ubicacion": disp_title, "lineas": [body] if body else [], "historial": [], "derogado": False, "revisar": False}
+                arts.append(cur); skip = False; expect = None; continue
         m = match_art(line)
+        if m and disp:
+            # Dentro de una sección de disposiciones, "Artículo …" suele ser texto citado de otra norma.
+            # Solo vuelve al articulado si es un artículo sin comillas que continúa la numeración (o un Título Preliminar).
+            maxn = max((int(re.match(r"\d+", a["n"]).group()) for a in arts if re.match(r"\d", a["n"])), default=0)
+            num = int(re.match(r"\d+", m[1]).group()) if re.match(r"\d", m[1]) else None
+            if not m[0] and (num is None or num <= maxn + 30): disp = None
+            else: m = None
+        if m and re.match(r"\d", m[1]) and last_num is not None and int(re.match(r"\d+", m[1]).group()) > last_num + 100:
+            m = None   # "Artículo 2011" dentro del Código Procesal Civil: es un artículo del Código Civil citado
         if m and m[0] and frag is None and (cur is None or m[1] != cur["n"]):  # artículo incorporado por una ley
             m = (False,) + m[1:]
         if m and (not m[0] or (cur and frag is None and m[1] == cur["n"])):
@@ -164,7 +199,9 @@ def parse(text: str):
                 if cur and cur["lineas"] and cur["lineas"][-1] == prev: cur["lineas"].pop()
             cur = {"n": n, "titulo": titulo, "ubicacion": " · ".join(v for k, v in sorted(ctx.items(), key=lambda kv: order.index(kv[0]))),
                    "lineas": [body] if body else [], "historial": [], "derogado": False, "revisar": False}
-            arts.append(cur); skip = False; expect = None; prev = line; continue
+            arts.append(cur); skip = False; expect = None; prev = line
+            if re.match(r"\d", n): last_num = int(re.match(r"\d+", n).group())
+            continue
         prev = line
         h = HEAD.match(line)
         if h and line.upper() == line:
@@ -183,7 +220,7 @@ def parse(text: str):
             if "conformidad" in line.lower() or "precisa" in line.lower(): skip = True; continue
             note = parse_note(line)
             if note:
-                if note["tipo"].startswith("derogad"): cur["derogado"] = True
+                if note["tipo"].startswith("derogad") and re.match(r"^\s*\(\*+\)\s*(Art[íi]culo|Disposici[óo]n)\s+derogad", line, re.I): cur["derogado"] = True
                 cur["historial"].append({k: v for k, v in note.items() if k != "tipo" and v})
                 if FULLMOD.match(line): expect = "full" if line.rstrip().endswith(":") else None
                 elif not note["tipo"].startswith("derogad") and line.rstrip().endswith(":"): expect = "partial"; frag_incorp = note["tipo"].startswith("incorporad"); frag = []
@@ -206,11 +243,12 @@ def parse(text: str):
     out = []
     for a in by.values():
         texto = "\n".join(l for l in a.pop("lineas") if l).strip()
+        texto = re.sub(r"\s*\(\*+\)\s*(RECTIFICADO POR FE DE ERRATAS)?", "", texto).replace("RECTIFICADO POR FE DE ERRATAS", "").strip()
         if not texto and a["titulo"] and not a["derogado"]: texto, a["titulo"] = a["titulo"], ""
         a["historial"].sort(key=lambda h: h.get("publicada") or "")   # el SPIJ no siempre las lista en orden
         last = a["historial"][-1] if a["historial"] else None
-        art = {"n": a["n"], "titulo": a["titulo"], "ubicacion": a["ubicacion"], "texto": texto,
-               "derogado": a["derogado"] or texto.lower().startswith("derogado")}
+        art = {"n": a["n"], "titulo": re.sub(r"\s*\.?\s*-?\s*$", "", a["titulo"]).strip(), "ubicacion": a["ubicacion"], "texto": texto,
+               "derogado": a["derogado"] or bool(re.match(r"^\(?derogad[oa]\)?\.?$", texto.strip(), re.I))}
         if last and last.get("vigenteDesde"): art["vigenteDesde"] = last["vigenteDesde"]
         if a["historial"]: art["historial"] = a["historial"]
         if a["revisar"]: art["revisar"] = True
