@@ -1,5 +1,5 @@
 # Estado actual — Folio
-> Última actualización: 2026-10-03 · Versión publicada: 0.5.0
+> Última actualización: 2026-10-05 · Versión publicada: 0.5.0
 
 ## ✅ Completado
 - [x] Investigación de mercado (sept. 2026): BYOK existe globalmente; en Perú nadie combina BYOK + memoria por expediente → process/research.md
@@ -70,6 +70,7 @@
 3. Al cambiar normas, el sitio y el README mencionan "Pronto: Ley 30364, NLPT, LPAG y LOPJ": actualizar cuando se publiquen
 
 ## Historial
+- 2026-10-05: métricas base — descargas de folio.html en Releases: 6 en total (v0.2.0: 0 · v0.3.0: 2 · v0.3.1: 1 · v0.4.0: 2 · v0.5.0: 1; incluye descargas propias); repo: 1 estrella, 0 forks. Visitas al repo: solo el dueño las ve en GitHub → Insights → Traffic (14 días). GoatCounter agregado al sitio por el usuario (commit dfc1210, código `foliope`, panel en https://foliope.goatcounter.com); cuenta solo desde el 2026-10-05; nunca dentro de la app. Pendiente opcional: aviso en el pie del sitio y `data-goatcounter-click` en los botones de descarga
 - 2026-09-30: repo público, Release v0.2.0, README con SEO, sitio en GitHub Pages (docs/index.html → https://mscnegocio-del.github.io/Folio/). Pendiente: registrar el sitio en Google Search Console.
 - 2026-09-30: sitio rediseñado con estilo oscuro tipo DeepSeek Harness (Montserrat/DM Sans/Fragment Mono, botones píldora); sin logos ni textos de DeepSeek.
 - 2026-09-30: v0.3.0 — app rediseñada con el sistema del sitio (DM Sans/Montserrat/Fragment Mono, acento azul, píldoras), fuentes en base64 (src/fonts.css), sin Google Fonts; e2e TODO OK.
