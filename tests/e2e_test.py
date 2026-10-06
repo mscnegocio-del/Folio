@@ -239,6 +239,8 @@ with sync_playwright() as p:
 
     m = b.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2); mp = m.new_page()
     mp.on("pageerror", lambda e: errors.append("móvil: " + str(e))); mp.route("**/*", handle)
+    mp.goto(URL); mp.wait_for_selector(".onb")
+    check(mp.evaluate("document.documentElement.scrollWidth <= innerWidth"), "móvil: bienvenida sin desborde horizontal")
     onboarding(mp, with_provider=False)
     mp.click("[data-action=load-sample]"); mp.wait_for_selector(".caratula"); mp.wait_for_timeout(400)
     sw = mp.evaluate('document.querySelector("#pane").scrollWidth'); cw = mp.evaluate('document.querySelector("#pane").clientWidth')
