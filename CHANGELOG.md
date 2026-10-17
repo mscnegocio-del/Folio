@@ -1,6 +1,10 @@
 # Changelog — Folio
 
 ## [Sin publicar] — 2026-10-03
+### Sitio
+- Los botones "Descargar" bajan `folio.html` directo (`releases/latest/download/folio.html`), sin pasar por la página de Releases; al hacer clic aparece un aviso ("ábrelo con doble clic") con enlace a GitHub por si la descarga no empieza.
+- En celular y tableta, "Descargar" pasa a "Envíatelo a tu computadora": WhatsApp, correo, copiar enlace o compartir, con el enlace `?ref=celular` para medir en GoatCounter cuántos llegan después a la computadora. Eventos nuevos: `enviar-*` y `descargar-github`.
+- Pregunta frecuente "¿Funciona en el celular?".
 ### Documentación
 - `process/estrategia-x.md`: guía para escribir en X (algoritmo, referentes, fórmula, ganchos, calendario semanal); enlazada desde AGENTS.md.
 
