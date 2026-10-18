@@ -10,6 +10,7 @@ const S = {
   // v0.6 · tres zonas: vista central, ficha (abierta/cerrada, pestaña y modo), barra y hoja en el celular, chips de la caja
   vista: 'inicio', vistaPrev: null, ficha: 'abierta', fichaTab: 'ficha', fichaModo: 'ficha', fuente: null, borrador: null,
   sideOpen: false, fichaMovil: false, ctx: { memoria: true, docs: true, biblioteca: true }, menu: null,
+  prop: { exp: null, sel: {}, confirmar: null, nuevos: [] },   // F5: ✓/✕ de cada propuesta, plazo en confirmación y cambios recién aplicados (resaltados)
   seguirAqui: {}   // F4: conversaciones en las que el abogado eligió "Seguir aquí" (nivel del aviso que ocultó; no se guarda)
 };
 const root = () => $('#root');
@@ -671,17 +672,95 @@ function fichaHTML() {
 function fichaPanelHTML() {
   const e = S.exp, m = e.memoria, next = nextPlazos(e)[0], pend = m.pendientes.filter(p => !p.done);
   const propPlazos = m.propuestas.filter(p => p.estado === 'pendiente' && p.tipo === 'plazo').length;
-  const sin = t => `<div class="sin">${t}</div>`;
+  const sin = t => `<div class="sin">${t}</div>`, nuevos = recienAplicados(e);
   return `<div class="panel">
     <div class="bloque"><span class="lbl">Estado</span>${e.estado ? `<div class="fest">${esc(e.estado)}</div>` : sin('Sin registrar')}</div>
     <div class="bloque"><span class="lbl">Próximo plazo</span>${next
       ? `<div class="plazo"><span class="num">${ddmm(next.fecha)}</span><div><b>${esc(next.desc)}</b><small>${esc(cap(whenLabel(next.fecha)))} · verifícalo con la resolución</small></div></div>`
-      : sin(`Ningún plazo confirmado${propPlazos ? ` · ${propPlazos === 1 ? 'hay 1 propuesto' : `hay ${propPlazos} propuestos`} por confirmar` : ''}`)}</div>
-    <div class="bloque"><span class="lbl">Pendientes</span>${pend.length ? pend.map(p => `<label class="pend"><input type="checkbox" data-action="toggle-pend" data-id="${p.id}">${esc(p.text)}</label>`).join('') : sin('Nada pendiente')}</div>
-    <div class="bloque"><span class="lbl">Hechos clave</span>${m.hechos.trim() ? `<div class="doct">${esc(m.hechos.trim())}</div>` : sin('Sin registrar')}</div>
+      : sin(`Ningún plazo confirmado${propPlazos ? ` · ${propPlazos === 1 ? 'hay 1 propuesto abajo' : `hay ${propPlazos} propuestos abajo`}` : ''}`)}</div>
+    ${cambiosHTML(e)}
+    <div class="bloque"><span class="lbl">Pendientes</span>${pend.length ? pend.map(p => `<label class="pend${nuevos.items.has(p.id) ? ' nuevo' : ''}"><input type="checkbox" data-action="toggle-pend" data-id="${p.id}">${esc(p.text)}</label>`).join('') : sin('Nada pendiente')}</div>
+    <div class="bloque"><span class="lbl">Hechos clave</span>${m.hechos.trim() ? `<div class="doct">${marcarNuevos(m.hechos.trim(), nuevos.hechos)}</div>` : sin('Sin registrar')}</div>
     <div class="bloque"><span class="lbl">Partes</span>${e.partes.length ? e.partes.map(p => `<div class="parte"><span>${esc(p.nombre)} · ${esc(lcFirst(p.rol))}${p.esCliente ? ', tu cliente' : ''}</span>${S.settings.pseudo ? `<span class="num">[${esc(p.tok)}]</span>` : ''}</div>`).join('') : sin('Ninguna registrada')}</div>
     <a class="mas" href="#" data-action="vista-memoria">Ver la memoria completa →</a>
   </div>`;
+}
+/* ---------- Cambios propuestos por el agente (v0.6 · F5, spec §7): ✓/✕, "Aplicar N cambios" sin plazos, cada plazo se confirma aparte ---------- */
+function propState(e) { if (S.prop.exp !== e.id) S.prop = { exp: e.id, sel: {}, confirmar: null, nuevos: [] }; return S.prop; }
+const propPend = (e, chatId) => e.memoria.propuestas.filter(p => p.estado === 'pendiente' && (chatId === undefined || p.chatId === chatId));
+const PROP_K = { estado: 'Estado', resumen: 'Resumen', hechos: 'Hechos', estrategia: 'Estrategia', pend: 'Pendientes', plazo: 'Plazo' };
+function cambiosHTML(e) {
+  const st = propState(e), pend = propPend(e); if (!pend.length) return '';
+  const cambios = pend.filter(p => p.tipo !== 'plazo'), plazos = pend.filter(p => p.tipo === 'plazo');
+  const chats = [...new Set(pend.map(p => p.chatId))], ch = chats.length === 1 && e.chats.find(c => c.id === chats[0]);
+  const de = chats.length > 1 ? `de ${chats.length} conversaciones` : ch ? `de «${esc(trunc(ch.titulo || 'Conversación sin título', 30))}»` : '';
+  const n = cambios.filter(p => st.sel[p.id] !== false).length;
+  const siNo = p => { const no = st.sel[p.id] === false;
+    return `<span class="si-no"><button class="si${no ? '' : ' on'}" data-action="prop-si" data-id="${p.id}" aria-label="Aceptar" aria-pressed="${!no}">${ic('check')}</button><button class="no${no ? ' on' : ''}" data-action="prop-no" data-id="${p.id}" aria-label="Rechazar" aria-pressed="${no}">${ic('cerrar')}</button></span>`; };
+  const cb = p => `<div class="cb${st.sel[p.id] === false ? ' rechazado' : ''}"><span class="s${p.tipo === 'cambia' ? ' m' : ''}">${p.tipo === 'cambia' ? '~' : '+'}</span><div class="txt"><div class="k">${PROP_K[p.seccion] || esc(p.seccion)}${p.tipo === 'cambia' ? ' · cambia' : ''}</div>${esc(p.despues)}${p.tipo === 'cambia' && p.antes ? `<span class="antes">Antes: ${esc(p.antes)}</span>` : ''}</div>${siNo(p)}</div>`;
+  const pz = p => { const preg = st.confirmar === p.id;
+    return `<div class="cb pz"><span class="s p">!</span><div class="txt"><div class="k">Plazo · por confirmar</div><span class="num">${esc(fmtDate(p.fecha))}</span> · ${esc(lcFirst(p.despues))}</div>${preg ? '<span></span>' : `<button class="confirmar" data-action="plazo-confirmar" data-id="${p.id}">Confirmar</button>`}
+      ${preg ? `<div class="pregunta"><span>¿Verificaste la fecha en la resolución y en tu casilla?</span><div><button class="pb" data-action="plazo-si" data-id="${p.id}">Sí, confirmar</button><button class="pb" data-action="plazo-no">Todavía no</button></div></div>` : ''}</div>`; };
+  return `<section class="cambios" id="cambios" aria-label="Cambios propuestos por el agente">
+    <div class="cc"><b>Cambios propuestos por el agente</b><span>${de}</span></div>
+    ${cambios.map(cb).join('')}${plazos.map(pz).join('')}
+    ${cambios.length ? `<div class="acc"><button class="pb prim" data-action="prop-aplicar"${n ? '' : ' disabled'}>Aplicar ${plural(n, 'cambio', 'cambios')}</button><button class="pb" data-action="prop-descartar">Descartar</button></div>` : ''}
+  </section>`;
+}
+// Lo aplicado en esta sesión se resalta en la Ficha (pendientes en verde, hechos con marca)
+function recienAplicados(e) {
+  const ids = new Set(propState(e).nuevos), hist = e.memoria.historial.filter(h => ids.has(h.id) && !h.deshecho);
+  return { items: new Set(hist.filter(h => h.itemId).map(h => h.itemId)), hechos: hist.filter(h => h.seccion === 'hechos').map(h => h.despues) };
+}
+function marcarNuevos(texto, nuevos) {
+  let html = esc(texto);
+  for (const t of nuevos) { const x = esc(t.trim()), i = html.lastIndexOf(x); if (x && i >= 0) html = html.slice(0, i) + `<mark>${x}</mark>` + html.slice(i + x.length); }
+  return html;
+}
+// Aviso inferior con "Deshacer" (como el prototipo); los demás avisos siguen arriba
+let avisoT = null, avisoFn = null;
+function aviso(txt, deshacer) {
+  $('#aviso')?.remove(); clearTimeout(avisoT); avisoFn = deshacer || null;
+  $('#v6')?.insertAdjacentHTML('beforeend', `<div class="aviso" id="aviso" role="status"><span>${esc(txt)}</span>${deshacer ? '<button data-action="aviso-deshacer">Deshacer</button>' : ''}</div>`);
+  avisoT = setTimeout(() => { $('#aviso')?.remove(); avisoFn = null; }, 5000);
+}
+// Después de un cambio en las propuestas: ficha, barra, encabezado y la línea del hilo (sin volver a pintar la conversación)
+function refreshProps() {
+  refreshExp();
+  const l = $('#prop-linea'); if (l && S.vista === 'chat') { const n = propLineaHTML(S.exp, activeChat(S.exp)); if (n) l.outerHTML = n; else l.remove(); }
+}
+function revisarCambios() {
+  abrirFicha(); Object.assign(S, { fichaModo: 'ficha', fichaTab: 'ficha' }); renderFicha(); layout();
+  const c = $('#cambios'); if (!c) return;
+  c.scrollIntoView({ block: 'center' }); c.classList.add('foco'); setTimeout(() => c.classList.remove('foco'), 1600);
+}
+async function aplicarCambios(descartar = false) {
+  const e = S.exp, st = propState(e), lote = propPend(e).filter(p => p.tipo !== 'plazo');
+  const si = descartar ? [] : lote.filter(p => st.sel[p.id] !== false);
+  lote.forEach(p => { if (si.includes(p)) st.nuevos.push(aplicarPropuesta(e, p).id); else p.estado = 'descartada'; });
+  st.sel = {}; await saveExp(); refreshProps();
+  aviso(descartar ? 'Cambios descartados' : `Memoria actualizada · ${plural(si.length, 'cambio', 'cambios')}`, async () => {
+    const no = lote.filter(p => !revertirPropuesta(e, p));
+    await saveExp(); refreshProps();
+    if (no.length) toast(`${plural(no.length, 'cambio no se deshizo porque', 'cambios no se deshicieron porque')} editaste esa parte de la memoria después.`, true);
+  });
+}
+async function confirmarPlazo(id) {
+  const e = S.exp, st = propState(e), p = e.memoria.propuestas.find(x => x.id === id); if (!p || p.estado !== 'pendiente') return;
+  st.confirmar = null; st.nuevos.push(aplicarPropuesta(e, p).id); await saveExp(); refreshProps();
+  aviso(`Plazo confirmado: ${ddmm(p.fecha)} · ${lcFirst(p.despues)}`, async () => { revertirPropuesta(e, p); await saveExp(); refreshProps(); });
+}
+// Línea del hilo: lo que propuso el agente en esta conversación, o lo ya aplicado, o "Actualizar memoria" a mano
+function propLineaHTML(e, c) {
+  const msgs = c.mensajes, last = msgs[msgs.length - 1]; if (!last || S.sending) return '';
+  const props = e.memoria.propuestas.filter(p => p.chatId === c.id), pend = props.filter(p => p.estado === 'pendiente');
+  const cambios = pend.filter(p => p.tipo !== 'plazo').length, plazos = pend.length - cambios;
+  if (cambios) return `<div class="prop" id="prop-linea"><span>El agente propone <b>${plural(cambios, 'cambio', 'cambios')}</b> en la memoria${plazos ? ` y <b>${plural(plazos, 'plazo', 'plazos')}</b> por confirmar` : ''}</span><button data-action="revisar-cambios">Revisar en la ficha →</button></div>`;
+  const ult = props.reduce((a, p) => p.at > a ? p.at : a, ''), lote = props.filter(p => p.at === ult), aplic = lote.filter(p => p.estado === 'aplicada').length;
+  const ultResp = [...msgs].reverse().find(m => m.role === 'assistant')?.at || '';
+  if (aplic && ult >= ultResp) return `<div class="prop hecho" id="prop-linea"><span>✓ ${plural(aplic, 'cambio aplicado', 'cambios aplicados')} a la memoria${plazos ? ` · falta confirmar ${plural(plazos, 'plazo', 'plazos')}` : ''}</span><button data-action="revisar-cambios">Ver en la ficha →</button></div>`;
+  if (plazos) return `<div class="prop" id="prop-linea"><span>El agente propone <b>${plural(plazos, 'plazo', 'plazos')}</b> por confirmar</span><button data-action="revisar-cambios">Revisar en la ficha →</button></div>`;
+  return isReady(S.settings) && last.role === 'assistant' ? `<div class="prop" id="prop-linea"><span>¿Algo de esto debe quedar en la memoria del caso?</span><button data-action="propose-memory" title="El agente propone cambios a la memoria; tú decides cuáles guardar">Actualizar memoria</button></div>` : '';
 }
 function fdocsHTML() {
   const e = S.exp, leidos = docsLeidos(e);
@@ -922,10 +1001,7 @@ function quickActions(e) {
 function chatHTML() {
   const e = S.exp, c = activeChat(e), msgs = c.mensajes;
   if (!msgs.length) return `<div class="col hilo" id="hilo">${parteDeHTML(e, c)}</div>`;
-  const last = msgs[msgs.length - 1];
-  const prop = isReady(S.settings) && last.role === 'assistant' && !S.sending
-    ? `<div class="prop"><span>¿Algo de esto debe quedar en la memoria del caso?</span><button data-action="propose-memory" title="El agente propone cambios a la memoria; tú decides cuáles guardar">Actualizar memoria</button></div>` : '';
-  return `<div class="col hilo" id="hilo">${msgs.map(msgHTML).join('')}${prop}</div>`;
+  return `<div class="col hilo" id="hilo">${msgs.map(msgHTML).join('')}${propLineaHTML(e, c)}</div>`;
 }
 /* Conversación nueva: lo que el agente ya sabe, calculado en el equipo (no gasta consultas) */
 function parteDeHTML(e, c) {
@@ -934,7 +1010,7 @@ function parteDeHTML(e, c) {
   const rows = [['Estado', e.estado || 'sin registrar'], ['Estrategia', una(e.memoria.estrategia) || 'sin registrar'],
     prev?.resumen ? ['Resumen anterior', una(prev.resumen)] : ['Próximo plazo', next ? `${fmtDate(next.fecha)}, ${next.desc}` : 'ninguno registrado']];
   S.quick = isReady(S.settings) ? quickActions(e).slice(0, 3) : [];
-  return `${prev ? `<div class="continua">${ic('flecha')}<span>Continúa de <a href="#" data-action="open-chat" data-id="${prev.id}">«${esc(prev.titulo || 'Conversación anterior')}»</a> · Folio guardó un resumen y la memoria está al día</span></div>` : ''}
+  return `${prev ? `<div class="continua">${ic('flecha')}<span>Continúa de <a href="#" data-action="open-chat" data-id="${prev.id}">«${esc(prev.titulo || 'Conversación anterior')}»</a> · ${(n => n ? `Folio guardó un resumen · ${plural(n, 'cambio', 'cambios')} de memoria por revisar en la ficha` : 'Folio guardó un resumen y la memoria está al día')(propPend(e, prev.id).length)}</span></div>` : ''}
     <div class="ya"><span class="lbl">El agente parte de</span>${rows.map(([k, v]) => `<div class="r"><span>${k}</span><span>${esc(v)}</span></div>`).join('')}</div>
     ${S.quick.length ? `<div class="atajos">${S.quick.map(([l], i) => `<button class="atajo" data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}</div>` : ''}`;
 }
@@ -1273,17 +1349,6 @@ function itemsMemoria(j, R) {
   (Array.isArray(j.plazos_nuevos) ? j.plazos_nuevos : []).filter(p => p && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha || '') && R(p.descripcion)).forEach(p => items.push({ k: 'plazo', label: `Nuevo plazo, ${fmtDate(p.fecha)}`, v: R(p.descripcion), fecha: p.fecha }));
   return items;
 }
-// Guarda las propuestas y pide al abogado elegir cuáles aplicar (nada se aplica sin su clic; los plazos van desmarcados).
-// Devuelve cuántas aplicó; si cierra sin decidir, quedan pendientes.
-async function revisarPropuestas(e, items, chatId) {
-  const props = addProposals(e, items, chatId);
-  const sel = await askDialog({ title: 'Cambios propuestos a la memoria', ok: 'Aplicar seleccionados', wide: true,
-    collect: d => $$('[data-prop]', d).filter(c => c.checked).map(c => +c.dataset.prop),
-    body: `<p>Marca lo que quieres guardar. Nada cambia sin tu aprobación.</p><ul class="proposal">${items.map((it, i) => `<li><label class="check"><input type="checkbox" data-prop="${i}" ${it.k === 'plazo' ? '' : 'checked'}><span><strong>${esc(it.label)}</strong><br>${esc(it.v)}${it.k === 'plazo' ? '<br><span class="small" style="color:var(--warn)">Verifica esta fecha con la resolución y tu notificación antes de aceptarla.</span>' : ''}</span></label></li>`).join('')}</ul>` });
-  if (!sel) { await saveExp(); return 0; }
-  props.forEach((pr, i) => { if (sel.includes(i)) Object.assign(pr, { estado: 'aplicada', histId: applyMemoryChange(e, items[i], chatId).id }); else pr.estado = 'descartada'; });
-  await saveExp(); return sel.length;
-}
 async function proposeMemory(btn) {
   const e = S.exp, s = S.settings; const P = makePseudo(e, s.pseudo);
   const convo = convoTexto(activeChat(e).mensajes.filter(m => m.role !== 'error').slice(-8));
@@ -1297,10 +1362,9 @@ ${MEMORIA_REGLAS}`;
     const out = await llm({ cfg: s, system, messages: [{ role: 'user', content: user }], maxTokens: 4000 });
     await logSend('Actualizar memoria', system.length + user.length, P);
     const R = v => typeof v === 'string' ? P.restore(v).trim() : '', items = itemsMemoria(parseJSONLoose(out), R);
-    if (!items.length) { toast('El agente no encontró información nueva para la memoria.'); return; }
-    const n = await revisarPropuestas(e, items, activeChat(e).id);
-    if (n) toast(`Memoria actualizada: ${n} cambio${n > 1 ? 's' : ''}.`);
-  } catch (err) { fail(err); } finally { renderCentro(); renderFicha(); }
+    if (!items.length) { toast('El agente no encontró información nueva para la memoria.'); renderCentro(); return; }
+    addProposals(e, items, activeChat(e).id); await saveExp(); renderBarra(); renderCentro(); revisarCambios();
+  } catch (err) { fail(err); renderCentro(); }
 }
 
 /* ---------- Seguir en una nueva (F4, spec §6): el agente resume, propone cambios de memoria y se abre una conversación que continúa ---------- */
@@ -1321,11 +1385,10 @@ En "resumen_conversacion" resume en 3 a 6 líneas lo que se pidió, lo que se co
     const resumen = R(j.resumen_conversacion);
     if (!resumen) throw new FolioError('El agente no devolvió el resumen de la conversación. Intenta de nuevo o con otro modelo.');
     prev.resumen = resumen; await saveExp();
-    const items = itemsMemoria(j, R);
-    if (items.length) { const n = await revisarPropuestas(e, items, prev.id); if (n) toast(`Memoria actualizada: ${n} cambio${n > 1 ? 's' : ''}.`); }
+    const items = itemsMemoria(j, R); if (items.length) addProposals(e, items, prev.id);
     const c = newChat(prev.id); e.chats = [...e.chats.filter(x => x.mensajes.length), c]; e.chatActivo = c.id;
     Object.assign(S, { vista: 'chat', sideOpen: false }); resetFicha();
-    await saveExp(); render(); $('#q')?.focus();
+    await saveExp(); render(); if (items.length) revisarCambios(); $('#q')?.focus();
   } catch (err) { fail(err); if (btn?.isConnected) { btn.disabled = false; btn.textContent = 'Seguir en una nueva'; } }
 }
 
@@ -1551,7 +1614,7 @@ document.addEventListener('click', async ev => {
       case 'hoy-ir': {
         await openExp(id); const e = S.exp; if (!e || e.id !== id) break;
         if (a.dataset.chat && e.chats.some(c => c.id === a.dataset.chat)) { e.chatActivo = a.dataset.chat; S.vista = 'chat'; }
-        abrirFicha(); resetFicha(); render(); break; }
+        abrirFicha(); resetFicha(); render(); revisarCambios(); break; }
       case 'open-chat': abrirChat(id); break;
       case 'new-chat': await irAChatNuevo(); $('#q')?.focus(); break;
       case 'chat-menu': await chatMenu(); break;
@@ -1600,6 +1663,14 @@ document.addEventListener('click', async ev => {
       case 'stop': S.abort?.abort(); break;
       case 'propose-memory': await proposeMemory(a); break;
       case 'seguir-nueva': await seguirEnNueva(a); break;
+      case 'revisar-cambios': revisarCambios(); break;
+      case 'prop-si': case 'prop-no': propState(S.exp).sel[id] = a.dataset.action === 'prop-si'; renderFicha(); break;
+      case 'prop-aplicar': await aplicarCambios(); break;
+      case 'prop-descartar': await aplicarCambios(true); break;
+      case 'plazo-confirmar': propState(S.exp).confirmar = id; renderFicha(); $('#cambios [data-action="plazo-si"]')?.focus(); break;
+      case 'plazo-no': propState(S.exp).confirmar = null; renderFicha(); break;
+      case 'plazo-si': await confirmarPlazo(id); break;
+      case 'aviso-deshacer': { const f = avisoFn; avisoFn = null; $('#aviso')?.remove(); clearTimeout(avisoT); if (f) await f(); break; }
       case 'seguir-aqui': { const c = activeChat(S.exp); S.seguirAqui[c.id] = nivelContexto(S.exp); $('.larga')?.remove(); break; }
       case 'open-settings': await settingsView(); fillConsentLine(); break;
       case 'close-settings': closeSettings(); break;

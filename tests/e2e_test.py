@@ -67,7 +67,7 @@ def handle(route, request):
                 content = json.dumps({"citas": [{"norma": "CC", "articulo": "481"}], "terminos": ["alimentos"]})
             if "módulo de memoria" in text:
                 content = json.dumps({"estado": "MOCK-ESTADO", "hechos_agregar": "MOCK-HECHO [PERSONA_2] alega ingresos menores.",
-                                      "pendientes_nuevos": ["MOCK-PEND"], "plazos_nuevos": []})
+                                      "pendientes_nuevos": ["MOCK-PEND"], "plazos_nuevos": [{"fecha": "2027-06-30", "descripcion": "Absolver el traslado (MOCK-PLAZO)"}]})
             if "seguirá en una nueva" in text:
                 content = json.dumps({"resumen_conversacion": "MOCK-RESUMEN: [PERSONA_1] pidió el esquema de absolución; falta el perito.",
                                       "pendientes_nuevos": ["MOCK-PEND-F4"], "plazos_nuevos": []})
@@ -212,7 +212,30 @@ with sync_playwright() as p:
     check(pg.evaluate("S.settings.review") is False, "«Revisar siempre antes de enviar» se cambia desde la vista previa")
     pg.evaluate("S.settings.review=true;saveSettings()")
     pg.click(".prop [data-action=propose-memory]"); pg.wait_for_selector("#velo-envio .envio"); pg.click("[data-action=envio-enviar]")
-    pg.wait_for_selector("[data-prop]", timeout=10000); pg.click("[data-dlg=yes]"); pg.wait_for_timeout(500)
+    pg.wait_for_selector("#cambios", timeout=10000); n_plazos = pg.evaluate("S.exp.memoria.plazos.length")
+    # v0.6 · F5: cambios propuestos en la Ficha, aplicar sin plazos, deshacer y confirmar el plazo aparte
+    check(pg.locator("#cambios .cb:not(.pz)").count() == 3 and pg.locator("#cambios .cb.pz").count() == 1 and pg.inner_text("#cambios [data-action=prop-aplicar]") == "Aplicar 3 cambios",
+          "propuestas: caja en la ficha con 3 cambios y 1 plazo aparte")
+    check("estado · cambia" in pg.inner_text("#cambios").lower() and pg.locator("#cambios .cb .s.m").count() == 1 and "de «" in pg.inner_text("#cambios .cc"), "propuestas: tipo (+ nuevo, ~ cambia) y conversación de origen")
+    check("El agente propone 3 cambios en la memoria y 1 plazo por confirmar" in pg.inner_text("#prop-linea"), "propuestas: una sola línea en el hilo")
+    pg.click("#cambios .cb:has-text('MOCK-PEND') [data-action=prop-no]")
+    check(pg.inner_text("#cambios [data-action=prop-aplicar]") == "Aplicar 2 cambios" and pg.locator("#cambios .cb.rechazado").count() == 1, "propuestas: ✕ rechaza y descuenta")
+    pg.click("#cambios .cb:has-text('MOCK-PEND') [data-action=prop-si]")
+    pg.screenshot(path=str(SHOTS / "22-cambios.png"))
+    pg.click("#cambios [data-action=prop-aplicar]"); pg.wait_for_selector("#aviso")
+    pg.screenshot(path=str(SHOTS / "23-aplicado.png"))
+    check(pg.inner_text("#aviso span") == "Memoria actualizada · 3 cambios" and pg.evaluate("S.exp.memoria.plazos.length") == n_plazos, "propuestas: «Aplicar» guarda los cambios pero no el plazo")
+    check(pg.locator("#cambios .cb:not(.pz)").count() == 0 and pg.locator("#cambios .cb.pz").count() == 1 and "falta confirmar 1 plazo" in pg.inner_text("#prop-linea"), "propuestas: queda el plazo por confirmar")
+    check(pg.locator(".ficha .pend.nuevo", has_text="MOCK-PEND").count() == 1 and "MOCK-HECHO" in pg.inner_text(".ficha .doct mark"), "propuestas: lo aplicado se resalta en la ficha")
+    pg.click("#aviso [data-action=aviso-deshacer]"); pg.wait_for_timeout(200)
+    check(pg.locator("#cambios .cb:not(.pz)").count() == 3 and "MOCK-ESTADO" not in pg.inner_text(".ficha .fest") and pg.evaluate("S.exp.memoria.pendientes.some(p=>p.text==='MOCK-PEND')") is False, "propuestas: «Deshacer» devuelve la memoria y las propuestas")
+    pg.click("#cambios [data-action=prop-aplicar]"); pg.wait_for_selector("#aviso")
+    pg.click("#cambios [data-action=plazo-confirmar]")
+    check("¿Verificaste la fecha en la resolución y en tu casilla?" in pg.inner_text("#cambios .pregunta"), "plazo: se confirma aparte con la pregunta de verificación")
+    pg.click("#cambios [data-action=plazo-no]"); check(pg.locator("#cambios .pregunta").count() == 0, "plazo: «Todavía no» lo deja por confirmar")
+    pg.click("#cambios [data-action=plazo-confirmar]"); pg.click("#cambios [data-action=plazo-si]"); pg.wait_for_timeout(200)
+    check(pg.inner_text("#aviso span") == "Plazo confirmado: 30/06 · absolver el traslado (MOCK-PLAZO)" and pg.locator("#cambios").count() == 0 and pg.evaluate("S.exp.memoria.plazos.length") == n_plazos + 1, "plazo: confirmado se registra y la caja desaparece")
+    check("✓ 4 cambios aplicados a la memoria" in pg.inner_text("#prop-linea") and "hecho" in pg.get_attribute("#prop-linea", "class"), "propuestas: la línea del hilo queda en verde")
     check("MOCK-ESTADO" in pg.inner_text(".ficha .fest"), "la ficha muestra el nuevo estado procesal")
     pg.click(".ficha [data-action=vista-memoria]"); pg.wait_for_selector("[data-bind=estado]")
     check(v6("vista") == "memoria" and pg.input_value("[data-bind=estado]") == "MOCK-ESTADO", "actualizar memoria aplica cambios aprobados (memoria completa)")
@@ -222,12 +245,12 @@ with sync_playwright() as p:
 
     # v0.6 · F1: conversaciones por expediente, propuestas e historial de la memoria, última visita
     d = pg.evaluate("""async()=>{const e=await store.get('exp:'+S.exp.id),c=e.chats.find(x=>x.id===e.chatActivo);
-      return {chats:e.chats.filter(x=>x.mensajes.length).length,tieneChat:'chat' in e,titulo:c.titulo,msgs:c.mensajes.length,hist:e.memoria.historial.map(h=>h.seccion+':'+(h.chatId===c.id)),
+      return {chats:e.chats.filter(x=>x.mensajes.length).length,tieneChat:'chat' in e,titulo:c.titulo,msgs:c.mensajes.length,hist:e.memoria.historial.filter(h=>!h.deshecho).map(h=>h.seccion+':'+(h.chatId===c.id)),
               props:e.memoria.propuestas.map(p=>p.estado),visita:!!e.ultimaVisita,frags:c.mensajes.find(m=>m.meta).meta.frags}}""")
     check(d["chats"] == 1 and not d["tieneChat"] and d["msgs"] >= 2, "conversaciones: los mensajes viven en la conversación activa")
     check(len(d["titulo"]) > 0 and isinstance(d["frags"], list), "conversaciones: título local y documentos leídos guardados")
-    check(sorted(d["hist"]) == ["estado:true", "hechos:true", "pend:true"], "memoria: historial de cambios aprobados con su conversación de origen")
-    check(d["props"] == ["aplicada"] * 3 and d["visita"], "memoria: propuestas marcadas como aplicadas y visita registrada")
+    check(sorted(d["hist"]) == ["estado:true", "hechos:true", "pend:true", "plazo:true"], "memoria: historial de cambios aprobados con su conversación de origen")
+    check(d["props"] == ["aplicada"] * 4 and d["visita"], "memoria: propuestas marcadas como aplicadas y visita registrada")
     u = pg.evaluate("""()=>{const e=structuredClone(S.exp),m=e.memoria,h=m.historial.find(x=>x.seccion==='pend'),n=m.pendientes.length;
       const ok1=undoMemoryChange(e,h.id)&&m.pendientes.length===n-1&&!undoMemoryChange(e,h.id);
       const h2=applyMemoryChange(e,{k:'hechos',v:'Hecho de prueba'},null);const ok2=undoMemoryChange(e,h2.id)&&!m.hechos.includes('Hecho de prueba');
@@ -312,9 +335,10 @@ with sync_playwright() as p:
     n_sent = len(sent); prev_id = pg.evaluate("activeChat(S.exp).id")
     pg.click(".larga [data-action=seguir-nueva]"); pg.wait_for_selector("#velo-envio")
     check(not any(x in pg.inner_text("#velo-envio .envio") for x in REAL_DATA) and "[PERSONA_1]" in pg.inner_text("#velo-envio .envio"), "seguir en una nueva: revisión previa seudonimizada")
-    pg.click("[data-action=envio-enviar]"); pg.wait_for_selector("#dlg .proposal", timeout=10000)
+    pg.click("[data-action=envio-enviar]"); pg.wait_for_selector("#hilo .continua", timeout=10000)
     check(len(sent) == n_sent + 1 and not any(x in json.dumps(sent[-1], ensure_ascii=False) for x in REAL_DATA), "seguir en una nueva: una sola consulta, sin datos reales")
-    pg.click("[data-dlg=yes]"); pg.wait_for_selector("#hilo .continua", timeout=10000)
+    check("2 cambios de memoria por revisar en la ficha" in pg.inner_text("#hilo .continua") and pg.locator("#cambios .cb", has_text="MOCK-PEND-F4").count() == 1, "seguir en una nueva: los cambios propuestos esperan en la ficha")
+    pg.click("#cambios [data-action=prop-aplicar]"); pg.wait_for_timeout(200)
     f4 = pg.evaluate("""p=>{const e=S.exp,c=activeChat(e),prev=e.chats.find(x=>x.id===p);return {deChat:c.deChat===p,vacia:!c.mensajes.length,resumen:prev.resumen||'',
       pend:e.memoria.pendientes.some(x=>x.text==='MOCK-PEND-F4'),sys:prepararEnvio('¿Qué falta?').system0}}""", prev_id)
     check(f4["deChat"] and f4["vacia"] and "Rosa Elena" in f4["resumen"] and "Escrito de absolución" in pg.inner_text("#hilo .continua"), "seguir en una nueva: se abre una conversación que continúa la anterior, con el resumen guardado")

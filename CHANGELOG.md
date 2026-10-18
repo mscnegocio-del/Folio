@@ -1,6 +1,15 @@
 # Changelog — Folio
 
 ## [Sin publicar]
+### Cambiado (v0.6 · F5: cambios propuestos en la Ficha)
+- Lo que propone el agente ("Actualizar memoria" y "Seguir en una nueva") ya no abre una ventana: aparece en la Ficha, en la caja "Cambios propuestos por el agente", con su sección, el tipo (+ nuevo, ~ cambia con el texto anterior) y ✓ / ✕ en cada uno.
+- "Aplicar N cambios" no incluye los plazos: cada plazo se confirma aparte con "¿Verificaste la fecha en la resolución y en tu casilla?" [Sí, confirmar] [Todavía no]. "Descartar" rechaza los cambios y deja los plazos.
+- Tras aplicar, descartar o confirmar un plazo, un aviso abajo ofrece "Deshacer" (si editaste esa parte de la memoria después, no se pisa tu texto). Lo recién aplicado se resalta en la Ficha.
+- En el hilo, una sola línea: "El agente propone N cambios en la memoria y M plazos por confirmar · Revisar en la ficha →"; tras aplicar, "✓ N cambios aplicados a la memoria" en verde. "Hoy" lleva directo a la caja.
+- "Continúa de «…»" dice cuántos cambios de la conversación anterior quedan por revisar; "la memoria está al día" solo cuando no queda ninguno.
+### Pruebas
+- e2e: caja de cambios, ✓/✕, aplicar sin plazos, resaltado, deshacer, confirmar plazo (con "Todavía no") y línea del hilo.
+
 ### Cambiado (v0.6 · F4: ventana de contexto)
 - Folio estima en tu equipo cuánto ocupa cada conversación (instrucciones, memoria, normas, fragmentos e historial completo) frente a un presupuesto útil de 60 000 tokens, ajustable en Ajustes → Privacidad de cada consulta. Ya no se corta el historial a los últimos 8 mensajes.
 - Hasta el 70 % no se muestra nada. Desde el 70 %, sobre la caja: "Esta conversación ya es larga…" con [Seguir en una nueva] y [Seguir aquí]; desde el 90 % la línea pasa a ámbar y "Seguir en una nueva" es la acción principal. El porcentaje está en el "⋯" de la conversación.
