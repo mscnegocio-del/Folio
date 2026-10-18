@@ -10,6 +10,7 @@
 - Celular: las pestañas de la maqueta "Pegar desde el CEJ" ya no se cortan en pantallas de 320 px (pasan a dos líneas) y los enlaces y botones chicos tienen zona de toque de 44 px en pantallas táctiles, sin cambiar cómo se ven.
 - Fondo de partículas en la portada (canvas 2D propio, sin three.js): puntos teal y marfil unidos por hilos tenues, como la memoria del expediente. Se pausa fuera de pantalla y con la pestaña oculta, limita la resolución a 2× y la cantidad de partículas según el tamaño de la pantalla; con "reducir movimiento" queda un cuadro quieto.
 ### Documentación
+- Spec E10 `process/specs/rediseno-chat-v0.6.md` (agente al centro, varios chats por expediente, medidor de contexto, memoria "punto medio") y prototipo navegable `process/prototipos/rediseno-chat-v0.6.html`.
 - `process/estrategia-x.md`: guía para escribir en X (algoritmo, referentes, fórmula, ganchos, calendario semanal); enlazada desde AGENTS.md.
 
 ## [0.5.0] — 2026-10-03 — rediseño "el expediente primero"
