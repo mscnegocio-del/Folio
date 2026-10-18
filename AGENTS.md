@@ -26,6 +26,7 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Orden del bundle: CSS fonts.css → styles.css (+ logo de src/img); JS config.js → core.js → normas.js → legal.js → ui.js (ver build.py)
 - Biblioteca legal: solo texto oficial de normas y datos de modificación; nunca concordancias del SPIJ ni extracción automática del SPIJ (ver normas/README.md)
 - UI: usar solo los tokens de `src/styles.css` (claro y oscuro); teal (`--accent`) solo para acción principal, activo, foco y enlaces; nunca volver a cargar fuentes desde Google Fonts
+- **Rediseño v0.6 (E10), regla del usuario:** la interfaz se implementa **tal cual** el prototipo `process/prototipos/rediseno-chat-v0.6.html` (estructura, zonas, textos, colores, tamaños, íconos, estados y comportamiento) hasta culminar todas las fases (F2–F6). No se cambia, no se "mejora" ni se reinterpreta nada sin aprobación explícita del usuario. Si algo del prototipo choca con una regla NUNCA o es técnicamente imposible, se pregunta antes. Pantallas que el prototipo no cubre (bienvenida, bloqueo, ajustes) se mantienen como están, con los mismos tokens
 - Commits: `tipo(alcance): descripción en español` — tipos: feat, fix, docs, style, refactor, test, chore
 
 ## NUNCA

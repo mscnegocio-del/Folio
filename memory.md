@@ -51,6 +51,7 @@
 - 2026-10-03: anuncio v0.5.0 publicado en X (a mano: X bloquea por API posts con enlaces). Post 2 (citas) publicado; versión simple en borrador Typefully d=11059349. Guía para próximos posts: process/estrategia-x.md. Semana 5–11/10 en borradores Typefully (lun 11059349, mar 11059640, mié 11059642, jue 11059644, vie 11059645, sáb 11059646 video, dom 11059648); se publican a mano
 
 ## ⚠️ Decisiones vigentes (detalle en process/decisions.md)
+- **v0.6 tal cual el prototipo** (`process/prototipos/rediseno-chat-v0.6.html`) hasta culminar F2–F6; nada cambia sin aprobación del usuario (D-42, AGENTS.md)
 - Solo gratuito con BYOK; plan pagado descartado por ahora (exige RUC, encargo de datos y choca con el cargo en el PJ)
 - DeepSeek solo vía OpenRouter con ZDR, nunca su API directa
 - Biblioteca legal: fuente única = texto oficial del SPIJ (descarga manual, nunca extracción automática); foros/redes no son fuente; ningún paquete sin revisión + visto bueno del mantenedor (D-28 a D-33)

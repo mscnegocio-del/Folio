@@ -2,6 +2,7 @@
 
 > Estado: **dirección aprobada por el usuario (2026-10-18)** · Épica E10 · Decisiones D-38 a D-41
 > Prototipo navegable: `process/prototipos/rediseno-chat-v0.6.html` (estados con `?vista=hoy|inicio|chat|fuente|borrador|larga|limite|nueva|envio`; a Figma con el plugin html.to.design)
+> **Regla del usuario (2026-10-18):** se implementa tal cual el prototipo hasta culminar las fases; ningún cambio sin su aprobación (AGENTS.md, D-42).
 > Base: investigación de la competencia (`process/research.md` §8) y segunda opinión UX independiente (2026-10-18). El primer prototipo (4 columnas) se descartó: el chat quedaba en 416–576 px y la información se repetía en 3 o 4 lugares.
 
 ## 1. Problema
