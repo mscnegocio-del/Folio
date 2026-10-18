@@ -18,6 +18,9 @@ const POLICY_CHANGES = [
   { version: '2026-10-01 r2 (borrador)', items: [
     'Política de privacidad, sección 9: la biblioteca legal peruana se descarga desde el sitio público del proyecto (GitHub Pages) y puede actualizarse sola, como máximo dos veces al día. Las búsquedas en la biblioteca se hacen en tu equipo.',
     'Términos de uso, nueva sección 7 (Biblioteca legal): la biblioteca no es una edición oficial; verifica cada artículo en la fuente oficial antes de usarlo.'
+  ] },
+  { version: '2026-10-18 (borrador)', items: [
+    'Política de privacidad, sección 4: para que puedas revisar lo que salió (“Ver lo que se envió”), Folio guarda cifrada en tu equipo una copia del texto exacto enviado en las respuestas más recientes de cada conversación. Al seguir en una conversación nueva, el resumen que prepara el agente también se guarda cifrado en tu equipo. Nada de esto sale a otro lugar.'
   ] }
 ];
 function policyChangesSince(version) {
@@ -39,7 +42,8 @@ function policyHTML() {
 <ul>
 <li>se hace con tu propia cuenta y API key, bajo los términos y la política de privacidad del proveedor, que aceptas directamente con él;</li>
 <li>constituye un flujo transfronterizo de datos personales, porque esos proveedores procesan la información en servidores ubicados fuera del Perú;</li>
-<li>queda anotado solo en tu equipo, en el Registro de envíos de Ajustes (fecha, proveedor, modelo, tamaño y si se aplicó seudonimización).</li>
+<li>queda anotado solo en tu equipo, en el Registro de envíos de Ajustes (fecha, proveedor, modelo, tamaño y si se aplicó seudonimización);</li>
+<li>deja, cifrada solo en tu equipo, una copia del texto exacto que salió en las respuestas más recientes de cada conversación, para que lo revises con “Ver lo que se envió”. Si sigues en una conversación nueva, el resumen que prepara el agente también se guarda cifrado en tu equipo.</li>
 </ul>
 <p>Se recomienda usar la API del proveedor y no sus aplicaciones de consumo, mantener activa la seudonimización y, si usas OpenRouter, exigir proveedores sin retención de datos. Folio no ofrece conexión directa con la API propia de DeepSeek porque, según su política de privacidad, almacena los datos en China; ese modelo puede usarse a través de OpenRouter con proveedores sin retención. Si usas un servidor propio instalado en tu oficina, la información no sale de tu red.</p>
 <h3>5. Seudonimización y sus límites</h3>

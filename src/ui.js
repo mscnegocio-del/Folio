@@ -9,7 +9,8 @@ const S = {
   visitaPrevia: null,   // fecha de la visita anterior al expediente abierto ("Desde tu última visita")
   // v0.6 · tres zonas: vista central, ficha (abierta/cerrada, pestaña y modo), barra y hoja en el celular, chips de la caja
   vista: 'inicio', vistaPrev: null, ficha: 'abierta', fichaTab: 'ficha', fichaModo: 'ficha', fuente: null, borrador: null,
-  sideOpen: false, fichaMovil: false, ctx: { memoria: true, docs: true, biblioteca: true }, menu: null
+  sideOpen: false, fichaMovil: false, ctx: { memoria: true, docs: true, biblioteca: true }, menu: null,
+  seguirAqui: {}   // F4: conversaciones en las que el abogado eligió "Seguir aquí" (nivel del aviso que ocultó; no se guarda)
 };
 const root = () => $('#root');
 // Logo de Folio (imagen incluida en el HTML por build.py, variante clara u oscura según el tema) + insignia Beta
@@ -535,7 +536,15 @@ function convsHTML() {
 function centroHTML() {
   const v = S.vista;
   const body = v === 'hoy' ? hoyHTML() : v === 'inicio' ? inicioHTML() : v === 'chat' ? chatHTML() : v === 'memoria' ? memoriaHTML() : v === 'ajustes' ? settingsHTML() : emptyHTML();
-  return `<header class="cab" id="cab">${cabHTML()}</header>${updateBarHTML()}<div class="scroll" id="scroll">${body}</div>${v === 'chat' ? `<div class="pie-chat">${cajaHTML('chat')}</div>` : ''}`;
+  return `<header class="cab" id="cab">${cabHTML()}</header>${updateBarHTML()}<div class="scroll" id="scroll">${body}</div>${v === 'chat' ? `${largaHTML()}<div class="pie-chat">${cajaHTML('chat')}</div>` : ''}`;
+}
+/* Aviso de conversación larga (F4): nada hasta ~70 %; línea tranquila; ámbar desde ~90 % con "Seguir en una nueva" como acción principal.
+   "Seguir aquí" la oculta en esta sesión hasta el siguiente umbral. */
+function nivelContexto(e) { const u = usoContexto(e); return u >= CTX_ALTO ? 2 : u >= CTX_AVISO ? 1 : 0; }
+function largaHTML() {
+  const e = S.exp, c = activeChat(e); if (!isReady(S.settings) || !conversados(c).length) return '';
+  const n = nivelContexto(e); if (!n || (S.seguirAqui[c.id] || 0) >= n) return '';
+  return `<div class="larga${n === 2 ? ' alta' : ''}" role="status"><span><b>Esta conversación ya es larga.</b> Para que el agente no pierda precisión, sigue en una nueva: Folio guarda un resumen.</span><span class="acc"><button class="pb ${n === 2 ? 'prim' : 'tinta'}" data-action="seguir-nueva"${S.sending ? ' disabled' : ''}>Seguir en una nueva</button><button class="pb" data-action="seguir-aqui">Seguir aquí</button></span></div>`;
 }
 function cabHTML() {
   const e = S.exp, v = S.vista;
@@ -544,7 +553,7 @@ function cabHTML() {
     : v === 'chat' ? [corto, activeChat(e).titulo || 'Nueva conversación'] : v === 'memoria' ? [corto, 'Memoria del expediente'] : v === 'ajustes' ? ['', 'Ajustes'] : ['', 'Expedientes'];
   return `<button class="ib solo-movil" data-action="toggle-side" aria-label="Expedientes">${ic('menu')}</button>
     <div class="tit">${miga ? `<span class="miga">${miga}</span>` : ''}<span class="titulo">${esc(titulo)}</span></div>
-    ${v === 'chat' ? `<button class="pb solo-pc" data-action="new-chat">${ic('mas')}Nueva conversación</button><button class="ib" data-action="chat-menu" aria-label="Más opciones de la conversación">${ic('puntos')}</button>` : ''}
+    ${v === 'chat' ? `<button class="pb solo-pc" data-action="new-chat">${ic('mas')}Nueva conversación</button><button class="ib" data-action="chat-menu" aria-label="Más opciones de la conversación" title="${conversados(activeChat(e)).length ? `Contexto usado: ${usoContexto(e)} % del presupuesto de esta conversación` : ''}">${ic('puntos')}</button>` : ''}
     ${fichaVisible() ? `<button class="ib${fichaAbierta() ? ' on' : ''}" data-action="toggle-ficha" aria-label="Ficha del expediente" title="Ficha del expediente">${ic('ficha')}</button>` : ''}`;
 }
 
@@ -1017,7 +1026,7 @@ async function chatMenu() {
   const c = activeChat(S.exp), n = c.mensajes.filter(m => m.role !== 'error').length;
   const r = await askDialog({ title: 'Conversación', ok: 'Guardar', collect: d => ({ titulo: $('#cv-t', d).value.trim() }),
     body: `<label class="field"><span>Título</span><input class="input" id="cv-t" value="${esc(c.titulo)}" placeholder="Nueva conversación" maxlength="120"></label>
-      <p class="small muted">${plural(n, 'mensaje', 'mensajes')}. Si borras la conversación, la memoria del caso se mantiene.</p>
+      <p class="small muted">${plural(n, 'mensaje', 'mensajes')}${n ? ` · contexto usado: <span class="mono">${usoContexto(S.exp)} %</span> del presupuesto de esta conversación` : ''}. Si borras la conversación, la memoria del caso se mantiene.</p>
       ${c.mensajes.length ? '<button type="button" class="btn danger sm" data-action="del-chat">Borrar conversación</button>' : ''}` });
   if (!r) return;
   c.titulo = r.titulo; await saveExp(); renderCentro(); renderBarra();
@@ -1144,25 +1153,48 @@ async function reviewPayload(system, messages, P) {
   return abrirEnvio({ provider: S.settings.provider, model: S.settings.model, n: P.enabled ? reemplazosEn(P, texto).length : 0, texto, reemp: reemplazosEn(P, texto), instr });
 }
 
-/* Armado único de la consulta: lo usan la vista previa y el envío, así lo que se muestra es lo que sale */
-function historyFor(e) {
-  const h = activeChat(e).mensajes.filter(m => m.role === 'user' || m.role === 'assistant').slice(-8).map(m => ({ role: m.role, content: m.content }));
+/* Ventana de contexto (v0.6 · F4, spec §6): Folio estima los tokens en el equipo contra un presupuesto útil por conversación */
+const tokensDe = n => Math.ceil(n / 3.5);   // ~3,5 caracteres por token en español; es una estimación, no se guarda
+const NORMAS_RESERVA = 6000;                 // caracteres que se reservan para los artículos que agrega la búsqueda de normas
+const CTX_AVISO = 70, CTX_ALTO = 90;          // % del presupuesto: línea tranquila y línea ámbar
+const presupuesto = () => S.settings.contextoMax || DEFAULT_SETTINGS.contextoMax;
+const conversados = c => c.mensajes.filter(m => m.role === 'user' || m.role === 'assistant');
+function chatPrevio(e, c) { const p = c.deChat && e.chats.find(x => x.id === c.deChat); return p?.resumen ? p : null; }
+// Instrucciones + memoria + normas + fragmentos: lo que va en cada consulta además del historial
+function contextoBase(e, text) {
+  const c = S.ctx, lib = Lib.installed() && c.biblioteca, chat = activeChat(e);
+  const ctx = buildContext(e, S.docTexts, text, { memoria: c.memoria, docs: c.docs && e.docs.length > 0, citados: citadosEn(e, text), previo: chatPrevio(e, chat) });
+  return { ctx, lib, chars: SYSTEM_PROMPT.length + (lib ? LEGAL_RULES.length + NORMAS_RESERVA : 0) + ctx.text.length + text.length };
+}
+// Porcentaje del presupuesto que ocupa la conversación activa con su historial completo (se recalcula solo si algo cambió)
+let usoMemo = { k: '', v: 0 };
+function usoContexto(e) {
+  const c = activeChat(e), msgs = conversados(c), ult = [...msgs].reverse().find(m => m.role === 'user')?.content || '';
+  const k = [c.id, c.mensajes.length, c.updatedAt, e.updatedAt, e.docs.length, presupuesto(), S.ctx.memoria, S.ctx.docs, S.ctx.biblioteca, Lib.installed()].join('|');
+  if (usoMemo.k !== k) usoMemo = { k, v: Math.round(tokensDe(contextoBase(e, ult).chars + msgs.reduce((a, m) => a + m.content.length, 0)) / presupuesto() * 100) };
+  return usoMemo.v;
+}
+/* Armado único de la consulta: lo usan la vista previa y el envío, así lo que se muestra es lo que sale.
+   Al 100 % no se corta nada a ciegas: van los mensajes más recientes que caben y se avisa cuántos quedaron fuera. */
+function historyFor(e, cabe = Infinity) {
+  const todos = conversados(activeChat(e)), h = [];
+  let usado = 0;
+  for (let i = todos.length - 1; i >= 0; i--) { usado += todos[i].content.length; if (tokensDe(usado) > cabe && h.length) break; h.unshift({ role: todos[i].role, content: todos[i].content }); }
   while (h.length && h[0].role !== 'user') h.shift();
   const out = []; for (const m of h) { if (out.length && out[out.length - 1].role === m.role) out[out.length - 1].content += '\n\n' + m.content; else out.push({ ...m }); }
-  return out;
+  return { msgs: out, fuera: todos.length - h.length };
 }
 function prepararEnvio(text) {
   const e = S.exp, s = S.settings, c = S.ctx, P = makePseudo(e, s.pseudo);
-  const docs = c.docs && e.docs.length > 0, citados = citadosEn(e, text);
-  const ctx = buildContext(e, S.docTexts, text, { memoria: c.memoria, docs, citados });
+  const { ctx, chars } = contextoBase(e, text);
   const lib = Lib.installed() && c.biblioteca, usePlanner = lib && s.legalPlanner !== false;
   const plannerSystem = PLANNER_PROMPT + normasCatalogText();
   const plannerUser = usePlanner ? P.apply(`Especialidad: ${e.especialidad || 'sin indicar'}\nMateria: ${e.materia || 'sin indicar'}\nEstado procesal: ${c.memoria ? e.estado || 'sin indicar' : 'sin indicar'}\n\nConsulta del abogado:\n${text}`) : '';
   const system0 = P.apply(SYSTEM_PROMPT + (lib ? LEGAL_RULES : '') + '\n\n' + ctx.text);
-  const hist = historyFor(e).map(m => ({ role: m.role, content: P.apply(m.content) }));
+  const { msgs, fuera } = historyFor(e, presupuesto() - tokensDe(chars)), hist = msgs.map(m => ({ role: m.role, content: P.apply(m.content) }));
   const messages = [...hist, { role: 'user', content: P.apply(text) }];
   if (messages.length >= 2 && messages[messages.length - 2].role === 'user') { const last = messages.pop(); messages[messages.length - 1].content += '\n\n' + last.content; }
-  return { e, s, P, ctx, lib, usePlanner, plannerSystem, plannerUser, system0, messages, text };
+  return { e, s, P, ctx, lib, usePlanner, plannerSystem, plannerUser, system0, messages, text, fuera };
 }
 // Texto que se muestra: datos del caso, normas, conversación anterior y la pregunta (con marcadores)
 function textoEnvio(x, normas = null, historial = true) {
@@ -1170,7 +1202,9 @@ function textoEnvio(x, normas = null, historial = true) {
   const corte = Lib.manifest?.actualizadoAl ? ` (biblioteca al ${fmtDate(Lib.manifest.actualizadoAl)})` : '';
   const partes = [data];
   if (x.lib) partes.push(`=== NORMAS VIGENTES${corte} ===\n${normas ?? 'Folio agregará los artículos de tu biblioteca que pida la búsqueda de normas: textos públicos, sin datos del caso.'}`);
-  if (prev.length) partes.push(historial ? `=== CONVERSACIÓN ANTERIOR ===\n${prev.map(m => `[${m.role === 'user' ? 'Abogado' : 'Agente'}]\n${m.content}`).join('\n\n')}` : `=== CONVERSACIÓN ANTERIOR ===\n(${plural(prev.length, 'mensaje anterior', 'mensajes anteriores')} de esta conversación)`);
+  const fuera = x.fuera ? `(${plural(x.fuera, 'mensaje más antiguo no cabe', 'mensajes más antiguos no caben')} en el presupuesto de contexto y no se ${x.fuera === 1 ? 'envía' : 'envían'})` : '';
+  const anteriores = !prev.length ? '' : historial ? prev.map(m => `[${m.role === 'user' ? 'Abogado' : 'Agente'}]\n${m.content}`).join('\n\n') : `(${plural(prev.length, 'mensaje anterior', 'mensajes anteriores')} de esta conversación)`;
+  if (fuera || anteriores) partes.push(`=== CONVERSACIÓN ANTERIOR ===\n${[fuera, anteriores].filter(Boolean).join('\n\n')}`);
   partes.push(`=== PREGUNTA ===\n${q}`);
   if (x.usePlanner && normas == null) partes.push(`=== BÚSQUEDA DE NORMAS (consulta corta que sale antes, sin la memoria) ===\n${x.plannerUser}`);
   return partes.join('\n\n');
@@ -1225,36 +1259,74 @@ async function logSend(kind, chars, P) {
 }
 
 /* ---------- La memoria se actualiza con tu aprobación ---------- */
+const MEMORIA_JSON = `{"estado": string|null, "resumen_agregar": string|null, "hechos_agregar": string|null, "estrategia_agregar": string|null, "pendientes_nuevos": [string], "plazos_nuevos": [{"fecha": "AAAA-MM-DD", "descripcion": string}]}`;
+const MEMORIA_REGLAS = `Incluye solo información nueva que aparezca de forma explícita en la conversación. No inventes fechas: un plazo nuevo solo se propone si la conversación menciona una fecha concreta. Usa null o listas vacías si no hay nada. Conserva los marcadores como [PERSONA_1] tal cual.`;
+const convoTexto = msgs => msgs.map(m => `${m.role === 'user' ? 'ABOGADO' : 'AGENTE'}: ${m.content}`).join('\n\n');
+// Respuesta del modelo → propuestas con sección, con los datos reales restaurados en el equipo
+function itemsMemoria(j, R) {
+  const items = [];
+  if (R(j.estado)) items.push({ k: 'estado', label: 'Nuevo estado procesal', v: R(j.estado) });
+  if (R(j.resumen_agregar)) items.push({ k: 'resumen', label: 'Agregar al resumen', v: R(j.resumen_agregar) });
+  if (R(j.hechos_agregar)) items.push({ k: 'hechos', label: 'Agregar a hechos clave', v: R(j.hechos_agregar) });
+  if (R(j.estrategia_agregar)) items.push({ k: 'estrategia', label: 'Agregar a la estrategia', v: R(j.estrategia_agregar) });
+  (Array.isArray(j.pendientes_nuevos) ? j.pendientes_nuevos : []).map(R).filter(Boolean).forEach(v => items.push({ k: 'pend', label: 'Nuevo pendiente', v }));
+  (Array.isArray(j.plazos_nuevos) ? j.plazos_nuevos : []).filter(p => p && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha || '') && R(p.descripcion)).forEach(p => items.push({ k: 'plazo', label: `Nuevo plazo, ${fmtDate(p.fecha)}`, v: R(p.descripcion), fecha: p.fecha }));
+  return items;
+}
+// Guarda las propuestas y pide al abogado elegir cuáles aplicar (nada se aplica sin su clic; los plazos van desmarcados).
+// Devuelve cuántas aplicó; si cierra sin decidir, quedan pendientes.
+async function revisarPropuestas(e, items, chatId) {
+  const props = addProposals(e, items, chatId);
+  const sel = await askDialog({ title: 'Cambios propuestos a la memoria', ok: 'Aplicar seleccionados', wide: true,
+    collect: d => $$('[data-prop]', d).filter(c => c.checked).map(c => +c.dataset.prop),
+    body: `<p>Marca lo que quieres guardar. Nada cambia sin tu aprobación.</p><ul class="proposal">${items.map((it, i) => `<li><label class="check"><input type="checkbox" data-prop="${i}" ${it.k === 'plazo' ? '' : 'checked'}><span><strong>${esc(it.label)}</strong><br>${esc(it.v)}${it.k === 'plazo' ? '<br><span class="small" style="color:var(--warn)">Verifica esta fecha con la resolución y tu notificación antes de aceptarla.</span>' : ''}</span></label></li>`).join('')}</ul>` });
+  if (!sel) { await saveExp(); return 0; }
+  props.forEach((pr, i) => { if (sel.includes(i)) Object.assign(pr, { estado: 'aplicada', histId: applyMemoryChange(e, items[i], chatId).id }); else pr.estado = 'descartada'; });
+  await saveExp(); return sel.length;
+}
 async function proposeMemory(btn) {
   const e = S.exp, s = S.settings; const P = makePseudo(e, s.pseudo);
-  const convo = activeChat(e).mensajes.filter(m => m.role !== 'error').slice(-8).map(m => `${m.role === 'user' ? 'ABOGADO' : 'AGENTE'}: ${m.content}`).join('\n\n');
+  const convo = convoTexto(activeChat(e).mensajes.filter(m => m.role !== 'error').slice(-8));
   const system = `Eres el módulo de memoria de Folio. Propón cambios a la memoria de un expediente judicial peruano a partir de la conversación reciente. Devuelve SOLO un objeto JSON válido, sin texto adicional, con esta forma:
-{"estado": string|null, "resumen_agregar": string|null, "hechos_agregar": string|null, "estrategia_agregar": string|null, "pendientes_nuevos": [string], "plazos_nuevos": [{"fecha": "AAAA-MM-DD", "descripcion": string}]}
-Incluye solo información nueva que aparezca de forma explícita en la conversación. No inventes fechas: un plazo nuevo solo se propone si la conversación menciona una fecha concreta. Usa null o listas vacías si no hay nada. Conserva los marcadores como [PERSONA_1] tal cual.`;
+${MEMORIA_JSON}
+${MEMORIA_REGLAS}`;
   const user = P.apply(`FECHA DE HOY: ${todayISO()}\n\nMEMORIA ACTUAL:\n${memoryText(e)}\n\nCONVERSACIÓN RECIENTE:\n${convo}`);
   if (!(await reviewPayload(system, [{ role: 'user', content: user }], P, 'memoria'))) return;
   btn = btn || $('[data-action="propose-memory"]'); if (btn) { btn.disabled = true; btn.textContent = 'Analizando…'; }
   try {
     const out = await llm({ cfg: s, system, messages: [{ role: 'user', content: user }], maxTokens: 4000 });
     await logSend('Actualizar memoria', system.length + user.length, P);
-    const j = parseJSONLoose(out); const R = v => typeof v === 'string' ? P.restore(v).trim() : '';
-    const items = [];
-    if (R(j.estado)) items.push({ k: 'estado', label: 'Nuevo estado procesal', v: R(j.estado) });
-    if (R(j.resumen_agregar)) items.push({ k: 'resumen', label: 'Agregar al resumen', v: R(j.resumen_agregar) });
-    if (R(j.hechos_agregar)) items.push({ k: 'hechos', label: 'Agregar a hechos clave', v: R(j.hechos_agregar) });
-    if (R(j.estrategia_agregar)) items.push({ k: 'estrategia', label: 'Agregar a la estrategia', v: R(j.estrategia_agregar) });
-    (j.pendientes_nuevos || []).map(R).filter(Boolean).forEach(v => items.push({ k: 'pend', label: 'Nuevo pendiente', v }));
-    (j.plazos_nuevos || []).filter(p => p && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha || '') && R(p.descripcion)).forEach(p => items.push({ k: 'plazo', label: `Nuevo plazo, ${fmtDate(p.fecha)}`, v: R(p.descripcion), fecha: p.fecha }));
+    const R = v => typeof v === 'string' ? P.restore(v).trim() : '', items = itemsMemoria(parseJSONLoose(out), R);
     if (!items.length) { toast('El agente no encontró información nueva para la memoria.'); return; }
-    const chatId = activeChat(e).id, props = addProposals(e, items, chatId);
-    const sel = await askDialog({ title: 'Cambios propuestos a la memoria', ok: 'Aplicar seleccionados', wide: true,
-      collect: d => $$('[data-prop]', d).filter(c => c.checked).map(c => +c.dataset.prop),
-      body: `<p>Marca lo que quieres guardar. Nada cambia sin tu aprobación.</p><ul class="proposal">${items.map((it, i) => `<li><label class="check"><input type="checkbox" data-prop="${i}" ${it.k === 'plazo' ? '' : 'checked'}><span><strong>${esc(it.label)}</strong><br>${esc(it.v)}${it.k === 'plazo' ? '<br><span class="small" style="color:var(--warn)">Verifica esta fecha con la resolución y tu notificación antes de aceptarla.</span>' : ''}</span></label></li>`).join('')}</ul>` });
-    if (!sel) { await saveExp(); return; }   // si cierras sin decidir, las propuestas quedan pendientes
-    props.forEach((pr, i) => { if (sel.includes(i)) Object.assign(pr, { estado: 'aplicada', histId: applyMemoryChange(e, items[i], chatId).id }); else pr.estado = 'descartada'; });
-    if (!sel.length) { await saveExp(); return; }
-    await saveExp(); toast(`Memoria actualizada: ${sel.length} cambio${sel.length > 1 ? 's' : ''}.`);
+    const n = await revisarPropuestas(e, items, activeChat(e).id);
+    if (n) toast(`Memoria actualizada: ${n} cambio${n > 1 ? 's' : ''}.`);
   } catch (err) { fail(err); } finally { renderCentro(); renderFicha(); }
+}
+
+/* ---------- Seguir en una nueva (F4, spec §6): el agente resume, propone cambios de memoria y se abre una conversación que continúa ---------- */
+async function seguirEnNueva(btn) {
+  const e = S.exp, s = S.settings, prev = activeChat(e), P = makePseudo(e, s.pseudo);
+  const system = `Eres el módulo de memoria de Folio. Una conversación entre un abogado litigante peruano y su asistente ya es larga y seguirá en una nueva. Devuelve SOLO un objeto JSON válido, sin texto adicional, con esta forma:
+{"resumen_conversacion": string, ${MEMORIA_JSON.slice(1)}
+En "resumen_conversacion" resume en 3 a 6 líneas lo que se pidió, lo que se concluyó o preparó y lo que falta, para que el asistente continúe sin la conversación completa. Las demás claves son cambios propuestos a la memoria del expediente. ${MEMORIA_REGLAS}`;
+  const base = tokensDe(system.length + memoryText(e).length + 200);
+  const { msgs, fuera } = historyFor(e, presupuesto() - base);
+  const user = P.apply(`FECHA DE HOY: ${todayISO()}\n\nMEMORIA ACTUAL:\n${memoryText(e)}\n\nCONVERSACIÓN${fuera ? ` (sin ${plural(fuera, 'mensaje más antiguo', 'mensajes más antiguos')}, que no caben)` : ''}:\n${convoTexto(msgs)}`);
+  if (!(await reviewPayload(system, [{ role: 'user', content: user }], P))) return;
+  btn = btn || $('[data-action="seguir-nueva"]'); if (btn) { btn.disabled = true; btn.textContent = 'Resumiendo…'; }
+  try {
+    const out = await llm({ cfg: s, system, messages: [{ role: 'user', content: user }], maxTokens: 4000 });
+    await logSend('Resumen para seguir en una nueva', system.length + user.length, P);
+    const j = parseJSONLoose(out), R = v => typeof v === 'string' ? P.restore(v).trim() : '';
+    const resumen = R(j.resumen_conversacion);
+    if (!resumen) throw new FolioError('El agente no devolvió el resumen de la conversación. Intenta de nuevo o con otro modelo.');
+    prev.resumen = resumen; await saveExp();
+    const items = itemsMemoria(j, R);
+    if (items.length) { const n = await revisarPropuestas(e, items, prev.id); if (n) toast(`Memoria actualizada: ${n} cambio${n > 1 ? 's' : ''}.`); }
+    const c = newChat(prev.id); e.chats = [...e.chats.filter(x => x.mensajes.length), c]; e.chatActivo = c.id;
+    Object.assign(S, { vista: 'chat', sideOpen: false }); resetFicha();
+    await saveExp(); render(); $('#q')?.focus();
+  } catch (err) { fail(err); if (btn?.isConnected) { btn.disabled = false; btn.textContent = 'Seguir en una nueva'; } }
 }
 
 /* ---------- Movimientos pegados del CEJ ---------- */
@@ -1371,6 +1443,7 @@ function settingsHTML() {
     <section class="sheet"><h3>Privacidad de cada consulta</h3>
       <label class="switch" style="margin:.6rem 0 1rem"><input type="checkbox" data-setting="pseudo" ${s.pseudo ? 'checked' : ''}><span><strong>Reemplazar datos personales antes de enviar</strong><br><span class="small muted">Nombres y documentos de las partes, DNI, RUC, teléfonos, correos y direcciones.</span></span></label>
       <label class="switch" style="margin-bottom:1rem"><input type="checkbox" data-setting="review" ${s.review ? 'checked' : ''}><span><strong>Revisar el texto antes de cada envío</strong><br><span class="small muted">Muestra exactamente lo que saldrá de tu equipo y te pide confirmar.</span></span></label>
+      <label class="field" style="max-width:360px"><span>Presupuesto de contexto por conversación</span><select class="select" data-setting="contextoMax">${[30000, 60000, 100000, 150000].map(n => `<option value="${n}" ${presupuesto() === n ? 'selected' : ''}>${n.toLocaleString('es-PE')} tokens${n === DEFAULT_SETTINGS.contextoMax ? ' (recomendado)' : ''}</option>`).join('')}</select><small>Desde el 70 % Folio te sugiere seguir en una conversación nueva con un resumen. Súbelo solo si tu modelo admite más contexto.</small></label>
       <div class="note warn"><p>Reemplazar datos reduce el riesgo, pero no anonimiza. Envía solo lo indispensable en casos sensibles.</p></div></section>
     <section class="sheet"><h3>Seguridad</h3>
       <label class="field" style="max-width:280px"><span>Bloqueo automático por inactividad</span><select class="select" data-setting="autoLockMin">${[5, 15, 30, 60].map(n => `<option value="${n}" ${s.autoLockMin === n ? 'selected' : ''}>${n} minutos</option>`).join('')}</select></label>
@@ -1526,6 +1599,8 @@ document.addEventListener('click', async ev => {
       case 'quick': { const [, q, fill] = S.quick[+a.dataset.i] || []; if (!q) break; if (S.vista === 'inicio') await irAChatNuevo(); if (fill) { const t = $('#q'); t.value = q; t.focus(); t.setSelectionRange(q.length, q.length); } else await sendChat(q); break; }
       case 'stop': S.abort?.abort(); break;
       case 'propose-memory': await proposeMemory(a); break;
+      case 'seguir-nueva': await seguirEnNueva(a); break;
+      case 'seguir-aqui': { const c = activeChat(S.exp); S.seguirAqui[c.id] = nivelContexto(S.exp); $('.larga')?.remove(); break; }
       case 'open-settings': await settingsView(); fillConsentLine(); break;
       case 'close-settings': closeSettings(); break;
       case 'save-provider': Object.assign(S.settings, pickCfg(S.draftCfg)); await saveSettings(); toast(isReady(S.settings) ? 'Proveedor guardado.' : 'Guardado. Falta la key o el modelo para usar el agente.', !isReady(S.settings)); break;
@@ -1565,7 +1640,7 @@ document.addEventListener('change', async ev => {
     }
     else if (t.dataset.bind && S.exp) { setPath(S.exp, t.dataset.bind, t.value); saveSoon(); }
     else if (t.dataset.setting) {
-      const k = t.dataset.setting; S.settings[k] = t.type === 'checkbox' ? t.checked : (k === 'autoLockMin' ? +t.value : t.value);
+      const k = t.dataset.setting; S.settings[k] = t.type === 'checkbox' ? t.checked : (k === 'autoLockMin' || k === 'contextoMax' ? +t.value : t.value);
       await saveSettings(); if (k === 'theme') applyTheme(); toast('Ajuste guardado.');
     }
     else if (t.id === 'file-docs') { const f = [...t.files]; t.value = ''; await addFiles(f); }

@@ -68,6 +68,9 @@ def handle(route, request):
             if "módulo de memoria" in text:
                 content = json.dumps({"estado": "MOCK-ESTADO", "hechos_agregar": "MOCK-HECHO [PERSONA_2] alega ingresos menores.",
                                       "pendientes_nuevos": ["MOCK-PEND"], "plazos_nuevos": []})
+            if "seguirá en una nueva" in text:
+                content = json.dumps({"resumen_conversacion": "MOCK-RESUMEN: [PERSONA_1] pidió el esquema de absolución; falta el perito.",
+                                      "pendientes_nuevos": ["MOCK-PEND-F4"], "plazos_nuevos": []})
             return route.fulfill(status=200, content_type="application/json",
                                  body=json.dumps({"choices": [{"message": {"content": content}}]}))
         if "borrador de escrito" in body["messages"][-1]["content"]:
@@ -289,8 +292,40 @@ with sync_playwright() as p:
     pg.click(".hoy .grupo:has-text('Plazos por confirmar') .fila-hoy"); pg.wait_for_selector("#hilo")
     check(v6("vista") == "chat" and v6("ficha") == "abierta" and pg.inner_text("#cab .titulo") == "Escrito de absolución", "hoy: «Revisar» abre la conversación de origen con la ficha")
 
+    # F4 · ventana de contexto: nada bajo 70 %, línea tranquila, ámbar desde 90 %, "Seguir en una nueva" con resumen
+    check(pg.locator(".larga").count() == 0 and pg.evaluate("usoContexto(S.exp)") < 70, "contexto: bajo el 70 % no se muestra nada")
+    def presupuesto_para(pct):
+        pg.evaluate("p=>{const u=usoContexto(S.exp)*S.settings.contextoMax/100;S.settings.contextoMax=Math.round(u*100/p);renderCentro()}", pct)
+    presupuesto_para(80)
+    u = pg.evaluate("usoContexto(S.exp)")
+    check(pg.locator(".larga:not(.alta)").count() == 1 and pg.locator(".larga .pb.tinta", has_text="Seguir en una nueva").count() == 1 and "Esta conversación ya es larga" in pg.inner_text(".larga"), f"contexto: línea tranquila desde el 70 % ({u} %)")
+    check(pg.get_attribute("#cab [data-action=chat-menu]", "title") == f"Contexto usado: {u} % del presupuesto de esta conversación", "contexto: el porcentaje está en el menú ⋯")
+    pg.screenshot(path=str(SHOTS / "19-larga.png"))
+    pg.click(".larga [data-action=seguir-aqui]"); check(pg.locator(".larga").count() == 0, "contexto: «Seguir aquí» oculta la línea")
+    presupuesto_para(95)
+    check(pg.locator(".larga.alta").count() == 1 and pg.locator(".larga .pb.prim", has_text="Seguir en una nueva").count() == 1, "contexto: al 90 % la línea vuelve en ámbar con «Seguir en una nueva» como acción principal")
+    pg.screenshot(path=str(SHOTS / "20-limite.png"))
+    presupuesto_para(400)
+    t = pg.evaluate("textoEnvio(prepararEnvio('Consulta de prueba'))")
+    check("no caben en el presupuesto" in t and pg.evaluate("prepararEnvio('x').fuera") == 2, "contexto: al pasar el 100 % van los mensajes que caben y la vista previa dice cuántos quedaron fuera")
+    presupuesto_para(95)
+    n_sent = len(sent); prev_id = pg.evaluate("activeChat(S.exp).id")
+    pg.click(".larga [data-action=seguir-nueva]"); pg.wait_for_selector("#velo-envio")
+    check(not any(x in pg.inner_text("#velo-envio .envio") for x in REAL_DATA) and "[PERSONA_1]" in pg.inner_text("#velo-envio .envio"), "seguir en una nueva: revisión previa seudonimizada")
+    pg.click("[data-action=envio-enviar]"); pg.wait_for_selector("#dlg .proposal", timeout=10000)
+    check(len(sent) == n_sent + 1 and not any(x in json.dumps(sent[-1], ensure_ascii=False) for x in REAL_DATA), "seguir en una nueva: una sola consulta, sin datos reales")
+    pg.click("[data-dlg=yes]"); pg.wait_for_selector("#hilo .continua", timeout=10000)
+    f4 = pg.evaluate("""p=>{const e=S.exp,c=activeChat(e),prev=e.chats.find(x=>x.id===p);return {deChat:c.deChat===p,vacia:!c.mensajes.length,resumen:prev.resumen||'',
+      pend:e.memoria.pendientes.some(x=>x.text==='MOCK-PEND-F4'),sys:prepararEnvio('¿Qué falta?').system0}}""", prev_id)
+    check(f4["deChat"] and f4["vacia"] and "Rosa Elena" in f4["resumen"] and "Escrito de absolución" in pg.inner_text("#hilo .continua"), "seguir en una nueva: se abre una conversación que continúa la anterior, con el resumen guardado")
+    check("MOCK-RESUMEN" in pg.inner_text("#hilo .ya") and f4["pend"], "seguir en una nueva: «El agente parte de» muestra el resumen y la memoria aplicó lo aprobado")
+    check("RESUMEN DE LA CONVERSACIÓN ANTERIOR" in f4["sys"] and "[PERSONA_1] pidió" in f4["sys"] and "Rosa" not in f4["sys"], "seguir en una nueva: el resumen va al agente en la conversación nueva, seudonimizado")
+    pg.screenshot(path=str(SHOTS / "21-sigue.png"))
+    pg.evaluate("async()=>{S.settings.contextoMax=60000;await saveSettings()}")
+
     pg.click(".pie [data-action=open-settings]"); pg.wait_for_selector(".settings")
     check(v6("vista") == "ajustes" and pg.inner_text("#cab .titulo") == "Ajustes", "ajustes en la zona central")
+    check(pg.locator("select[data-setting=contextoMax] option[selected]").get_attribute("value") == "60000", "ajustes: presupuesto de contexto (60 000 recomendado)")
     pg.click(".settings [data-action=show-keyguide]"); pg.wait_for_timeout(200)
     check(pg.query_selector("details.guide[open]") is not None, "guía de keys abre la sección del proveedor")
     pg.click("[data-action=dlg-close]")
