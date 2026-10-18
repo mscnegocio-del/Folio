@@ -85,6 +85,8 @@ a{color:inherit}
 .glow::before{width:1100px;height:620px;left:50%;top:-80px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(30,66,116,.8),rgba(20,46,86,.4) 60%,transparent)}
 .glow::after{width:520px;height:420px;right:-120px;top:40px;background:radial-gradient(closest-side,rgba(53,199,179,.2),transparent)}
 .glow i{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 55%,var(--bg))}
+.particulas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 1.2s ease}
+.particulas.lista{opacity:1}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font:400 12px var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--desc)}
 .eyebrow svg{width:13px;height:13px;opacity:.7}
 h1{font:400 clamp(34px,5vw,48px)/1.25 var(--display);letter-spacing:-.02em;margin:22px 0 26px}
@@ -322,7 +324,7 @@ button.btn{cursor:pointer}
 
 <main>
 <div class="hero">
-  <div class="glow" aria-hidden="true"><i></i></div>
+  <div class="glow" aria-hidden="true"><canvas class="particulas"></canvas><i></i></div>
   <div class="wrap">
     <span class="eyebrow"><svg><use href="#spark"/></svg>Versión de prueba · v0.5.0</span>
     <h1>Folio<br>Tu expediente, con memoria.</h1>
@@ -582,6 +584,87 @@ button.btn{cursor:pointer}
   if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return}
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
   els.forEach(function(e){io.observe(e)});
+})();
+
+/* Fondo de partículas de la portada (canvas 2D, sin librerías). Se pausa fuera de pantalla o con la pestaña oculta;
+   con "reducir movimiento" se dibuja un solo cuadro quieto */
+(function(){
+  var cv=document.querySelector('.particulas');
+  if(!cv||!cv.getContext)return;
+  var cx=cv.getContext('2d'),caja=cv.parentNode;
+  var mq=matchMedia('(prefers-reduced-motion:reduce)');
+  var pts=[],w=0,h=0,dpr=1,raf=0,visible=true,ultimo=0;
+  var DIST=120,COLORES=['53,199,179','244,241,234','94,214,197'];
+
+  function medir(){
+    var r=caja.getBoundingClientRect();
+    // Safari en iPhone cambia el alto al esconder la barra; solo se rehace si cambia el ancho o mucho el alto
+    if(Math.round(r.width)===w&&Math.abs(r.height-h)<80)return false;
+    w=Math.round(r.width);h=Math.round(r.height);
+    dpr=Math.min(window.devicePixelRatio||1,2);
+    cv.width=w*dpr;cv.height=h*dpr;
+    cx.setTransform(dpr,0,0,dpr,0,0);
+    var n=Math.round(Math.min(90,Math.max(28,w*h/14000)));
+    pts=[];
+    for(var i=0;i<n;i++){
+      var c=Math.random()<.45?0:(Math.random()<.7?1:2);
+      pts.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,
+        r:c===1?Math.random()*.9+.5:Math.random()*1.2+.8,c:COLORES[c],a:c===1?.35:.7});
+    }
+    return true;
+  }
+
+  function cuadro(dt){
+    cx.clearRect(0,0,w,h);
+    var i,j,p,q,dx,dy,d2,max=DIST*DIST;
+    for(i=0;i<pts.length;i++){
+      p=pts[i];
+      p.x+=p.vx*dt;p.y+=p.vy*dt;
+      if(p.x<-10)p.x=w+10;else if(p.x>w+10)p.x=-10;
+      if(p.y<-10)p.y=h+10;else if(p.y>h+10)p.y=-10;
+    }
+    // hilos entre partículas cercanas: la "memoria" del expediente
+    cx.lineWidth=.6;
+    for(i=0;i<pts.length;i++){
+      p=pts[i];
+      for(j=i+1;j<pts.length;j++){
+        q=pts[j];dx=p.x-q.x;dy=p.y-q.y;d2=dx*dx+dy*dy;
+        if(d2<max){
+          cx.strokeStyle='rgba(53,199,179,'+((1-d2/max)*.22).toFixed(3)+')';
+          cx.beginPath();cx.moveTo(p.x,p.y);cx.lineTo(q.x,q.y);cx.stroke();
+        }
+      }
+    }
+    for(i=0;i<pts.length;i++){
+      p=pts[i];
+      cx.fillStyle='rgba('+p.c+','+p.a+')';
+      cx.beginPath();cx.arc(p.x,p.y,p.r,0,6.2832);cx.fill();
+    }
+  }
+
+  function bucle(t){
+    raf=0;
+    var dt=ultimo?Math.min((t-ultimo)/16.67,3):1;ultimo=t;
+    cuadro(dt);
+    pedir();
+  }
+  function pedir(){if(!raf&&visible&&!document.hidden&&!mq.matches)raf=requestAnimationFrame(bucle)}
+  function parar(){if(raf){cancelAnimationFrame(raf);raf=0}ultimo=0}
+  function arrancar(){
+    medir();
+    if(mq.matches){parar();cuadro(0)}else pedir();
+    cv.classList.add('lista');
+  }
+
+  if('ResizeObserver' in window)new ResizeObserver(function(){if(medir()&&(mq.matches||!raf))cuadro(0)}).observe(caja);
+  else addEventListener('resize',function(){if(medir())cuadro(0)},{passive:true});
+  if('IntersectionObserver' in window)new IntersectionObserver(function(es){
+    visible=es[0].isIntersecting;if(visible)pedir();else parar();
+  }).observe(caja);
+  document.addEventListener('visibilitychange',function(){if(document.hidden)parar();else pedir()});
+  var cambio=function(){if(mq.matches){parar();cuadro(0)}else pedir()};
+  if(mq.addEventListener)mq.addEventListener('change',cambio);else if(mq.addListener)mq.addListener(cambio);
+  arrancar();
 })();
 
 /* Animaciones del sitio. Con "reducir movimiento" no corren y queda el estado final */
