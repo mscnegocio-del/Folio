@@ -7,6 +7,7 @@
 - Pregunta frecuente "¿Funciona en el celular?".
 - Paleta marino/teal de la app en el sitio (T-411): fondo `#0B1220`, teal `#35C7B3` solo en la acción principal, el elemento activo, el foco y los enlaces.
 - Animaciones sin librerías (CSS, SVG y JavaScript propio): la ventana de la portada se usa sola (pregunta, lectura de la memoria y respuesta por partes, con "Ver la demo de nuevo"); en "Datos personales protegidos" los datos reales se transforman en `[PERSONA_1]`, `[DNI_1]` y `[DIRECCION_1]`; nueva sección "Qué sale de tu computadora" con el recorrido de la consulta y "Servidores de Folio: no existen". Arrancan al entrar en pantalla, el diagrama se pausa fuera de ella y con "reducir movimiento" se ve el estado final.
+- Fondo de partículas en la portada (canvas 2D propio, sin three.js): puntos teal y marfil unidos por hilos tenues, como la memoria del expediente. Se pausa fuera de pantalla y con la pestaña oculta, limita la resolución a 2× y la cantidad de partículas según el tamaño de la pantalla; con "reducir movimiento" queda un cuadro quieto.
 ### Documentación
 - `process/estrategia-x.md`: guía para escribir en X (algoritmo, referentes, fórmula, ganchos, calendario semanal); enlazada desde AGENTS.md.
 
