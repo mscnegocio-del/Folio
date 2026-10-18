@@ -1,6 +1,18 @@
 # Changelog — Folio
 
 ## [Sin publicar]
+### Cambiado (v0.6 · F2: tres zonas, tal cual el prototipo)
+- Nueva pantalla en tres zonas: a la izquierda los expedientes (buscador con Ctrl K, "Hoy" con contador y el expediente activo con sus conversaciones), al centro el agente en una columna de lectura de 700 px y a la derecha la Ficha del expediente, que se pliega.
+- "Hoy" reúne lo que pide atención en todos los expedientes: plazos propuestos por el agente por confirmar, fechas que registraste (vencidas y de los próximos 14 días) y cambios de memoria por revisar. Recuerda que Folio no calcula plazos.
+- Al abrir un expediente se ve su Inicio: carátula en una línea, "Desde tu última visita" (movimientos nuevos, plazos propuestos, pendientes y documentos que el agente aún no leyó), la caja "¿Qué necesitas hoy en este expediente?", atajos y la lista de conversaciones con su estado.
+- La conversación muestra "Leyó la memoria, N documentos y M artículos ▸", las citas como chips dentro del párrafo (un clic abre el artículo en la Ficha, modo Fuente, con vigencia y "no es edición oficial"), un aviso ámbar cuando la respuesta habla de plazos y el recibo "Enviado a … con tu cuenta · modelo · N datos reemplazados".
+- Cuando el agente redacta un escrito aparece "Borrador listo · Abrir al lado": la Ficha pasa a modo Borrador (520 px) con los huecos [entre corchetes] resaltados, "Guardar como documento", "Copiar" y "Pedir cambios en la conversación".
+- Ficha: estado, próximo plazo, pendientes, hechos clave y partes con su marcador; pestañas Documentos y Movimientos; "Ver la memoria completa" abre la memoria editable con sus movimientos.
+- Conversaciones: "+ Nueva conversación" (reutiliza una vacía), "⋯" para renombrarla o borrarla. Se quitan el panel flotante del agente, `Ctrl+.`, las pestañas Resumen/Memoria/Movimientos/Documentos y el indicador de privacidad de la carátula: la privacidad se dice en el pie de la barra ("Cifrado en este equipo"), en la píldora de destino y en el recibo.
+- Pantallas de 1024 a 1279 px con la Ficha abierta (o bajo 1440 px en modo Borrador): la barra pasa a riel de íconos. Bajo 1024 px: una columna, ☰ abre los expedientes y la Ficha se abre como hoja.
+### Pruebas
+- e2e reescrito para la v0.6: tres zonas, Inicio, Hoy, citas en línea y modo Fuente, borrador al lado y guardado, riel a 1200/1366 px, renombrar conversación, Ctrl K, celular (cajón y hoja) y oscuro.
+
 ### Cambiado (v0.6 · F1, sin cambios visibles todavía)
 - Cada expediente guarda varias conversaciones (`chats`) en lugar de un solo chat; los expedientes y copias de seguridad anteriores se migran solos al abrirse ("Conversación anterior"). Cada conversación recibe un título local con las primeras palabras de la primera pregunta.
 - "Actualizar memoria" guarda lo que propuso el agente y un historial de lo que aplicaste, con lo que había antes, para poder deshacerlo sin pisar lo que edites después.

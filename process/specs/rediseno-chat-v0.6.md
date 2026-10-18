@@ -2,6 +2,7 @@
 
 > Estado: **dirección aprobada por el usuario (2026-10-18)** · Épica E10 · Decisiones D-38 a D-41
 > Prototipo navegable: `process/prototipos/rediseno-chat-v0.6.html` (estados con `?vista=hoy|inicio|chat|fuente|borrador|larga|limite|nueva|envio`; a Figma con el plugin html.to.design)
+> **Regla del usuario (2026-10-18):** se implementa tal cual el prototipo hasta culminar las fases; ningún cambio sin su aprobación (AGENTS.md, D-42).
 > Base: investigación de la competencia (`process/research.md` §8) y segunda opinión UX independiente (2026-10-18). El primer prototipo (4 columnas) se descartó: el chat quedaba en 416–576 px y la información se repetía en 3 o 4 lugares.
 
 ## 1. Problema
@@ -83,7 +84,7 @@ settings.contextoMax = 60000
 |---|---|
 | F0 | ✅ Investigación, segunda opinión, prototipo HTML y aprobación de la dirección |
 | F1 | ✅ Datos: `chats`, migración (`normalizeExp`), propuestas e historial de memoria con deshacer, `ultimaVisita` (2026-10-18; sin cambios visibles en la v0.5) |
-| F2 | Tres zonas: barra con conversaciones anidadas, vista Hoy, Inicio del expediente, Ficha con modos |
+| F2 | ✅ Tres zonas: barra con conversaciones anidadas, vista Hoy, Inicio del expediente, Ficha con modos Ficha · Fuente · Borrador, riel y celular (2026-10-18). La caja de cambios propuestos en la Ficha llega en F5; chips, @, / y vista previa en F3 |
 | F3 | Caja de texto: chips de contexto, @, /, píldora de destino y vista previa |
 | F4 | Contexto: estimación, línea de aviso, "Seguir en una nueva" con resumen |
 | F5 | Propuestas de memoria en la Ficha, aplicar y confirmar plazos, deshacer |

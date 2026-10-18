@@ -1,5 +1,5 @@
 # Estado actual — Folio
-> Última actualización: 2026-10-17 · Versión publicada: 0.5.0
+> Última actualización: 2026-10-18 · Versión publicada: 0.5.0 · En curso: v0.6 (E10) F3
 
 ## ✅ Completado
 - [x] Investigación de mercado (sept. 2026): BYOK existe globalmente; en Perú nadie combina BYOK + memoria por expediente → process/research.md
@@ -51,6 +51,7 @@
 - 2026-10-03: anuncio v0.5.0 publicado en X (a mano: X bloquea por API posts con enlaces). Post 2 (citas) publicado; versión simple en borrador Typefully d=11059349. Guía para próximos posts: process/estrategia-x.md. Semana 5–11/10 en borradores Typefully (lun 11059349, mar 11059640, mié 11059642, jue 11059644, vie 11059645, sáb 11059646 video, dom 11059648); se publican a mano
 
 ## ⚠️ Decisiones vigentes (detalle en process/decisions.md)
+- **v0.6 tal cual el prototipo** (`process/prototipos/rediseno-chat-v0.6.html`) hasta culminar F2–F6; nada cambia sin aprobación del usuario (D-42, AGENTS.md)
 - Solo gratuito con BYOK; plan pagado descartado por ahora (exige RUC, encargo de datos y choca con el cargo en el PJ)
 - DeepSeek solo vía OpenRouter con ZDR, nunca su API directa
 - Biblioteca legal: fuente única = texto oficial del SPIJ (descarga manual, nunca extracción automática); foros/redes no son fuente; ningún paquete sin revisión + visto bueno del mantenedor (D-28 a D-33)
@@ -63,6 +64,7 @@
 - Consulta escrita sobre incompatibilidades del cargo en el PJ (antes de difundir y, sobre todo, antes de cobrar cualquier servicio). Pregunta concreta: "desarrollo y publico en mi tiempo libre un software gratuito y de código abierto, sin fines de lucro ni recursos institucionales, ¿hay incompatibilidad?" → Gerencia de RR. HH. / Oficina de Integridad de la CSJ Junín. Análisis en process/legal-privacy.md §Incompatibilidad del cargo
 
 ## 📌 Próximos pasos (próxima sesión)
+- **E10 v0.6: seguir con F3** (caja de texto: efecto de los chips, menú @ y /, píldora de destino con la vista previa exacta y "Ver lo que se envió") tal cual el prototipo (D-42); luego F4, F5 y F6 → Release v0.6.0
 - Redes: revisar qué post tuvo más respuestas y preparar la semana siguiente con process/estrategia-x.md
 0. **E9**: observaciones del usuario sobre v0.5.0 → ajustes (v0.5.x) → T-411: llevar la paleta marino/teal al sitio (docs/index.html)
 1. Si el usuario trae las 4 normas o `CP-2.doc`: `python normas/build_normas.py --strict --reporte normas/reporte-verificacion.md` → revisar pendientes del reporte (los formatos del SPIJ ya conocidos están en normas/README.md) → visto bueno → commit + push (sin Release: la app actualiza la biblioteca sola)
@@ -70,6 +72,7 @@
 3. Al cambiar normas, el sitio y el README mencionan "Pronto: Ley 30364, NLPT, LPAG y LOPJ": actualizar cuando se publiquen
 
 ## Historial
+- 2026-10-18: **E10 F2 hecha (interfaz de tres zonas, tal cual el prototipo)**: barra de expedientes con conversaciones anidadas y riel, vista Hoy, Inicio del expediente con "Desde tu última visita", hilo con "Leyó…", citas en línea → Ficha en modo Fuente, aviso de plazos, recibo y borrador → Ficha en modo Borrador con "Guardar como documento"; Ficha con pestañas Documentos y Movimientos; memoria completa; celular con cajón y hoja. Pendiente para fases siguientes: efecto de los chips, @, / y vista previa exacta (F3); aviso de contexto y "Seguir en una nueva" (F4); caja "Cambios propuestos" en la Ficha con confirmación de plazos y deshacer (F5); "Movimientos sin revisar" en Hoy llega con las propuestas del CEJ (F5). e2e reescrito: TODO OK. Siguiente: F3
 - 2026-10-18: **E10 F1 hecha (datos, sin cambios visibles)**: varias conversaciones por expediente (`exp.chats`, `chatActivo`) con migración automática al abrir (`normalizeExp`: el chat antiguo pasa a "Conversación anterior"); título local de cada conversación; "Actualizar memoria" guarda las propuestas (`memoria.propuestas`) y el historial de lo aplicado con deshacer seguro (`applyMemoryChange`/`undoMemoryChange`); `ultimaVisita` sin tocar `updatedAt`; `settings.contextoMax` = 60 000. e2e TODO OK con 7 comprobaciones nuevas. Siguiente: F2 (interfaz de tres zonas)
 - 2026-10-18: **E10 dirección aprobada** ("tres zonas, una protagonista"), tras investigar la competencia con Playwright y una segunda opinión UX independiente (16 legaltech + 5 referentes). Primer prototipo (4 columnas) descartado. Spec reescrita, decisiones D-38 a D-41, prototipo rehecho en `process/prototipos/rediseno-chat-v0.6.html` (`?vista=hoy|inicio|chat|fuente|borrador|larga|limite|nueva|envio`). Siguiente: prueba de primer clic con abogados (opcional) y F1 (datos `chats`, propuestas e historial de memoria)
 - 2026-10-18: **E10 (v0.6) en diseño**: spec `process/specs/rediseno-chat-v0.6.md` (pendiente de aprobación) y prototipo `process/prototipos/rediseno-chat-v0.6.html` (estados con `?estado=chat|contexto|memoria|nuevo|inicio`; a Figma con html.to.design). Decisiones del usuario: prototipo HTML (Figma no está conectado) y memoria "punto medio" (propone sola, un clic, plazos desmarcados, deshacer). Al aprobar: registrar D-38 a D-40 y empezar F1 (datos `chats` + migración)
