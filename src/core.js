@@ -376,6 +376,16 @@ function undoMemoryChange(e, histId) {
   h.deshecho = true; return true;
 }
 
+// Propuestas (v0.6 · F5): aplicar una aprobada y volverla a "pendiente" (deshacer). Si el abogado editó la sección después, no se deshace
+function aplicarPropuesta(e, pr) {
+  const h = applyMemoryChange(e, { k: pr.seccion, v: pr.despues, fecha: pr.fecha }, pr.chatId);
+  Object.assign(pr, { estado: 'aplicada', histId: h.id }); return h;
+}
+function revertirPropuesta(e, pr) {
+  if (pr.estado === 'aplicada' && !undoMemoryChange(e, pr.histId)) return false;
+  pr.estado = 'pendiente'; delete pr.histId; return true;
+}
+
 /* ---------- Contexto del expediente (la "memoria") ---------- */
 function plazoState(p) { if (p.done) return 'cumplido'; const d = daysUntil(p.fecha); return d < 0 ? `vencido hace ${-d} día(s)` : d === 0 ? 'vence hoy' : `vence en ${d} día(s)`; }
 function memoryText(e) {

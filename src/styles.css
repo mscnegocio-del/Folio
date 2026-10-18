@@ -7,7 +7,7 @@
   --paper:#F7F5F0; --sheet:#FFFFFF; --sheet-2:#F1EEE7;
   --ink:#0B1220; --graphite:#4A5668; --faint:#5F6B7C;
   --rule:#E4E0D7; --rule-strong:#D2CDC2;
-  --accent:#0F766E; --accent-ink:#0E6F64; --accent-soft:#E3F2EF; --on-accent:#FFFFFF;
+  --accent:#0F766E; --accent-ink:#0E6F64; --accent-soft:#E3F2EF; --on-accent:#FFFFFF; --accent-on-ink:#5ED6C5;
   --danger:#C0362C; --danger-soft:#FDECEA;
   --ok:#1F7A4D; --ok-soft:#E6F4EC;
   --warn:#8A5A00; --warn-soft:#FBF1DC;
@@ -30,7 +30,7 @@
     --paper:#0B1220; --sheet:#111B2A; --sheet-2:#162235;
     --ink:#F4F1EA; --graphite:#9AA8B8; --faint:#7E8DA0;
     --rule:#1F2C3F; --rule-strong:#2C3D54;
-    --accent:#35C7B3; --accent-ink:#35C7B3; --accent-soft:#14303A; --on-accent:#0B1220;
+    --accent:#35C7B3; --accent-ink:#35C7B3; --accent-soft:#14303A; --on-accent:#0B1220; --accent-on-ink:#0F766E;
     --danger:#FF8A80; --danger-soft:#2B1820;
     --ok:#7FD1A3; --ok-soft:#12291F;
     --warn:#F2C35B; --warn-soft:#2A2414;
@@ -47,7 +47,7 @@
   --paper:#0B1220; --sheet:#111B2A; --sheet-2:#162235;
   --ink:#F4F1EA; --graphite:#9AA8B8; --faint:#7E8DA0;
   --rule:#1F2C3F; --rule-strong:#2C3D54;
-  --accent:#35C7B3; --accent-ink:#35C7B3; --accent-soft:#14303A; --on-accent:#0B1220;
+  --accent:#35C7B3; --accent-ink:#35C7B3; --accent-soft:#14303A; --on-accent:#0B1220; --accent-on-ink:#0F766E;
   --danger:#FF8A80; --danger-soft:#2B1820;
   --ok:#7FD1A3; --ok-soft:#12291F;
   --warn:#F2C35B; --warn-soft:#2A2414;
@@ -792,6 +792,9 @@ details.guide code{font-family:var(--type);font-size:.85em;background:var(--shee
 .v6 .cb.pz .pregunta{grid-column:2 / 4;display:grid;gap:6px;font-size:13px;color:var(--warn)}
 .v6 .cb.pz .pregunta div{display:flex;gap:6px}
 .v6 .cambios .acc{display:flex;gap:8px;margin-top:10px}
+/* aviso con Deshacer (F5) */
+.v6 .aviso{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--paper);border-radius:12px;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:14px;font-size:14px;box-shadow:0 18px 40px -16px rgba(0,0,0,.5);z-index:60;white-space:nowrap}
+.v6 .aviso button{color:var(--accent-on-ink);font-weight:500;padding:4px 6px}
 .v6 .pend{display:flex;gap:8px;align-items:flex-start;font-size:14px;padding:2px 0}
 .v6 .pend input{accent-color:var(--accent);margin-top:4px}
 .v6 .pend.nuevo{color:var(--ok)}
