@@ -7,6 +7,7 @@
 - Pregunta frecuente "¿Funciona en el celular?".
 - Paleta marino/teal de la app en el sitio (T-411): fondo `#0B1220`, teal `#35C7B3` solo en la acción principal, el elemento activo, el foco y los enlaces.
 - Animaciones sin librerías (CSS, SVG y JavaScript propio): la ventana de la portada se usa sola (pregunta, lectura de la memoria y respuesta por partes, con "Ver la demo de nuevo"); en "Datos personales protegidos" los datos reales se transforman en `[PERSONA_1]`, `[DNI_1]` y `[DIRECCION_1]`; nueva sección "Qué sale de tu computadora" con el recorrido de la consulta y "Servidores de Folio: no existen". Arrancan al entrar en pantalla, el diagrama se pausa fuera de ella y con "reducir movimiento" se ve el estado final.
+- Celular: las pestañas de la maqueta "Pegar desde el CEJ" ya no se cortan en pantallas de 320 px (pasan a dos líneas) y los enlaces y botones chicos tienen zona de toque de 44 px en pantallas táctiles, sin cambiar cómo se ven.
 ### Documentación
 - `process/estrategia-x.md`: guía para escribir en X (algoritmo, referentes, fórmula, ganchos, calendario semanal); enlazada desde AGENTS.md.
 
