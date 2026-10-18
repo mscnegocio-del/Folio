@@ -5,7 +5,8 @@ const S = {
   screen: 'boot', bootError: '', onb: null, settings: null, draftCfg: null, index: [], exp: null, docTexts: {},
   tab: 'resumen', view: 'exp', sideOpen: false, sending: false, abort: null, audit: [], lastSend: null,
   stampPress: false, lastActive: Date.now(), filter: '', consent: null, updateHidden: false,
-  agent: 'cerrado', quick: [], agendaAll: false, movsAll: false, docFilter: ''
+  agent: 'cerrado', quick: [], agendaAll: false, movsAll: false, docFilter: '',
+  visitaPrevia: null   // fecha de la visita anterior al expediente abierto (para "desde tu última visita", v0.6)
 };
 const root = () => $('#root');
 // Logo de Folio (imagen incluida en el HTML por build.py, variante clara u oscura según el tema) + insignia Beta
@@ -330,6 +331,8 @@ async function addAudit(entry) { S.audit.unshift(entry); S.audit = S.audit.slice
 async function openExp(id, silent) {
   try {
     const e = await store.get('exp:' + id); if (!e) throw new FolioError('No se encontró el expediente.');
+    normalizeExp(e); S.visitaPrevia = e.ultimaVisita; e.ultimaVisita = new Date().toISOString();
+    await store.put('exp:' + id, e);   // migración y visita: no cambian la fecha de modificación ni el orden de la lista
     if (S.exp?.id !== id || !TABS.some(([k]) => k === S.tab)) Object.assign(S, { tab: 'resumen', movsAll: false, docFilter: '' });
     S.exp = e; S.docTexts = {}; S.view = 'exp'; S.sideOpen = false;
     for (const d of e.docs) { const r = await store.get('doc:' + d.id); if (r) S.docTexts[d.id] = r.text; }
@@ -338,9 +341,10 @@ async function openExp(id, silent) {
   } catch (e) { if (!silent) fail(e); S.exp = null; render(); }
 }
 function blankExp(f) {
+  const c = newChat(), ahora = new Date().toISOString();   // crear el expediente cuenta como la primera visita
   return { id: uid(), numero: f.numero || '', materia: f.materia || '', especialidad: f.especialidad || '', organo: f.organo || '', distrito: f.distrito || '', estado: f.estado || '',
-    partes: [], nextTok: 1, memoria: { resumen: '', hechos: '', estrategia: '', pendientes: [], plazos: [] }, movimientos: [], chat: [], docs: [],
-    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    partes: [], nextTok: 1, memoria: { resumen: '', hechos: '', estrategia: '', pendientes: [], plazos: [], propuestas: [], historial: [] }, movimientos: [], docs: [],
+    chats: [c], chatActivo: c.id, ultimaVisita: ahora, createdAt: ahora, updatedAt: ahora };
 }
 function addParte(e, nombre, rol, doc, esCliente) { e.partes.push({ id: uid(), tok: `PERSONA_${e.nextTok++}`, nombre: nombre.trim(), rol, doc: (doc || '').trim(), esCliente: !!esCliente }); }
 
@@ -680,7 +684,7 @@ function resumenHTML() {
 function memHTML() {
   const e = S.exp, m = e.memoria, pseudo = S.settings.pseudo;
   const plazos = [...m.plazos].sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const canPropose = isReady(S.settings) && e.chat.some(x => x.role === 'assistant');
+  const canPropose = isReady(S.settings) && activeChat(e).mensajes.some(x => x.role === 'assistant');
   return `<div class="mem">
     <div class="mem-note">${ico('check')}<p>Todo lo que está aquí lo escribiste o aprobaste tú. El agente lo lee antes de cada respuesta.</p>${canPropose ? '<button class="btn sm" data-action="propose-memory" title="El agente propone cambios a partir de la conversación; tú decides cuáles guardar">Actualizar desde la conversación</button>' : ''}</div>
     <section class="mem-sec"><h2 class="eyebrow">Situación actual</h2>
@@ -801,7 +805,7 @@ function agentHTML() {
   const line = !ready ? '' : abroad
     ? `<span class="dot ${s.pseudo ? '' : 'off'}"></span>${s.pseudo ? 'Se envía a ' + esc(provLabel(s.provider)) + ' con datos reemplazados' : 'Se envía a ' + esc(provLabel(s.provider)) + ' sin reemplazar datos'}`
     : `<span class="dot"></span>Se envía a tu servidor propio`;
-  const big = S.agent === 'amplio', last = e.chat[e.chat.length - 1];
+  const msgs = activeChat(e).mensajes, big = S.agent === 'amplio', last = msgs[msgs.length - 1];
   S.quick = ready ? quickActions(e) : [];
   const who = !ready ? 'Sin proveedor conectado' : s.provider === 'custom' ? `En tu servidor propio · <span class="mono">${esc(s.model)}</span>` : `Con tu cuenta de ${esc(provLabel(s.provider))} · <span class="mono">${esc(s.model.split('/').pop())}</span>`;
   const suggest = ready && last?.role === 'assistant' && !S.sending ? `<div class="mem-suggest"><span>¿Algo de esto debe quedar en la memoria del caso?</span><button class="btn sm" data-action="propose-memory" title="El agente propone cambios a la memoria; tú decides cuáles guardar">Actualizar memoria</button></div>` : '';
@@ -812,8 +816,8 @@ function agentHTML() {
     </div>
     <details class="agent-info"><summary>${who}</summary>
       <div class="agent-info-body">${ready ? `<p>Proveedor: ${esc(provLabel(s.provider))}<br>Modelo: <span class="mono">${esc(s.model)}</span></p>` : ''}${libStatusHTML()}
-        <div class="row">${e.chat.length ? '<button class="btn ghost sm" data-action="clear-chat">Limpiar conversación</button>' : ''}<button class="btn ghost sm" data-action="open-settings">${ready ? 'Cambiar proveedor' : 'Conectar proveedor'}</button></div></div></details>
-    <div class="msgs" id="msgs">${e.chat.length ? e.chat.map(msgHTML).join('') + suggest : recallHTML(e)}</div>
+        <div class="row">${msgs.length ? '<button class="btn ghost sm" data-action="clear-chat">Limpiar conversación</button>' : ''}<button class="btn ghost sm" data-action="open-settings">${ready ? 'Cambiar proveedor' : 'Conectar proveedor'}</button></div></div></details>
+    <div class="msgs" id="msgs">${msgs.length ? msgs.map(msgHTML).join('') + suggest : recallHTML(e)}</div>
     ${ready ? `<div class="quick" role="group" aria-label="Acciones rápidas">${S.quick.map(([l], i) => `<button data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}</div>
     <form class="composer" data-form="chat"><label class="sr-only" for="q">Tu consulta</label><textarea id="q" class="textarea" rows="2" placeholder="Escribe tu consulta. Enter envía, Mayús+Enter salta de línea." ${S.sending ? 'disabled' : ''}></textarea>
       <div class="row"><span class="privacy-line">${line}</span>${S.sending ? '<button class="btn" type="button" data-action="stop">Detener</button>' : '<button class="btn primary" type="submit">Enviar</button>'}</div></form>`
@@ -844,7 +848,7 @@ async function reviewPayload(system, messages, P, kind, plannerText = null, with
   return true;
 }
 function historyFor(e) {
-  const h = e.chat.filter(m => m.role === 'user' || m.role === 'assistant').slice(-8).map(m => ({ role: m.role, content: m.content }));
+  const h = activeChat(e).mensajes.filter(m => m.role === 'user' || m.role === 'assistant').slice(-8).map(m => ({ role: m.role, content: m.content }));
   while (h.length && h[0].role !== 'user') h.shift();
   const out = []; for (const m of h) { if (out.length && out[out.length - 1].role === m.role) out[out.length - 1].content += '\n\n' + m.content; else out.push({ ...m }); }
   return out;
@@ -862,7 +866,9 @@ async function sendChat(text) {
   let messages = [...hist, { role: 'user', content: P.apply(text) }];
   if (messages.length >= 2 && messages[messages.length - 2].role === 'user') { const last = messages.pop(); messages[messages.length - 1].content += '\n\n' + last.content; }
   if (!(await reviewPayload(system0, messages, P, 'chat', usePlanner ? plannerUser : null, lib))) return;
-  e.chat.push({ role: 'user', content: text, at: new Date().toISOString() });
+  const chat = activeChat(e), push = m => { chat.mensajes.push(m); chat.updatedAt = new Date().toISOString(); };
+  if (!chat.titulo) chat.titulo = autoTitle(text);
+  push({ role: 'user', content: text, at: new Date().toISOString() });
   S.sending = true; S.abort = new AbortController(); renderAgent(); $('.agent-fab')?.classList.add('busy');
   const box = $('#msgs'); box.insertAdjacentHTML('beforeend', `<div class="msg assistant" id="streaming"><span class="typing" aria-label="El agente está escribiendo"><i></i><i></i><i></i></span></div>`); scrollMsgs();
   let system = system0, arts = [];
@@ -878,11 +884,11 @@ async function sendChat(text) {
     let pending = null;
     const full = await llm({ cfg: s, system, messages, stream: true, maxTokens: 6000, signal: S.abort.signal, onDelta: t => { pending = t; requestAnimationFrame(() => { if (pending == null) return; const el = $('#streaming'); if (el) { el.innerHTML = md(P.restore(pending)); scrollMsgs(); } pending = null; }); } });
     const content = P.restore(full).trim() || '(El modelo no devolvió texto.)';
-    e.chat.push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count(), normas: arts.map(({ id, a }) => id + ' ' + a.n) }, citas: checkCitations(content) });
+    push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count(), normas: arts.map(({ id, a }) => id + ' ' + a.n) }, citas: checkCitations(content) });
     await logSend('Consulta', chars, P);
   } catch (err) {
-    if (err.name === 'AbortError') e.chat.push({ role: 'error', content: 'Detuviste la respuesta.' });
-    else e.chat.push({ role: 'error', content: err instanceof FolioError ? err.message : 'Error inesperado: ' + err.message });
+    if (err.name === 'AbortError') push({ role: 'error', content: 'Detuviste la respuesta.' });
+    else push({ role: 'error', content: err instanceof FolioError ? err.message : 'Error inesperado: ' + err.message });
   } finally { S.sending = false; S.abort = null; $('.agent-fab')?.classList.remove('busy'); await saveExp().catch(fail); renderAgent(); updateStamp(); if (S.agent !== 'cerrado') $('#q')?.focus(); }
 }
 async function logSend(kind, chars, P) {
@@ -893,7 +899,7 @@ async function logSend(kind, chars, P) {
 /* ---------- La memoria se actualiza con tu aprobación ---------- */
 async function proposeMemory(btn) {
   const e = S.exp, s = S.settings; const P = makePseudo(e, s.pseudo);
-  const convo = e.chat.filter(m => m.role !== 'error').slice(-8).map(m => `${m.role === 'user' ? 'ABOGADO' : 'AGENTE'}: ${m.content}`).join('\n\n');
+  const convo = activeChat(e).mensajes.filter(m => m.role !== 'error').slice(-8).map(m => `${m.role === 'user' ? 'ABOGADO' : 'AGENTE'}: ${m.content}`).join('\n\n');
   const system = `Eres el módulo de memoria de Folio. Propón cambios a la memoria de un expediente judicial peruano a partir de la conversación reciente. Devuelve SOLO un objeto JSON válido, sin texto adicional, con esta forma:
 {"estado": string|null, "resumen_agregar": string|null, "hechos_agregar": string|null, "estrategia_agregar": string|null, "pendientes_nuevos": [string], "plazos_nuevos": [{"fecha": "AAAA-MM-DD", "descripcion": string}]}
 Incluye solo información nueva que aparezca de forma explícita en la conversación. No inventes fechas: un plazo nuevo solo se propone si la conversación menciona una fecha concreta. Usa null o listas vacías si no hay nada. Conserva los marcadores como [PERSONA_1] tal cual.`;
@@ -912,16 +918,13 @@ Incluye solo información nueva que aparezca de forma explícita en la conversac
     (j.pendientes_nuevos || []).map(R).filter(Boolean).forEach(v => items.push({ k: 'pend', label: 'Nuevo pendiente', v }));
     (j.plazos_nuevos || []).filter(p => p && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha || '') && R(p.descripcion)).forEach(p => items.push({ k: 'plazo', label: `Nuevo plazo, ${fmtDate(p.fecha)}`, v: R(p.descripcion), fecha: p.fecha }));
     if (!items.length) { toast('El agente no encontró información nueva para la memoria.'); return; }
+    const chatId = activeChat(e).id, props = addProposals(e, items, chatId);
     const sel = await askDialog({ title: 'Cambios propuestos a la memoria', ok: 'Aplicar seleccionados', wide: true,
       collect: d => $$('[data-prop]', d).filter(c => c.checked).map(c => +c.dataset.prop),
       body: `<p>Marca lo que quieres guardar. Nada cambia sin tu aprobación.</p><ul class="proposal">${items.map((it, i) => `<li><label class="check"><input type="checkbox" data-prop="${i}" ${it.k === 'plazo' ? '' : 'checked'}><span><strong>${esc(it.label)}</strong><br>${esc(it.v)}${it.k === 'plazo' ? '<br><span class="small" style="color:var(--warn)">Verifica esta fecha con la resolución y tu notificación antes de aceptarla.</span>' : ''}</span></label></li>`).join('')}</ul>` });
-    if (!sel || !sel.length) return;
-    const m = e.memoria;
-    for (const i of sel) { const it = items[i];
-      if (it.k === 'estado') e.estado = it.v;
-      else if (it.k === 'pend') m.pendientes.push({ id: uid(), text: it.v, done: false });
-      else if (it.k === 'plazo') m.plazos.push({ id: uid(), fecha: it.fecha, desc: it.v, done: false });
-      else m[it.k] = (m[it.k] ? m[it.k].trimEnd() + '\n' : '') + it.v; }
+    if (!sel) { await saveExp(); return; }   // si cierras sin decidir, las propuestas quedan pendientes
+    props.forEach((pr, i) => { if (sel.includes(i)) Object.assign(pr, { estado: 'aplicada', histId: applyMemoryChange(e, items[i], chatId).id }); else pr.estado = 'descartada'; });
+    if (!sel.length) { await saveExp(); return; }
     await saveExp(); renderPane(); toast(`Memoria actualizada: ${sel.length} cambio${sel.length > 1 ? 's' : ''}.`);
   } catch (err) { fail(err); } finally { renderAgent(); updateStamp(); if (S.tab === 'memoria') renderPane(); }
 }
@@ -1171,8 +1174,8 @@ document.addEventListener('click', async ev => {
       case 'del-doc': { const d = S.exp.docs.find(x => x.id === id); const ok = await askDialog({ title: 'Eliminar documento', ok: 'Eliminar', danger: true, body: `<p>Se eliminará el texto de <strong>${esc(d.name)}</strong> de este equipo.</p>` }); if (!ok) break; await store.del('doc:' + id); delete S.docTexts[id]; S.exp.docs = S.exp.docs.filter(x => x.id !== id); await saveExp(); renderPane(); updateTabs(); break; }
       case 'quick': { const [, q, fill] = S.quick[+a.dataset.i] || []; if (!q) break; if (fill) { const t = $('#q'); t.value = q; t.focus(); t.setSelectionRange(q.length, q.length); } else await sendChat(q); break; }
       case 'stop': S.abort?.abort(); break;
-      case 'copy-msg': await navigator.clipboard.writeText(S.exp.chat[+a.dataset.i].content); toast('Respuesta copiada.'); break;
-      case 'clear-chat': { const ok = await askDialog({ title: 'Limpiar conversación', ok: 'Limpiar', body: '<p>Se borra la conversación de este expediente. La memoria del caso se mantiene.</p>' }); if (!ok) break; S.exp.chat = []; await saveExp(); renderAgent(); break; }
+      case 'copy-msg': await navigator.clipboard.writeText(activeChat(S.exp).mensajes[+a.dataset.i].content); toast('Respuesta copiada.'); break;
+      case 'clear-chat': { const ok = await askDialog({ title: 'Limpiar conversación', ok: 'Limpiar', body: '<p>Se borra la conversación de este expediente. La memoria del caso se mantiene.</p>' }); if (!ok) break; Object.assign(activeChat(S.exp), { mensajes: [], titulo: '' }); await saveExp(); renderAgent(); break; }
       case 'propose-memory': await proposeMemory(a); break;
       case 'open-settings': await settingsView(); fillConsentLine(); break;
       case 'close-settings': S.view = 'exp'; render(); break;

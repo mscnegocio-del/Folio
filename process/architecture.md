@@ -50,6 +50,7 @@ folio/
 | LLM | `llm()`, `readSSE()`, `checkRes()`, `safeFetch()`, `listModels()` | streaming SSE OpenAI-compatible y Anthropic |
 | Seudonimización | `makePseudo(exp, enabled)` → `{apply, restore, count, map}` | ver detalle abajo |
 | Recuperación | `terms`, `chunkText` (~1400 car.), `retrieve` (top 4 por palabras clave) | sin embeddings, todo local |
+| Conversaciones y memoria (v0.6) | `newChat`, `normalizeExp`, `activeChat`, `autoTitle`, `addProposals`, `applyMemoryChange`, `undoMemoryChange` | Migración al abrir; el historial guarda lo anterior y no pisa ediciones posteriores del abogado |
 | Contexto | `memoryText`, `buildContext`, `SYSTEM_PROMPT`, `parseJSONLoose` | |
 | Render seguro | `md()` | escapa primero, luego **negrita**, *cursiva*, listas, títulos |
 | Documentos | `LIBS`, `loadScript` (con respaldo), `extractText` | pdf.js 3.11.174 + worker como script; mammoth 1.8.0 |

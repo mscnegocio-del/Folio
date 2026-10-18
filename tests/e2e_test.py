@@ -159,6 +159,34 @@ with sync_playwright() as p:
     check(pg.input_value("[data-bind=estado]") == "MOCK-ESTADO", "actualizar memoria aplica cambios aprobados")
     check("Julio César Huamán Torres" in pg.input_value('[data-bind="memoria.hechos"]'), "memoria restaurada con nombres reales")
 
+    # v0.6 · F1: conversaciones por expediente, propuestas e historial de la memoria, última visita
+    d = pg.evaluate("""async()=>{const e=await store.get('exp:'+S.exp.id),c=e.chats.find(x=>x.id===e.chatActivo);
+      return {chats:e.chats.length,tieneChat:'chat' in e,titulo:c.titulo,msgs:c.mensajes.length,hist:e.memoria.historial.map(h=>h.seccion+':'+(h.chatId===c.id)),
+              props:e.memoria.propuestas.map(p=>p.estado),visita:!!e.ultimaVisita}}""")
+    check(d["chats"] == 1 and not d["tieneChat"] and d["msgs"] >= 2, "conversaciones: los mensajes viven en la conversación activa")
+    check(d["titulo"].startswith("¿Qué") or len(d["titulo"]) > 0, "conversaciones: título local con la primera pregunta")
+    check(sorted(d["hist"]) == ["estado:true", "hechos:true", "pend:true"], "memoria: historial de cambios aprobados con su conversación de origen")
+    check(d["props"] == ["aplicada"] * 3 and d["visita"], "memoria: propuestas marcadas como aplicadas y visita registrada")
+    u = pg.evaluate("""()=>{const e=structuredClone(S.exp),m=e.memoria,h=m.historial.find(x=>x.seccion==='pend'),n=m.pendientes.length;
+      const ok1=undoMemoryChange(e,h.id)&&m.pendientes.length===n-1&&!undoMemoryChange(e,h.id);
+      const h2=applyMemoryChange(e,{k:'hechos',v:'Hecho de prueba'},null);const ok2=undoMemoryChange(e,h2.id)&&!m.hechos.includes('Hecho de prueba');
+      const h3=applyMemoryChange(e,{k:'estrategia',v:'Línea nueva'},null);m.estrategia+=' (editado por el abogado)';const ok3=!undoMemoryChange(e,h3.id);
+      return ok1&&ok2&&ok3}""")
+    check(u, "memoria: deshacer revierte el cambio y no pisa lo que el abogado editó después")
+    orig = pg.evaluate("S.exp.id")
+    m = pg.evaluate("""async()=>{const e=structuredClone(S.exp);e.id='legado-1';e.chat=e.chats[0].mensajes;
+      ['chats','chatActivo','ultimaVisita'].forEach(k=>delete e[k]);delete e.memoria.historial;delete e.memoria.propuestas;e.updatedAt='2026-01-01T00:00:00.000Z';
+      await store.put('exp:legado-1',e);S.index.push({id:'legado-1',numero:'LEGADO',titulo:'Legado',materia:'',ejemplo:false,updatedAt:e.updatedAt,plazos:[]});await store.put('index',S.index);
+      await openExp('legado-1');const x=await store.get('exp:legado-1'),p1=x.ultimaVisita;await openExp('legado-1');
+      return {chats:x.chats.length,titulo:x.chats[0].titulo,n:x.chats[0].mensajes.length,tieneChat:'chat' in x,hist:Array.isArray(x.memoria.historial)&&Array.isArray(x.memoria.propuestas),
+              activo:x.chatActivo===x.chats[0].id,upd:x.updatedAt,previa:S.visitaPrevia===p1&&!!p1}}""")
+    check(m["chats"] == 1 and m["titulo"] == "Conversación anterior" and m["n"] >= 2 and not m["tieneChat"] and m["activo"] and m["hist"],
+          "migración: el chat de versiones anteriores pasa a «Conversación anterior»")
+    check(m["upd"] == "2026-01-01T00:00:00.000Z" and m["previa"], "migración: abrir no cambia la fecha de modificación y recuerda la visita anterior")
+    check(pg.locator("#msgs .msg").count() >= 2, "migración: la conversación anterior se ve en el agente")
+    pg.evaluate("""async(id)=>{await store.del('exp:legado-1');S.index=S.index.filter(x=>x.id!=='legado-1');await store.put('index',S.index);await openExp(id)}""", orig)
+    pg.click("#tab-memoria"); pg.wait_for_selector("[data-bind=estado]")
+
     pg.click("#tab-movimientos"); check(pg.locator(".tl-month").count() == 2 and pg.locator(".timeline li.latest").count() == 1, "movimientos: línea de tiempo agrupada por mes")
     pg.click("#tab-documentos"); check(pg.locator(".docrow").count() == 1 and pg.query_selector(".dropzone.slim") is not None, "documentos en lista")
     pg.click("[data-action=agent-wide]"); check(pg.get_attribute("#expwrap", "data-agent") == "amplio", "agente: modo amplio")
