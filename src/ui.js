@@ -90,9 +90,9 @@ function onbBody() {
     <h1>Tu asistente para litigar, sin sacar tus expedientes de tu equipo</h1>
     <p class="lead">Folio guarda cada expediente con su propia memoria: partes, plazos, movimientos, documentos y estrategia. El agente de IA lee esa memoria para ayudarte a revisar el caso, ordenar pendientes y preparar borradores.</p>
     <div class="flow" aria-label="Cómo viaja la información">
-      <div class="node you"><h3>Tu equipo</h3><ul><li>Expedientes y memoria del caso</li><li>Documentos y conversaciones</li><li>Tu API key</li></ul><p class="small muted" style="margin:.5em 0 0">Todo cifrado con tu contraseña.</p></div>
+      <div class="node you"><h3 role="heading" aria-level="2">Tu equipo</h3><ul><li>Expedientes y memoria del caso</li><li>Documentos y conversaciones</li><li>Tu API key</li></ul><p class="small muted" style="margin:.5em 0 0">Todo cifrado con tu contraseña.</p></div>
       <div class="arrow"><svg viewBox="0 0 64 20" aria-hidden="true"><path d="M2 10h56m-8-7 8 7-8 7" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>Solo los fragmentos que la consulta necesita, con los nombres reemplazados</span></div>
-      <div class="node"><h3>Tu proveedor de IA</h3><ul><li>OpenAI, Anthropic u OpenRouter, con tu propia cuenta</li><li>O un servidor propio en tu oficina</li></ul></div>
+      <div class="node"><h3 role="heading" aria-level="2">Tu proveedor de IA</h3><ul><li>OpenAI, Anthropic u OpenRouter, con tu propia cuenta</li><li>O un servidor propio en tu oficina</li></ul></div>
       <div class="none"><span aria-hidden="true">⊘</span><span><s>Servidores de Folio</s>: no existen en esta versión. Nunca vemos tus expedientes.</span></div>
     </div>
     <div class="note"><p>Esta es una versión de prueba. Funciona en este navegador, sin cuenta y sin conectarse al CEJ ni al SINOE.</p></div>`;
@@ -129,7 +129,7 @@ function renderOnb() {
   root().innerHTML = `<div class="onb">
     <aside>
       <div class="brand">${BRAND}</div>
-      <ol class="steps" aria-label="Pasos de configuración">${ONB_STEPS.map((s, i) => `<li class="${i < o.step ? 'done' : i === o.step ? 'now' : ''}" ${i === o.step ? 'aria-current="step"' : ''}>${esc(s)}</li>`).join('')}</ol>
+      <ol class="steps" aria-label="Pasos de configuración" tabindex="0">${ONB_STEPS.map((s, i) => `<li class="${i < o.step ? 'done' : i === o.step ? 'now' : ''}" ${i === o.step ? 'aria-current="step"' : ''}>${esc(s)}</li>`).join('')}</ol>
       <div class="legal-links"><a href="#" data-action="show-policy">Política de privacidad</a><a href="#" data-action="show-terms">Términos de uso</a><a href="#" data-action="show-clause">Autorización para clientes</a><span class="tiny muted">Versión ${esc(APP.version)}</span></div>
     </aside>
     <main><div class="content">${onbBody()}</div>
@@ -553,7 +553,7 @@ function cabHTML() {
   const [miga, titulo] = v === 'hoy' ? ['', 'Hoy'] : v === 'inicio' ? [`<span class="num">${esc(e.numero || 'Sin número')}</span>`, 'Inicio del expediente']
     : v === 'chat' ? [corto, activeChat(e).titulo || 'Nueva conversación'] : v === 'memoria' ? [corto, 'Memoria del expediente'] : v === 'ajustes' ? ['', 'Ajustes'] : ['', 'Expedientes'];
   return `<button class="ib solo-movil" data-action="toggle-side" aria-label="Expedientes">${ic('menu')}</button>
-    <div class="tit">${miga ? `<span class="miga">${miga}</span>` : ''}<span class="titulo">${esc(titulo)}</span></div>
+    <div class="tit">${miga ? `<span class="miga">${miga}</span>` : ''}<span class="titulo"${v === 'chat' ? ' role="heading" aria-level="1"' : ''}>${esc(titulo)}</span></div>
     ${v === 'chat' ? `<button class="pb solo-pc" data-action="new-chat">${ic('mas')}Nueva conversación</button><button class="ib" data-action="chat-menu" aria-label="Más opciones de la conversación" title="${conversados(activeChat(e)).length ? `Contexto usado: ${usoContexto(e)} % del presupuesto de esta conversación` : ''}">${ic('puntos')}</button>` : ''}
     ${fichaVisible() ? `<button class="ib${fichaAbierta() ? ' on' : ''}" data-action="toggle-ficha" aria-label="Ficha del expediente" title="Ficha del expediente">${ic('ficha')}</button>` : ''}`;
 }
@@ -667,7 +667,7 @@ function fichaHTML() {
     ? `<div class="ftabs" role="tablist" aria-label="Ficha del expediente">${tabs.map(([k, l, n]) => `<button class="tab${S.fichaTab === k ? ' on' : ''}" role="tab" aria-selected="${S.fichaTab === k}" data-action="ftab" data-tab="${k}">${l}${n != null ? ` <span class="num">${n}</span>` : ''}</button>`).join('')}</div>`
     : `<button class="volver" data-action="ficha-volver">${ic('volver')}Volver a la ficha</button>`;
   const body = S.fichaModo === 'fuente' ? fuenteHTML() : S.fichaModo === 'borrador' ? borradorHTML() : S.fichaTab === 'docs' ? fdocsHTML() : S.fichaTab === 'movs' ? fmovsHTML() : fichaPanelHTML();
-  return `<div class="fcab">${head}<button class="ib" data-action="toggle-ficha" aria-label="Cerrar la ficha" title="Cerrar la ficha">${ic('cerrar')}</button></div><div class="fcuerpo" id="fcuerpo">${body}</div>`;
+  return `<div class="fcab">${head}<button class="ib" data-action="toggle-ficha" aria-label="Cerrar la ficha" title="Cerrar la ficha">${ic('cerrar')}</button></div><div class="fcuerpo" id="fcuerpo" tabindex="-1">${body}</div>`;
 }
 function fichaPanelHTML() {
   const e = S.exp, m = e.memoria, next = nextPlazos(e)[0], pend = m.pendientes.filter(p => !p.done);
@@ -734,11 +734,12 @@ function revisarCambios() {
   const c = $('#cambios'); if (!c) return;
   c.scrollIntoView({ block: 'center' }); c.classList.add('foco'); setTimeout(() => c.classList.remove('foco'), 1600);
 }
+function focoCambios() { ($('#cambios button:not([disabled])') || $('#fcuerpo'))?.focus({ preventScroll: true }); }
 async function aplicarCambios(descartar = false) {
   const e = S.exp, st = propState(e), lote = propPend(e).filter(p => p.tipo !== 'plazo');
   const si = descartar ? [] : lote.filter(p => st.sel[p.id] !== false);
   lote.forEach(p => { if (si.includes(p)) st.nuevos.push(aplicarPropuesta(e, p).id); else p.estado = 'descartada'; });
-  st.sel = {}; await saveExp(); refreshProps();
+  st.sel = {}; await saveExp(); refreshProps(); focoCambios();
   aviso(descartar ? 'Cambios descartados' : `Memoria actualizada · ${plural(si.length, 'cambio', 'cambios')}`, async () => {
     const no = lote.filter(p => !revertirPropuesta(e, p));
     await saveExp(); refreshProps();
@@ -747,7 +748,7 @@ async function aplicarCambios(descartar = false) {
 }
 async function confirmarPlazo(id) {
   const e = S.exp, st = propState(e), p = e.memoria.propuestas.find(x => x.id === id); if (!p || p.estado !== 'pendiente') return;
-  st.confirmar = null; st.nuevos.push(aplicarPropuesta(e, p).id); await saveExp(); refreshProps();
+  st.confirmar = null; st.nuevos.push(aplicarPropuesta(e, p).id); await saveExp(); refreshProps(); focoCambios();
   aviso(`Plazo confirmado: ${ddmm(p.fecha)} · ${lcFirst(p.despues)}`, async () => { revertirPropuesta(e, p); await saveExp(); refreshProps(); });
 }
 // Línea del hilo: lo que propuso el agente en esta conversación, o lo ya aplicado, o "Actualizar memoria" a mano
@@ -1208,9 +1209,9 @@ function abrirEnvio({ antes = true, provider, model, n, texto, reemp = [], instr
   v.insertAdjacentHTML('beforeend', `<div class="velo" id="velo-envio">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="envio-t">
       <div class="mc"><div><h2 id="envio-t">Lo que se ${antes ? 'enviará' : 'envió'} a ${esc(dest)}</h2><p>${esc(sub)}</p></div><button class="ib" data-action="envio-cerrar" aria-label="Cerrar">${ic('cerrar')}</button></div>
-      <div class="envio">${highlightTokens(texto)}</div>
+      <div class="envio" tabindex="0" role="region" aria-label="Texto que ${antes ? 'se enviará' : 'se envió'}">${highlightTokens(texto)}</div>
       ${reemp.length ? `<details class="reemp"><summary>Ver los ${plural(reemp.length, 'reemplazo', 'reemplazos')} (solo los ves tú)</summary><table>${reemp.map(([r, t]) => `<tr><td>${esc(r)}</td><td>${esc(t)}</td></tr>`).join('')}</table></details>` : ''}
-      ${instr ? `<details class="reemp"><summary>Ver las instrucciones fijas de Folio para el modelo (no contienen datos del caso)</summary><div class="envio" style="margin:6px 0 0">${esc(instr)}</div></details>` : ''}
+      ${instr ? `<details class="reemp"><summary>Ver las instrucciones fijas de Folio para el modelo (no contienen datos del caso)</summary><div class="envio" tabindex="0" role="region" aria-label="Instrucciones fijas de Folio" style="margin:6px 0 0">${esc(instr)}</div></details>` : ''}
       <p class="tercero">${esc(modeloTercero(provider, model))}</p>
       <div class="mp">${antes
         ? `<label><input type="checkbox" id="envio-revisar" ${S.settings.review ? 'checked' : ''}>Revisar siempre antes de enviar</label><button class="pb" data-action="envio-cerrar">Cancelar</button><button class="pb prim" data-action="envio-enviar" ${puedeEnviar ? '' : 'disabled title="Escribe tu consulta primero"'}>Enviar</button>`
@@ -1765,6 +1766,14 @@ document.addEventListener('keydown', ev => {
   if (ev.key === 'Enter' && (t.id === 'npend' || t.id === 'nplazo-d' || t.id === 'nparte-n' || t.id === 'nparte-d')) { ev.preventDefault(); $(`[data-action="${t.id === 'npend' ? 'add-pend' : t.id === 'nplazo-d' ? 'add-plazo' : 'add-parte'}"]`)?.click(); }
   // Ctrl K: buscar expediente · Esc: cierra la barra o la hoja de la ficha en el celular
   if (envioPend && ev.key === 'Escape') { ev.preventDefault(); cerrarEnvio(false); $('#q')?.focus(); return; }
+  // F6: el foco no sale de la vista previa mientras está abierta (Tab y Shift+Tab giran dentro)
+  if (envioPend && ev.key === 'Tab') {
+    const f = $$('#velo-envio button:not([disabled]), #velo-envio input, #velo-envio summary, #velo-envio [tabindex="0"]').filter(x => x.offsetParent);
+    const i = f.indexOf(document.activeElement), sig = ev.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i < 0 || i === f.length - 1 ? 0 : i + 1);
+    if (f.length) { ev.preventDefault(); f[sig].focus(); } return;
+  }
+  // F6: Esc cancela la confirmación de un plazo en la caja de cambios
+  if (ev.key === 'Escape' && S.prop.confirmar && t.closest?.('#cambios')) { ev.preventDefault(); S.prop.confirmar = null; renderFicha(); $('#cambios [data-action="plazo-confirmar"]')?.focus(); return; }
   if (S.screen !== 'app' || $('#dlg').open) return;
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') {
     ev.preventDefault();

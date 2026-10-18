@@ -1,6 +1,17 @@
 # Changelog — Folio
 
-## [Sin publicar]
+## [0.6.0] — 2026-10-18 — rediseño "tres zonas"
+Expedientes a la izquierda, el agente al centro y la Ficha del expediente a la derecha. Varias conversaciones por expediente, aviso cuando una conversación ya es larga y memoria que el agente propone y tú apruebas. Política 2026-10-18 (borrador): al desbloquear se pide aceptar de nuevo.
+
+### Cambiado (v0.6 · F6: celular, accesibilidad y pruebas)
+- Auditoría de accesibilidad con axe-core (WCAG 2 A/AA y buenas prácticas) en claro y oscuro, escritorio y celular: sin hallazgos. Se corrigieron el contraste del número del expediente activo, el encabezado de la conversación (nivel 1 para lectores de pantalla), el orden de encabezados de la bienvenida y la vista previa del envío (ahora se recorre con el teclado).
+- Teclado: el foco no sale de la vista previa mientras está abierta (Tab y Shift+Tab giran dentro); Esc cancela la confirmación de un plazo; tras aplicar, descartar o confirmar, el foco queda en la caja de cambios.
+- Celular: la bienvenida ya no desborda a 390 px (los pasos se desplazan dentro); las citas largas se parten en lugar de ensanchar la respuesta; el aviso con "Deshacer" siempre cabe en la pantalla.
+### Agregado
+- Propuestas de memoria al terminar cada respuesta, dentro de la misma respuesta (sin consulta extra): el agente agrega un bloque que Folio quita del texto, también mientras llega, y lleva a la caja de la Ficha. Si el modelo no lo hace, queda "Actualizar memoria".
+### Pruebas
+- e2e: celular con proveedor (conversación, aviso de contexto en ámbar, cambios en la hoja, aviso), teclado, axe (opcional: `pip install axe-playwright-python`) y propuestas dentro de la respuesta. Capturas 24 y 25.
+
 ### Cambiado (v0.6 · F5: cambios propuestos en la Ficha)
 - Lo que propone el agente ("Actualizar memoria" y "Seguir en una nueva") ya no abre una ventana: aparece en la Ficha, en la caja "Cambios propuestos por el agente", con su sección, el tipo (+ nuevo, ~ cambia con el texto anterior) y ✓ / ✕ en cada uno.
 - "Aplicar N cambios" no incluye los plazos: cada plazo se confirma aparte con "¿Verificaste la fecha en la resolución y en tu casilla?" [Sí, confirmar] [Todavía no]. "Descartar" rechaza los cambios y deja los plazos.

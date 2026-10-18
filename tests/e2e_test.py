@@ -2,6 +2,7 @@
 
 Uso:
     pip install playwright && playwright install chromium
+    pip install axe-playwright-python   # opcional: auditoría de accesibilidad (F6)
     python build.py
     python tests/e2e_test.py
 
@@ -14,6 +15,10 @@ import subprocess
 import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+try:   # F6: auditoría de accesibilidad con axe-core (opcional: pip install axe-playwright-python)
+    from axe_playwright_python.sync_playwright import Axe
+except ImportError:
+    Axe = None
 
 ROOT = Path(__file__).resolve().parent.parent
 URL = (ROOT / "dist" / "folio.html").as_uri()
@@ -43,6 +48,12 @@ def check(cond, msg):
     print(("OK   " if cond else "FAIL ") + msg)
     if not cond:
         failures.append(msg)
+
+
+def axe_ok(page, donde):
+    if Axe is None: return
+    v = Axe().run(page, options={"runOnly": ["wcag2a", "wcag2aa", "best-practice"]}).response["violations"]
+    check(not v, f"accesibilidad (axe, WCAG AA): {donde} {[(x['id'], x['nodes'][0]['target']) for x in v] if v else ''}")
 
 
 def handle(route, request):
@@ -227,6 +238,7 @@ with sync_playwright() as p:
     check(pg.inner_text("#cambios [data-action=prop-aplicar]") == "Aplicar 2 cambios" and pg.locator("#cambios .cb.rechazado").count() == 1, "propuestas: ✕ rechaza y descuenta")
     pg.click("#cambios .cb:has-text('MOCK-PEND') [data-action=prop-si]")
     pg.screenshot(path=str(SHOTS / "22-cambios.png"))
+    axe_ok(pg, "conversación con la caja de cambios (escritorio)")
     pg.click("#cambios [data-action=prop-aplicar]"); pg.wait_for_selector("#aviso")
     pg.screenshot(path=str(SHOTS / "23-aplicado.png"))
     check(pg.inner_text("#aviso span") == "Memoria actualizada · 3 cambios" and pg.evaluate("S.exp.memoria.plazos.length") == n_plazos, "propuestas: «Aplicar» guarda los cambios pero no el plazo")
@@ -462,11 +474,45 @@ with sync_playwright() as p:
     check(nowrap(), "móvil sin desborde en la memoria completa")
     m.close()
 
+    # v0.6 · F6: celular con proveedor (conversación, aviso de contexto, cambios en la hoja), teclado y accesibilidad
+    m = b.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2); mp = m.new_page()
+    mp.on("pageerror", lambda e: errors.append("móvil F6: " + str(e))); mp.route("**/*", handle)
+    onboarding(mp); mp.wait_for_function("Lib.installed()", timeout=15000)
+    mp.click("[data-action=load-sample]"); mp.wait_for_selector(".inicio"); mp.wait_for_timeout(300)
+    axe_ok(mp, "inicio en el celular")
+    mp.fill("#q", "¿Qué debo preparar?"); mp.keyboard.press("Enter"); mp.wait_for_selector("#velo-envio")
+    mp.focus("#velo-envio [data-action=envio-enviar]")
+    for _ in range(12): mp.keyboard.press("Tab")
+    check(mp.evaluate("!!document.activeElement.closest('#velo-envio')"), "teclado: el foco no sale de la vista previa (Tab)")
+    axe_ok(mp, "vista previa en el celular")
+    mp.click("[data-action=envio-enviar]"); mp.wait_for_selector("#hilo .resp .recibo", timeout=10000)
+    check(nowrap(), "móvil: la conversación no desborda")
+    mp.evaluate("S.settings.contextoMax=2000;renderCentro()"); mp.evaluate("S.settings.contextoMax=Math.round(usoContexto(S.exp)*S.settings.contextoMax/95);renderCentro()")
+    check(mp.locator(".larga.alta").count() == 1 and nowrap(), "móvil: aviso de conversación larga en ámbar, sin desborde")
+    mp.screenshot(path=str(SHOTS / "24-movil-larga.png"))
+    axe_ok(mp, "conversación con aviso de contexto en el celular")
+    mp.evaluate("S.settings.contextoMax=60000;renderCentro()")
+    mp.click("#prop-linea [data-action=propose-memory]"); mp.wait_for_selector("#velo-envio"); mp.click("[data-action=envio-enviar]")
+    mp.wait_for_selector("#cambios", timeout=10000); mp.wait_for_timeout(350)
+    check("ficha-movil" in mp.get_attribute("#v6", "class") and mp.locator("#cambios").is_visible(), "móvil: «Revisar en la ficha» abre la hoja en la caja de cambios")
+    mp.click("#cambios [data-action=prop-aplicar]"); mp.wait_for_selector("#aviso")
+    ab = mp.locator("#aviso").bounding_box()
+    check(ab["x"] >= 0 and ab["x"] + ab["width"] <= 390 and mp.evaluate("!!document.activeElement.closest('#cambios')"), "móvil: el aviso con «Deshacer» cabe y el foco sigue en la caja")
+    mp.screenshot(path=str(SHOTS / "25-movil-cambios.png"))
+    axe_ok(mp, "caja de cambios y aviso en el celular")
+    mp.click("#cambios [data-action=plazo-confirmar]"); mp.focus("#cambios [data-action=plazo-si]"); mp.keyboard.press("Escape")
+    check(mp.locator("#cambios .pregunta").count() == 0 and mp.evaluate("document.activeElement.dataset.action") == "plazo-confirmar", "teclado: Esc cancela la confirmación del plazo y devuelve el foco")
+    mp.click("#cambios [data-action=plazo-confirmar]"); mp.click("#cambios [data-action=plazo-si]"); mp.wait_for_timeout(200)
+    ab = mp.locator("#aviso").bounding_box()
+    check(ab["x"] >= 0 and ab["x"] + ab["width"] <= 390, "móvil: el aviso del plazo confirmado cabe en la pantalla")
+    m.close()
+
     d = b.new_context(viewport={"width": 1440, "height": 900}, color_scheme="dark"); dp = d.new_page(); dp.route("**/*", handle)
     dp.on("pageerror", lambda e: errors.append("oscuro: " + str(e)))
     onboarding(dp, with_provider=False); dp.screenshot(path=str(SHOTS / "03-oscuro.png"))
+    axe_ok(dp, "expedientes en oscuro")
     dp.click("[data-action=load-sample]"); dp.wait_for_selector(".inicio"); dp.wait_for_timeout(400)
-    dp.screenshot(path=str(SHOTS / "04-oscuro-expediente.png"))
+    dp.screenshot(path=str(SHOTS / "04-oscuro-expediente.png")); axe_ok(dp, "inicio en oscuro")
     dp.click(".barra .nav-hoy"); dp.wait_for_timeout(200); dp.screenshot(path=str(SHOTS / "19-oscuro-hoy.png"))
     dp.click(".secc [data-action=new-exp]"); dp.fill("#dlg [name=numero]", "01234-2026-0-1501-JR-CI-01"); dp.click("[data-dlg=yes]"); dp.wait_for_selector(".inicio")
     check("Todavía no conversas" in dp.inner_text(".inicio") and dp.locator(".barra .exp").count() == 2, "expediente nuevo: abre en su Inicio y aparece en la barra")

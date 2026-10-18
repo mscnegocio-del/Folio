@@ -88,7 +88,7 @@ settings.contextoMax = 60000
 | F3 | ✅ Caja de texto: chips que definen qué sale (memoria, documentos, biblioteca), @ para citar documentos y movimientos, / con 4 acciones que recuerdan verificar, píldora de destino y vista previa exacta (la misma antes de enviar y en "Ver lo que se envió") (2026-10-18) |
 | F4 | ✅ Contexto: estimación (~3,5 caracteres por token, historial completo dentro del presupuesto), línea de aviso 70/90 %, porcentaje en ⋯, "Seguir en una nueva" con resumen y propuestas en una consulta (2026-10-18). Las propuestas se revisan con la ventana actual hasta F5 |
 | F5 | ✅ Propuestas de memoria en la Ficha (✓/✕, "Aplicar N cambios" sin plazos, plazo confirmado aparte), aviso con "Deshacer", línea del hilo y "Hoy" → caja (2026-10-18). Pendiente de decisión: propuestas automáticas al terminar cada respuesta (§7) |
-| F6 | Celular, accesibilidad, e2e y capturas → Release v0.6.0 |
+| F6 | ✅ Celular, accesibilidad (axe-core sin hallazgos en claro/oscuro, escritorio/celular), teclado, e2e y capturas; propuestas dentro de la misma respuesta; `APP.version` 0.6.0 (2026-10-18). Falta publicar el Release |
 
 ## 13. Preguntas abiertas
 1. ¿Se proponen cambios de memoria también al bloquear Folio o cerrar la pestaña con una conversación abierta?
