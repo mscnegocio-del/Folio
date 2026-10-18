@@ -86,7 +86,7 @@ settings.contextoMax = 60000
 | F1 | ✅ Datos: `chats`, migración (`normalizeExp`), propuestas e historial de memoria con deshacer, `ultimaVisita` (2026-10-18; sin cambios visibles en la v0.5) |
 | F2 | ✅ Tres zonas: barra con conversaciones anidadas, vista Hoy, Inicio del expediente, Ficha con modos Ficha · Fuente · Borrador, riel y celular (2026-10-18). La caja de cambios propuestos en la Ficha llega en F5; chips, @, / y vista previa en F3 |
 | F3 | ✅ Caja de texto: chips que definen qué sale (memoria, documentos, biblioteca), @ para citar documentos y movimientos, / con 4 acciones que recuerdan verificar, píldora de destino y vista previa exacta (la misma antes de enviar y en "Ver lo que se envió") (2026-10-18) |
-| F4 | Contexto: estimación, línea de aviso, "Seguir en una nueva" con resumen |
+| F4 | ✅ Contexto: estimación (~3,5 caracteres por token, historial completo dentro del presupuesto), línea de aviso 70/90 %, porcentaje en ⋯, "Seguir en una nueva" con resumen y propuestas en una consulta (2026-10-18). Las propuestas se revisan con la ventana actual hasta F5 |
 | F5 | Propuestas de memoria en la Ficha, aplicar y confirmar plazos, deshacer |
 | F6 | Celular, accesibilidad, e2e y capturas → Release v0.6.0 |
 

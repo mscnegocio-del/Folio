@@ -1,6 +1,16 @@
 # Changelog — Folio
 
 ## [Sin publicar]
+### Cambiado (v0.6 · F4: ventana de contexto)
+- Folio estima en tu equipo cuánto ocupa cada conversación (instrucciones, memoria, normas, fragmentos e historial completo) frente a un presupuesto útil de 60 000 tokens, ajustable en Ajustes → Privacidad de cada consulta. Ya no se corta el historial a los últimos 8 mensajes.
+- Hasta el 70 % no se muestra nada. Desde el 70 %, sobre la caja: "Esta conversación ya es larga…" con [Seguir en una nueva] y [Seguir aquí]; desde el 90 % la línea pasa a ámbar y "Seguir en una nueva" es la acción principal. El porcentaje está en el "⋯" de la conversación.
+- Si se pasa del 100 %, se envían los mensajes más recientes que caben y la vista previa dice cuántos quedaron fuera.
+- "Seguir en una nueva": el agente resume la conversación y propone cambios de memoria en una sola consulta (seudonimizada, con revisión previa); eliges qué cambios aplicar (los plazos van desmarcados) y se abre una conversación con "Continúa de «…»". El resumen se guarda cifrado y va al agente en la conversación nueva.
+### Avisos legales
+- Política 2026-10-18 (borrador), sección 4: declara la copia cifrada local de lo enviado ("Ver lo que se envió") y del resumen. Se pide aceptar de nuevo al desbloquear.
+### Pruebas
+- e2e: umbrales 70/90 %, "Seguir aquí", porcentaje en ⋯, historial que no cabe, "Seguir en una nueva" (una consulta sin datos reales, resumen guardado y enviado seudonimizado, memoria aprobada) y presupuesto en Ajustes.
+
 ### Cambiado (v0.6 · F3: caja de texto)
 - Los chips de la caja definen qué sale: sin "Memoria" no se envía la memoria del expediente; sin "Documentos" no se envían fragmentos; sin "Biblioteca" no hay búsqueda de normas ni artículos. "Leyó…" muestra lo que realmente se envió.
 - `@` cita un documento o un movimiento (`@«nombre»`): su texto va en la consulta aunque los documentos estén desactivados. Se elige con el mouse o con ↑ ↓ y Enter.

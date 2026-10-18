@@ -2,7 +2,7 @@
    Folio MVP · núcleo
    Todo corre en el navegador. No hay servidor de Folio.
    ============================================================ */
-const APP = { name: 'Folio', version: '0.5.0', policyVersion: '2026-10-01 r2 (borrador)' };
+const APP = { name: 'Folio', version: '0.5.0', policyVersion: '2026-10-18 (borrador)' };
 const ITER = 310000;
 const te = new TextEncoder(), td = new TextDecoder();
 const $ = (s, el = document) => el.querySelector(s);
@@ -408,11 +408,13 @@ Reglas:
 // o.memoria / o.docs: lo que el abogado deja leer al agente (chips de la caja, v0.6 · F3).
 // o.citados: documentos y movimientos citados con @ (van aunque los documentos estén desactivados: el abogado los pidió).
 function buildContext(e, docTexts, q, o = {}) {
-  const { memoria = true, docs = true, citados = { docs: [], movs: [] } } = o;
+  const { memoria = true, docs = true, citados = { docs: [], movs: [] }, previo = null } = o;
   const frags = [], seen = new Set(), add = f => { const k = f.name + '|' + f.text.slice(0, 80); if (!seen.has(k)) { seen.add(k); frags.push(f); } };
   if (citados.docs.length) retrieve({ ...e, docs: e.docs.filter(d => citados.docs.includes(d.id)) }, docTexts, q, 2 * citados.docs.length).forEach(add);
   if (docs) retrieve(e, docTexts, q, 4).forEach(add);
   let t = `FECHA DE HOY: ${todayISO()}\n\n=== MEMORIA DEL EXPEDIENTE ===\n${memoria ? memoryText(e) : '(En esta consulta el abogado no compartió la memoria del expediente.)'}`;
+  // Conversación que continúa otra (v0.6 · F4): el resumen guardado reemplaza a los mensajes anteriores
+  if (previo?.resumen) t += `\n\n=== RESUMEN DE LA CONVERSACIÓN ANTERIOR («${previo.titulo || 'Conversación anterior'}») ===\n${previo.resumen}`;
   const movs = e.movimientos.filter(v => citados.movs.includes(v.id));
   if (movs.length) t += `\n\n=== MOVIMIENTOS CITADOS POR EL ABOGADO ===\n` + movs.map(v => `- ${v.fecha || 's/f'}: ${v.acto}${v.sumilla ? '. ' + v.sumilla : ''}`).join('\n');
   if (frags.length) t += `\n\n=== FRAGMENTOS DE DOCUMENTOS (texto extraído en el equipo del abogado) ===\n` + frags.slice(0, 6).map(f => `--- ${f.name} ---\n${f.text}`).join('\n\n');
