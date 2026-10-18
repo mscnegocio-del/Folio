@@ -22,13 +22,18 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fragment+Mono&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"SoftwareApplication","name":"Folio","applicationCategory":"BusinessApplication","operatingSystem":"Windows, macOS, Linux (navegador web)","softwareVersion":"0.5.0","inLanguage":"es-PE","description":"Agente de IA gratuito y de código abierto para abogados litigantes en el Perú, con memoria por expediente y cifrado local.","offers":{"@type":"Offer","price":"0","priceCurrency":"PEN"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","downloadUrl":"https://github.com/mscnegocio-del/Folio/releases/latest","author":{"@type":"Person","name":"Milton Salcedo Cruz","address":"Huancayo, Perú"}},
+{"@type":"SoftwareApplication","name":"Folio","applicationCategory":"BusinessApplication","operatingSystem":"Windows, macOS, Linux (navegador web)","softwareVersion":"0.5.0","inLanguage":"es-PE","description":"Agente de IA gratuito y de código abierto para abogados litigantes en el Perú, con memoria por expediente y cifrado local.","offers":{"@type":"Offer","price":"0","priceCurrency":"PEN"},"license":"https://www.gnu.org/licenses/agpl-3.0.html","downloadUrl":"https://github.com/mscnegocio-del/Folio/releases/latest/download/folio.html","author":{"@type":"Person","name":"Milton Salcedo Cruz","address":"Huancayo, Perú"}},
 {"@type":"FAQPage","mainEntity":[
 {"@type":"Question","name":"¿Folio es gratis?","acceptedAnswer":{"@type":"Answer","text":"Sí. Folio es gratuito y de código abierto. Solo pagas el uso de IA directamente a tu proveedor, según lo que consumas."}},
 {"@type":"Question","name":"¿Mis expedientes se suben a internet?","acceptedAnswer":{"@type":"Answer","text":"No. Se guardan cifrados en tu navegador. Solo sale hacia el proveedor de IA el texto de cada consulta, seudonimizado y después de que lo revises."}},
 {"@type":"Question","name":"¿Necesito instalar algo?","acceptedAnswer":{"@type":"Answer","text":"No. Descargas un archivo folio.html y lo abres con doble clic en Chrome, Edge o Firefox."}},
+{"@type":"Question","name":"¿Funciona en el celular?","acceptedAnswer":{"@type":"Answer","text":"Folio se usa en tu computadora: es un archivo que abres con doble clic en Chrome, Edge o Firefox, en Windows, macOS o Linux. Desde el celular puedes enviarte el enlace para descargarlo allí."}},
 {"@type":"Question","name":"¿Folio reemplaza al abogado?","acceptedAnswer":{"@type":"Answer","text":"No. Es un asistente que organiza información y propone borradores. La revisión y la decisión final son siempre del abogado."}}
 ]}]}
+</script>
+<script>
+/* Celular o tableta: Folio se usa en la computadora, así que "Descargar" pasa a "Envíatelo a tu computadora" */
+if(matchMedia('(hover:none) and (pointer:coarse)').matches||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))document.documentElement.classList.add('movil');
 </script>
 <style>
 :root{
@@ -171,6 +176,23 @@ footer nav{display:flex;gap:20px;font-size:14px}
 footer nav a{text-decoration:none;color:var(--dim)}
 footer nav a:hover{color:#fff}
 
+/* descarga: en la computadora, aviso tras el clic; en el celular, enviar el enlace a la computadora */
+[hidden]{display:none!important}
+html:not(.movil) .solo-movil,.movil .solo-pc{display:none!important}
+button.btn{cursor:pointer}
+.movil .hero .cta{margin-bottom:20px}
+.hero .nota-movil{font-size:14px;max-width:420px;margin:0 auto 56px}
+.sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:16px;background:rgba(0,0,0,.6)}
+.sheet-box{position:relative;width:100%;max-width:420px;background:var(--win);border:1px solid var(--win-bd);border-radius:16px;padding:28px 22px 22px;display:flex;flex-direction:column;gap:10px;box-shadow:0 30px 80px -20px rgba(0,0,0,.9)}
+.sheet-box h3{font:400 20px var(--sans);margin:0 40px 0 0}
+.sheet-box > p{color:var(--desc);font-size:15px;margin:0 0 8px}
+.sheet-box .btn{width:100%}
+.sheet-box .sheet-ok{min-height:1.5em;margin:2px 0 0;font-size:14px;color:#9be3b4;text-align:center;overflow-wrap:anywhere}
+.cerrar{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;background:var(--sec);color:#fff;font-size:20px;line-height:1;cursor:pointer}
+.aviso{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;width:min(520px,calc(100% - 32px));background:var(--win);border:1px solid var(--win-bd);border-radius:14px;padding:16px 56px 16px 18px;box-shadow:0 30px 80px -20px rgba(0,0,0,.9);font-size:14.5px}
+.aviso p{margin:0}
+.aviso p + p{margin-top:6px;color:var(--desc)}
+
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease}
 .reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
@@ -182,6 +204,7 @@ footer nav a:hover{color:#fff}
 @media (max-width:700px){
   .wrap{padding:0 16px}
   .top nav .link{display:none}
+  .movil .top nav .nav-gh{display:none}
   .hero{padding-top:64px}
   .grid,.providers{grid-template-columns:1fr}
   .card{padding:28px 22px 0}.grid.steps .card{padding:28px 22px}
@@ -198,6 +221,7 @@ footer nav a:hover{color:#fff}
   <symbol id="mark" viewBox="0 0 24 24"><path d="M5 3.5h9l5 5V20a.5.5 0 0 1-.5.5h-13A.5.5 0 0 1 5 20z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3.5V8.5h5M8.5 12.5h7M8.5 16h4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
   <symbol id="dl" viewBox="0 0 16 16"><path d="M8 2v8m0 0L4.8 6.8M8 10l3.2-3.2M2.5 11v1.5c0 .8.7 1.5 1.5 1.5h8c.8 0 1.5-.7 1.5-1.5V11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="gh" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.06-.49.06-.49.8.06 1.23.83 1.23.83.72 1.22 1.88.87 2.34.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.66 3.95.29.25.54.73.54 1.48v2.19c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></symbol>
+  <symbol id="pc" viewBox="0 0 16 16"><path d="M2.5 3h11c.3 0 .5.2.5.5v7c0 .3-.2.5-.5.5h-11a.5.5 0 0 1-.5-.5v-7c0-.3.2-.5.5-.5zM5.5 14h5M8 11v3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="spark" viewBox="0 0 16 16"><path fill="currentColor" d="M8 0l1.6 6.4L16 8l-6.4 1.6L8 16l-1.6-6.4L0 8l6.4-1.6z"/></symbol>
 </svg>
 
@@ -208,8 +232,8 @@ footer nav a:hover{color:#fff}
       <a class="link" href="#capacidades">Capacidades</a>
       <a class="link" href="#empezar">Empezar</a>
       <a class="link" href="#preguntas">Preguntas</a>
-      <a class="btn btn-secondary btn-xs" href="https://github.com/mscnegocio-del/Folio"><svg><use href="#gh"/></svg>GitHub</a>
-      <a class="btn btn-primary btn-xs" href="https://github.com/mscnegocio-del/Folio/releases/latest" data-goatcounter-click="descargar-menu"><svg><use href="#dl"/></svg>Descargar</a>
+      <a class="btn btn-secondary btn-xs nav-gh" href="https://github.com/mscnegocio-del/Folio"><svg><use href="#gh"/></svg>GitHub</a>
+      <a class="btn btn-primary btn-xs" href="https://github.com/mscnegocio-del/Folio/releases/latest/download/folio.html" data-descarga="menu" data-goatcounter-click="descargar-menu" data-goatcounter-title="Descargar (menú)"><svg class="solo-pc"><use href="#dl"/></svg><svg class="solo-movil"><use href="#pc"/></svg><span class="solo-pc">Descargar</span><span class="solo-movil">Enviar a tu PC</span></a>
     </nav>
   </div>
 </header>
@@ -223,9 +247,10 @@ footer nav a:hover{color:#fff}
     <p>Consultas, escritos, seguimiento del CEJ: empieza aquí.</p>
     <p>Folio es un agente de IA gratuito y de código abierto para abogados litigantes en el Perú. Todo queda cifrado en tu equipo y usas tu propia cuenta de IA.</p>
     <div class="cta">
-      <a class="btn btn-primary" href="https://github.com/mscnegocio-del/Folio/releases/latest" data-goatcounter-click="descargar-portada"><svg><use href="#dl"/></svg>Descargar folio.html</a>
+      <a class="btn btn-primary" href="https://github.com/mscnegocio-del/Folio/releases/latest/download/folio.html" data-descarga="portada" data-goatcounter-click="descargar-portada" data-goatcounter-title="Descargar folio.html (portada)"><svg class="solo-pc"><use href="#dl"/></svg><svg class="solo-movil"><use href="#pc"/></svg><span class="solo-pc">Descargar folio.html</span><span class="solo-movil">Envíatelo a tu computadora</span></a>
       <a class="btn btn-secondary" href="#empezar">Cómo empezar</a>
     </div>
+    <p class="solo-movil nota-movil">Folio se usa en tu computadora (Windows, macOS o Linux). Envíate el enlace y descárgalo allí.</p>
 
     <div class="window reveal" role="img" aria-label="Vista de Folio: el agente responde sobre el estado de un expediente">
       <aside class="side">
@@ -345,7 +370,7 @@ footer nav a:hover{color:#fff}
       <article class="card reveal">
         <h3>Descarga y abre con doble clic</h3>
         <p style="margin-bottom:12px">Sin instalación, sin cuenta y sin servidores.</p>
-        <div class="code"><a href="https://github.com/mscnegocio-del/Folio/releases/latest" data-goatcounter-click="descargar-pasos">↓ folio.html</a><span class="hint">v0.5.0 · 374 KB</span></div>
+        <div class="code"><a href="https://github.com/mscnegocio-del/Folio/releases/latest/download/folio.html" data-descarga="pasos" data-goatcounter-click="descargar-pasos" data-goatcounter-title="Descargar folio.html (pasos)"><span class="solo-pc">↓ folio.html</span><span class="solo-movil">→ Envíatelo a tu computadora</span></a><span class="hint">v0.5.0 · 374 KB</span></div>
         <div class="code"><a href="https://github.com/mscnegocio-del/Folio/blob/main/docs/guia-api-keys.md">→ ¿Cómo obtengo mi key?</a><span class="hint">guía paso a paso</span></div>
       </article>
       <article class="card reveal">
@@ -382,6 +407,7 @@ footer nav a:hover{color:#fff}
     <div class="head reveal"><h2>Preguntas frecuentes</h2></div>
     <div class="faq reveal">
       <details><summary>¿Folio es gratis?</summary><p>Sí. Es gratuito y de código abierto (AGPL-3.0). Solo pagas el uso de IA a tu proveedor.</p></details>
+      <details><summary>¿Funciona en el celular?</summary><p>Folio se usa en tu computadora: es un archivo que abres con doble clic en Chrome, Edge o Firefox, en Windows, macOS o Linux. Desde el celular puedes enviarte el enlace para descargarlo allí.</p></details>
       <details><summary>¿Mis expedientes se suben a internet?</summary><p>No. Se guardan cifrados en tu navegador. Solo sale hacia el proveedor de IA el texto de cada consulta, seudonimizado y después de que lo revises.</p></details>
       <details><summary>¿Folio usa leyes actualizadas?</summary><p>Sí, con su biblioteca legal peruana: el agente cita artículos vigentes tomados del SPIJ y Folio verifica cada cita. La fecha de los textos siempre está a la vista y la biblioteca se actualiza sola. No es una edición oficial: verifica en la fuente antes de usar un artículo en un escrito.</p></details>
       <details><summary>¿Se conecta al CEJ o a SINOE?</summary><p>No de forma automática. Copias el seguimiento del CEJ, lo pegas y el agente lo ordena.</p></details>
@@ -398,7 +424,7 @@ footer nav a:hover{color:#fff}
     <p style="color:var(--desc);max-width:640px;margin:0 auto">Folio está en versión de prueba y evoluciona con lo que piden los abogados. Reporta problemas, propone mejoras o revisa el código.</p>
     <div class="cta">
       <a class="btn btn-primary" href="https://github.com/mscnegocio-del/Folio"><svg><use href="#gh"/></svg>Ver en GitHub</a>
-      <a class="btn btn-secondary" href="https://github.com/mscnegocio-del/Folio/releases/latest" data-goatcounter-click="descargar-final">Descargar</a>
+      <a class="btn btn-secondary" href="https://github.com/mscnegocio-del/Folio/releases/latest/download/folio.html" data-descarga="final" data-goatcounter-click="descargar-final" data-goatcounter-title="Descargar (final)"><span class="solo-pc">Descargar</span><span class="solo-movil">Enviar a tu computadora</span></a>
       <a class="btn btn-secondary" href="https://github.com/mscnegocio-del/Folio/issues">Reportar un problema</a>
       <a class="btn btn-secondary" href="https://github.com/mscnegocio-del/Folio/blob/main/docs/guia-api-keys.md">Guía de keys</a>
     </div>
@@ -415,6 +441,25 @@ footer nav a:hover{color:#fff}
   </div>
 </footer>
 
+<div class="aviso" id="aviso" role="status" hidden>
+  <p><b>Se está descargando folio.html.</b> Ábrelo con doble clic desde tu carpeta de descargas.</p>
+  <p>¿No empezó? <a href="https://github.com/mscnegocio-del/Folio/releases/latest" data-goatcounter-click="descargar-github" data-goatcounter-title="Descargar desde GitHub (aviso)">Descárgalo desde GitHub</a></p>
+  <button class="cerrar" type="button" aria-label="Cerrar">×</button>
+</div>
+
+<div class="sheet" id="enviar" hidden>
+  <div class="sheet-box" role="dialog" aria-modal="true" aria-labelledby="enviar-titulo">
+    <button class="cerrar" type="button" aria-label="Cerrar">×</button>
+    <h3 id="enviar-titulo">Folio se usa en tu computadora</h3>
+    <p>Es un archivo que se abre con doble clic en Chrome, Edge o Firefox, en Windows, macOS o Linux. Envíate el enlace y descárgalo allí.</p>
+    <a class="btn btn-primary" data-enviar="whatsapp" data-goatcounter-click="enviar-whatsapp" data-goatcounter-title="Enviar por WhatsApp" target="_blank" rel="noopener">Enviar por WhatsApp</a>
+    <a class="btn btn-secondary" data-enviar="correo" data-goatcounter-click="enviar-correo" data-goatcounter-title="Enviar por correo">Enviar por correo</a>
+    <button class="btn btn-secondary" type="button" data-enviar="copiar" data-goatcounter-click="enviar-copiar" data-goatcounter-title="Copiar enlace">Copiar enlace</button>
+    <button class="btn btn-secondary" type="button" data-enviar="mas" data-goatcounter-click="enviar-mas" data-goatcounter-title="Más opciones" hidden>Más opciones</button>
+    <p class="sheet-ok" role="status"></p>
+  </div>
+</div>
+
 <script>
 (function(){
   var top=document.getElementById('top');
@@ -423,6 +468,45 @@ footer nav a:hover{color:#fff}
   if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});return}
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
   els.forEach(function(e){io.observe(e)});
+})();
+
+/* Descarga directa (computadora) o envío del enlace a la computadora (celular). ?ref=celular sale en GoatCounter como origen */
+(function(){
+  var botones=document.querySelectorAll('[data-descarga]');
+  if(!document.documentElement.classList.contains('movil')){
+    var aviso=document.getElementById('aviso'),t;
+    botones.forEach(function(a){a.addEventListener('click',function(){
+      aviso.hidden=false;clearTimeout(t);t=setTimeout(function(){aviso.hidden=true},15000);
+    })});
+    aviso.querySelector('.cerrar').addEventListener('click',function(){aviso.hidden=true});
+    return;
+  }
+  var SITIO='https://mscnegocio-del.github.io/Folio/?ref=celular';
+  var TEXTO='Folio, agente de IA gratuito para abogados litigantes. Ábrelo en tu computadora para descargarlo: '+SITIO;
+  var hoja=document.getElementById('enviar'),ok=hoja.querySelector('.sheet-ok'),previo;
+  function abrir(){previo=document.activeElement;ok.textContent='';hoja.hidden=false;document.body.style.overflow='hidden';hoja.querySelector('[data-enviar]').focus()}
+  function cerrar(){hoja.hidden=true;document.body.style.overflow='';if(previo)previo.focus()}
+  botones.forEach(function(a){
+    a.dataset.goatcounterClick='enviar-'+a.dataset.descarga;
+    a.dataset.goatcounterTitle='Enviar a la computadora ('+a.dataset.descarga+')';
+    a.setAttribute('aria-haspopup','dialog');
+    a.addEventListener('click',function(e){e.preventDefault();abrir()});
+  });
+  hoja.querySelector('[data-enviar="whatsapp"]').href='https://wa.me/?text='+encodeURIComponent(TEXTO);
+  hoja.querySelector('[data-enviar="correo"]').href='mailto:?subject='+encodeURIComponent('Folio para mi computadora')+'&body='+encodeURIComponent(TEXTO);
+  hoja.querySelector('[data-enviar="copiar"]').addEventListener('click',function(){
+    var hecho=function(){ok.textContent='Enlace copiado. Pégalo en un chat o en tu correo y ábrelo en tu computadora.'};
+    var mostrar=function(){ok.textContent=SITIO};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(SITIO).then(hecho,mostrar);else mostrar();
+  });
+  var mas=hoja.querySelector('[data-enviar="mas"]');
+  if(navigator.share){
+    mas.hidden=false;
+    mas.addEventListener('click',function(){navigator.share({title:'Folio',text:'Folio, agente de IA gratuito para abogados litigantes. Ábrelo en tu computadora para descargarlo.',url:SITIO}).catch(function(){})});
+  }
+  hoja.querySelector('.cerrar').addEventListener('click',cerrar);
+  hoja.addEventListener('click',function(e){if(e.target===hoja)cerrar()});
+  addEventListener('keydown',function(e){if(e.key==='Escape'&&!hoja.hidden)cerrar()});
 })();
 </script>
 <script data-goatcounter="https://foliope.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
