@@ -1,85 +1,94 @@
-# Spec — Rediseño v0.6: el agente al centro, el expediente a la derecha
+# Spec — Rediseño v0.6: tres zonas, una protagonista
 
-> Estado: **borrador, pendiente de aprobación del usuario** · Épica E10 · Fecha: 2026-10-18
-> Prototipo navegable: `process/prototipos/rediseno-chat-v0.6.html` (se importa a Figma con el plugin html.to.design)
-> Decisiones del usuario (2026-10-18): prototipo HTML en lugar de Figma; memoria "punto medio" (propone sola, se aplica con un clic, plazos con confirmación, con deshacer).
+> Estado: **dirección aprobada por el usuario (2026-10-18)** · Épica E10 · Decisiones D-38 a D-41
+> Prototipo navegable: `process/prototipos/rediseno-chat-v0.6.html` (estados con `?vista=hoy|inicio|chat|fuente|borrador|larga|limite|nueva|envio`; a Figma con el plugin html.to.design)
+> Base: investigación de la competencia (`process/research.md` §8) y segunda opinión UX independiente (2026-10-18). El primer prototipo (4 columnas) se descartó: el chat quedaba en 416–576 px y la información se repetía en 3 o 4 lugares.
 
 ## 1. Problema
-- Cada expediente tiene **un solo chat** (`exp.chat`). Las conversaciones de temas distintos se mezclan y no hay forma de volver a una anterior.
-- Al modelo solo le llegan **los últimos 8 mensajes**. En conversaciones largas el agente "olvida" lo del inicio sin avisar, y el abogado no sabe por qué responde peor.
-- La memoria se actualiza **solo si el abogado pide** "Actualizar memoria". Si lo olvida, el siguiente chat parte de una memoria vieja.
-- El abogado ya conoce el patrón de ChatGPT y Claude (lista a la izquierda, chat al centro). La v0.5 puso el expediente al centro (D-34) y el agente a un lado.
+- Cada expediente tiene **un solo chat** (`exp.chat`): los temas se mezclan y no se puede volver a una conversación anterior.
+- Al modelo solo le llegan **los últimos 8 mensajes**. En conversaciones largas el agente "olvida" sin avisar.
+- La memoria se actualiza **solo si el abogado lo pide**. Si lo olvida, el siguiente chat parte de una memoria vieja.
+- El abogado conoce el patrón de ChatGPT y Claude. Lo que da esa sensación es **aire**: una columna de lectura ancha y tranquila.
 
 ## 2. Objetivo
-Que trabajar con Folio se sienta como ChatGPT o Claude, pero **por expediente y con memoria que siempre está al día**:
-1. **Izquierda:** expedientes y agenda de plazos.
-2. **Centro:** el agente. Conversaciones anteriores del expediente y la conversación actual.
-3. **Derecha (plegable):** todo el expediente: resumen, memoria, documentos, movimientos y partes.
-4. Cada chat nuevo **parte de la memoria actualizada**, y ningún chat se alarga hasta que el agente pierda precisión.
+Trabajar un expediente con el Agente como en ChatGPT o Claude, pero **con memoria del caso siempre al día, privacidad visible y fuentes verificadas**. Cada dato vive en **un solo lugar**.
 
-## 3. Pantalla (escritorio, desde 1180 px)
+## 3. Pantalla: tres zonas
 | Zona | Ancho | Contenido |
 |---|---|---|
-| Barra izquierda | 264 px | Logo, "Nuevo expediente", buscador, agenda agrupada (vencidos, hoy, 7 días), lista de expedientes (marca teal en el activo), pie con Privacidad, Ajustes y Bloquear |
-| Conversaciones | 240 px, plegable | Chats del expediente activo, del más reciente al más antiguo: título, fecha, n.° de mensajes y marca "resumen en la memoria". Botón "Nuevo chat" |
-| Chat | resto | Encabezado (número de expediente, estado, medidor de contexto, abrir o cerrar panel derecho), mensajes y caja de texto |
-| Panel derecho | 360 px, plegable | Pestañas Resumen · Memoria · Documentos · Movimientos · Partes. En Memoria: "Cambios recientes" con deshacer |
+| **Izquierda: expedientes** | 248 px (riel de 60 px cuando falta espacio) | Buscar (Ctrl K) · **Hoy** (con contador) · "Expedientes" con un **+** discreto · lista de expedientes; **el activo despliega sus conversaciones** (3–5 últimas, "+ Nueva conversación", "Ver todas") · pie único: "🔒 Cifrado en este equipo · Bloquear · Ajustes" |
+| **Centro: el Agente** | resto (nunca menos de ~640 px; columna de lectura de 700 px) | Encabezado de una línea (número y carátula pequeños, título de la conversación, "+ Nueva conversación", botón de la ficha) · hilo · caja de texto |
+| **Derecha: Ficha del expediente** | 340 px, plegable (520 px en modo Borrador) | Modos **Ficha · Fuente · Borrador** · pestañas Documentos y Movimientos como listas simples |
 
-- **Inicio del expediente** (sin chat abierto): caja de texto centrada ("¿En qué trabajamos hoy en este expediente?"), "Folio recuerda" y accesos a los últimos chats, como la página de un proyecto en Claude.
-- Entre 820 y 1180 px: el panel derecho y la lista de conversaciones se abren encima del chat.
-- Bajo 820 px (celular): chat a pantalla completa; ☰ abre expedientes y conversaciones; ⓘ abre el expediente como hoja.
-- Se mantiene: nombre **"Agente"** (D-35), revisión previa del texto exacto, línea "Se envía a… con N datos reemplazados", fichas de citas, paleta marino/teal y tipografías (D-36, D-37), temas claro y oscuro.
+- **Hoy:** vista central con lo que pide atención en todos los expedientes: plazos propuestos por confirmar, fechas registradas por el abogado, cambios de memoria por revisar y movimientos pegados sin revisar. Aclara que Folio no calcula plazos.
+- **Inicio del expediente** (al abrirlo o con "+ Nueva conversación" sin texto): carátula, partes, juzgado y etapa en una línea; tarjeta **"Desde tu última visita"**; caja de texto con 3 atajos según el estado del caso; **lista de conversaciones** con título, una línea de resumen, fecha y estado ("✓ en la memoria" / "3 cambios por revisar").
+- **Responsive:** ≥ 1280 px tres zonas; 1024–1279 px con la ficha abierta la barra izquierda pasa a riel (lo mismo en modo Borrador bajo 1440 px); < 1024 px una sola columna: ☰ abre los expedientes y "Ficha" abre una hoja.
 
-## 4. Ventana de contexto
-- Folio estima los tokens de cada envío (≈ caracteres / 4): instrucciones + memoria + normas + fragmentos + historial completo del chat.
-- **Presupuesto por chat:** 60 000 tokens de historial por defecto (no el máximo del modelo: más contexto = más costo y respuestas menos precisas). Ajustable en Ajustes.
-- **Medidor** en el encabezado del chat: gris hasta 70 %, ámbar desde 70 %, y desde 90 % un aviso sobre la caja de texto:
-  "Esta conversación está cerca del límite. Para que el agente no pierda precisión, continúa en un chat nuevo: Folio guarda un resumen y actualiza la memoria." → **Continuar en un chat nuevo** · Seguir aquí.
-- **Continuar en un chat nuevo:** (1) Folio pide al modelo un resumen del chat (seudonimizado y con revisión previa, como toda salida), (2) lo guarda en el chat y propone los cambios de memoria (§5), (3) abre un chat nuevo con la marca "Viene de: <título>" y el resumen como contexto inicial.
-- Al 100 % no se corta nada: se envían los mensajes más recientes que quepan, y el aviso dice cuántos quedaron fuera.
+## 4. Caja de texto (centro de mando)
+- Chips de **qué lee el agente**: ✓ Memoria · ✓ N documentos · ✓ Biblioteca. Se activan y desactivan y definen qué sale.
+- **@** cita un documento o un movimiento; **/** abre acciones con nombre jurídico (/absolver-traslado, /resumir-documento, /pegar-cej). Cada acción lleva su recordatorio de verificar plazos y normas.
+- **Píldora de destino:** "🔒 OpenRouter · claude-sonnet-5.5". Un clic abre la **vista previa exacta** del envío (texto con marcadores y lista de reemplazos). "Revisar siempre antes de enviar" es una preferencia ahí y en Ajustes, no una casilla en cada mensaje.
 
-## 5. Memoria "punto medio" (reemplaza el flujo manual de D-08)
-**Cuándo propone Folio, sin que se lo pidan:** al abrir un chat nuevo o cambiar de chat (sobre el que se deja), al continuar en un chat nuevo, al crear o importar un documento, y con "Actualizar memoria" a mano como hoy.
+## 5. Respuestas, fuentes y plazos
+- Sobre cada respuesta: "Leyó la memoria, 2 documentos y 3 artículos ▸" (se despliega con cada fuente).
+- **Citas en línea** como chips con estado (✓ vigente, ⚠ texto distinto o por regir, ✗ derogado o inexistente). Un clic abre la **Ficha en modo Fuente**: texto oficial del artículo, vigencia, norma modificatoria, fecha de corte de la biblioteca y "no es edición oficial".
+- Todo plazo mencionado lleva un bloque ámbar: Folio no calcula plazos; se verifica en la resolución y la casilla.
+- Bajo cada respuesta, el **recibo**: "Enviado a OpenRouter con tu cuenta · modelo · N datos reemplazados · Ver lo que se envió".
+- Cuando el agente produce un escrito: tarjeta "Borrador listo · Abrir al lado" → **Ficha en modo Borrador** con "Guardar como documento".
 
-**Cómo se ve:** una tarjeta al final del chat: "Folio propone 4 cambios en la memoria", agrupados por sección (hechos, estrategia, pendientes, plazos, estado).
-- Hechos, estrategia, pendientes y estado vienen **marcados**; **plazos y fechas vienen desmarcados** con "verifica la fecha con la resolución y tu casilla".
-- **Aplicar seleccionados** (un clic) · Revisar uno por uno · Descartar.
-- Al aplicar: aviso "Memoria actualizada · Deshacer".
+## 6. Ventana de contexto
+- Folio estima los tokens (instrucciones + memoria + normas + fragmentos + historial completo) contra un **presupuesto útil de 60 000 tokens** por conversación (ajustable en Ajustes), por debajo del máximo del modelo.
+- **Hasta ~70 % no se muestra nada.** Al ~70 %, una línea tranquila sobre la caja: "Esta conversación ya es larga. Para que el agente no pierda precisión, sigue en una nueva: Folio guarda un resumen." [Seguir en una nueva] [Seguir aquí]. Al ~90 % la línea pasa a ámbar y "Seguir en una nueva" es la acción principal. El porcentaje solo aparece en el menú "⋯" de la conversación.
+- **Seguir en una nueva:** el agente resume la conversación (seudonimizado y con revisión previa), se proponen los cambios de memoria (§7) y se abre una conversación con "Continúa de «…» · resumen guardado".
+- Al 100 % no se corta nada: se envían los mensajes más recientes que quepan y se avisa cuántos quedaron fuera.
 
-**Historial:** cada cambio guarda sección, antes, después, fecha y chat de origen. Panel derecho → Memoria → **Cambios recientes**, con "Deshacer" por cambio y enlace al chat de donde salió.
-**Nunca** se aplica nada sin un clic del abogado (sigue la responsabilidad del abogado de D-08 y Ley 29733).
+## 7. Memoria "punto medio" (D-39)
+- **Cuándo propone el agente:** al terminar una respuesta con novedades, al seguir en una conversación nueva, al guardar o importar un documento y al pegar movimientos del CEJ. También con "Actualizar memoria" a mano.
+- En el hilo, **una sola línea**: "El agente propone 3 cambios en la memoria y 1 plazo por confirmar · Revisar en la ficha →".
+- En la **Ficha**, la caja "Cambios propuestos por el agente": cada ítem con su sección y tipo (**+ nuevo**, **~ cambia** con el texto anterior al expandir, **! plazo**) y ✓ / ✕. "Aplicar N cambios" **excluye los plazos**: cada plazo se confirma aparte, con "¿Verificaste la fecha en la resolución y tu casilla?".
+- Tras aplicar: "Memoria actualizada · Deshacer" y la conversación queda "✓ en la memoria". El historial guarda sección, antes, después, fecha y conversación de origen, con deshacer por cambio.
+- **Nunca se aplica nada sin un clic del abogado.**
 
-## 6. Datos (IndexedDB, todo cifrado)
+## 8. Voz y privacidad (D-41)
+- **"El agente"** es el modelo de terceros con la cuenta del abogado: propone, redacta, resume. **"Folio"** es el software: cifra, reemplaza datos, guarda, avisa. Nunca "Folio recuerda/propone" para algo que hizo el modelo.
+- La privacidad se dice **una vez y es accionable**: píldora de destino (antes), recibo (después) y "Cifrado en este equipo" (pie de la barra). Se eliminan las demás repeticiones.
+- El modelo siempre aparece como de terceros ("Claude Sonnet 5.5 de Anthropic, vía OpenRouter, con tu cuenta").
+
+## 9. Estética
+- **Papel y tinta:** `--sheet` para el centro (la hoja), `--paper` para la barra y la ficha. Bordes de 1 px; sin tarjetas dentro de tarjetas; sombra solo en la caja de texto.
+- **Escala de 6 tamaños:** 12 · 13 · 14 · 16 (respuesta) · 17 (título de conversación) · 26 (carátula, Montserrat).
+- **Fragment Mono solo para números y códigos** (expediente, fechas, citas, marcadores).
+- **Color con significado:** teal solo para enviar, la acción principal de cada zona, lo activo, el foco y los enlaces; ámbar para plazos y "por verificar"; verde para vigente y aplicado; rojo solo para derogado y errores. Tokens de `src/styles.css`, claro y oscuro.
+
+## 10. Datos (IndexedDB, todo cifrado)
 ```js
-exp.chats = [{ id, titulo, createdAt, updatedAt, deChat?, resumen?, mensajes:[ ...igual que exp.chat ], tokensAprox }]
+exp.chats = [{ id, titulo, resumenCorto?, createdAt, updatedAt, deChat?, resumen?, mensajes:[ ...igual que exp.chat ], tokensAprox, enMemoria? }]
 exp.chatActivo = id
+exp.memoria.propuestas = [{ id, at, chatId, seccion, tipo:'nuevo'|'cambia'|'plazo', antes?, despues, estado:'pendiente'|'aplicada'|'descartada' }]
 exp.memoria.historial = [{ id, at, seccion, antes, despues, chatId, deshecho? }]   // máx. 300
+exp.ultimaVisita = ISO
 settings.contextoMax = 60000
+settings.revisarSiempre = true
 ```
 - **Migración:** `exp.chat` (si tiene mensajes) pasa a `exp.chats[0]` con título "Conversación anterior". Se documenta en `process/db-schema.md`.
-- El título del chat se genera en el equipo (primeras palabras de la primera pregunta); el abogado puede renombrarlo.
-- **Sin nuevas salidas de red.** El resumen y la propuesta de memoria usan el mismo proveedor, con seudonimización y revisión previa → no cambia la política.
+- **Sin nuevas salidas de red.** El resumen y las propuestas usan el mismo proveedor, con seudonimización y revisión previa → no cambia la política.
 
-## 7. Fuera de alcance
-- Sincronización entre equipos, chats compartidos y búsqueda dentro de todos los chats (después).
+## 11. Fuera de alcance
+- Agente a nivel de despacho (preguntas sobre todos los expedientes), sincronización entre equipos, chats compartidos.
+- Predicción o perfil de jueces (no se hará).
 - Cambios en la biblioteca legal, el cifrado o la seudonimización.
 
-## 8. Decisiones a registrar al aprobar
-- D-38: el agente pasa al centro y el expediente al panel derecho (reemplaza la composición de D-34; se mantienen D-35 a D-37).
-- D-39: memoria "punto medio": Folio propone sola en puntos fijos y se aplica con un clic; plazos desmarcados; historial con deshacer (actualiza D-08).
-- D-40: varios chats por expediente con presupuesto de contexto y "Continuar en un chat nuevo" con resumen.
-
-## 9. Fases
+## 12. Fases
 | Fase | Contenido |
 |---|---|
-| F0 | Prototipo HTML y aprobación de esta spec |
-| F1 | Datos: `chats`, migración, historial de memoria |
-| F2 | Diseño de tres zonas + lista de conversaciones + panel derecho |
-| F3 | Medidor de contexto, aviso y "Continuar en un chat nuevo" |
-| F4 | Propuestas automáticas de memoria, aplicar con un clic, cambios recientes y deshacer |
-| F5 | Celular, accesibilidad, e2e y capturas → Release v0.6.0 |
+| F0 | ✅ Investigación, segunda opinión, prototipo HTML y aprobación de la dirección |
+| F1 | Datos: `chats`, migración, propuestas e historial de memoria, `ultimaVisita` |
+| F2 | Tres zonas: barra con conversaciones anidadas, vista Hoy, Inicio del expediente, Ficha con modos |
+| F3 | Caja de texto: chips de contexto, @, /, píldora de destino y vista previa |
+| F4 | Contexto: estimación, línea de aviso, "Seguir en una nueva" con resumen |
+| F5 | Propuestas de memoria en la Ficha, aplicar y confirmar plazos, deshacer |
+| F6 | Celular, accesibilidad, e2e y capturas → Release v0.6.0 |
 
-## 10. Preguntas abiertas
-1. ¿60 000 tokens por chat te parece bien como presupuesto inicial?
-2. ¿La lista de conversaciones va en una columna propia del centro (prototipo) o anidada bajo el expediente activo en la barra izquierda, como los proyectos de Claude?
-3. ¿Se proponen cambios de memoria también al bloquear Folio o cerrar la pestaña con un chat abierto?
+## 13. Preguntas abiertas
+1. ¿Se proponen cambios de memoria también al bloquear Folio o cerrar la pestaña con una conversación abierta?
+2. Prueba de primer clic con 3–5 abogados en una laptop de 1366 px antes de F2 (retomar un expediente, pedir y guardar un esquema, aplicar cambios salvo el plazo y confirmarlo).

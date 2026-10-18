@@ -3,9 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Folio · prototipo v0.6 (agente al centro)</title>
-<!-- Prototipo de diseño: datos ficticios, sin IA ni red. Spec: process/specs/rediseno-chat-v0.6.md
-     Para llevarlo a Figma: ábrelo en Chrome e impórtalo con el plugin html.to.design. -->
+<title>Folio · prototipo v0.6 (tres zonas)</title>
+<!-- Prototipo de diseño (no es código de producto): datos ficticios, sin IA ni red.
+     Spec: process/specs/rediseno-chat-v0.6.md · Decisiones D-38 a D-41.
+     Estados: ?vista=hoy|inicio|chat|fuente|borrador|larga|limite|nueva|envio  &tema=light|dark  &ficha=0  &proto=0
+     A Figma: ábrelo en Chrome e impórtalo con el plugin html.to.design. -->
 <style>
 :root{
   --paper:#F7F5F0; --sheet:#FFFFFF; --sheet-2:#F1EEE7;
@@ -13,12 +15,13 @@
   --rule:#E4E0D7; --rule-strong:#D2CDC2;
   --accent:#0F766E; --accent-soft:#E3F2EF; --on-accent:#FFFFFF;
   --danger:#C0362C; --danger-soft:#FDECEA; --ok:#1F7A4D; --ok-soft:#E6F4EC; --warn:#8A5A00; --warn-soft:#FBF1DC;
-  --hover:rgba(11,18,32,.045); --selected:rgba(11,18,32,.07); --bubble:#EFECE5;
-  --shadow:0 1px 2px rgba(11,18,32,.04),0 10px 28px -18px rgba(11,18,32,.22);
+  --hover:rgba(11,18,32,.045); --selected:rgba(11,18,32,.07);
+  --shadow:0 10px 30px -20px rgba(11,18,32,.35);
   --logo:var(--logo-claro);
   --ui:"DM Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --display:Montserrat,"DM Sans",system-ui,sans-serif;
   --type:"Fragment Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+  --sw:248px; --fw:340px;
   color-scheme:light;
 }
 :root[data-theme="dark"]{
@@ -27,627 +30,768 @@
   --rule:#1F2C3F; --rule-strong:#2C3D54;
   --accent:#35C7B3; --accent-soft:#14303A; --on-accent:#0B1220;
   --danger:#FF8A80; --danger-soft:#2B1820; --ok:#7FD1A3; --ok-soft:#12291F; --warn:#F2C35B; --warn-soft:#2A2414;
-  --hover:rgba(244,241,234,.05); --selected:rgba(244,241,234,.085); --bubble:#1C2A40;
-  --shadow:0 0 0 1px rgba(0,0,0,.2),0 18px 44px -26px rgba(0,0,0,.9);
+  --hover:rgba(244,241,234,.05); --selected:rgba(244,241,234,.085);
+  --shadow:0 0 0 1px rgba(0,0,0,.25),0 18px 40px -24px rgba(0,0,0,.9);
   --logo:var(--logo-oscuro);
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 var(--ui);-webkit-font-smoothing:antialiased;overflow:hidden}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 var(--ui);-webkit-font-smoothing:antialiased;overflow:hidden}
 button,input,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{cursor:pointer;background:none;border:0;padding:0}
+a{color:var(--accent);text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 [hidden]{display:none!important}
 svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.mono{font-family:var(--type)}
-.muted{color:var(--graphite)}
-.tiny{font-size:12.5px}
-.label{font:500 11.5px var(--ui);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
-
-/* botones */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--rule-strong);background:transparent;padding:7px 14px;border-radius:100px;font-weight:500;font-size:14px;line-height:1.2;white-space:nowrap}
+.num{font-family:var(--type);font-size:12px}
+.lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-strong);border-radius:100px;padding:6px 12px;font-size:13px;font-weight:500;white-space:nowrap}
 .btn:hover{background:var(--hover)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn.ghost{border-color:transparent}
-.btn.sm{padding:5px 11px;font-size:13px}
-.icon-btn{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:10px;border:0;background:transparent;color:var(--graphite)}
-.icon-btn:hover{background:var(--hover);color:var(--ink)}
-.icon-btn.on{color:var(--accent);background:var(--accent-soft)}
+.btn.prim{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.prim:hover{filter:brightness(1.07)}
+.btn.tinta{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.ib{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:9px;color:var(--graphite)}
+.ib:hover{background:var(--hover);color:var(--ink)}
+.ib.on{color:var(--ink);background:var(--selected)}
 
-/* ---------- estructura ---------- */
-.app{display:grid;grid-template-columns:264px var(--cw,240px) minmax(0,1fr) var(--rw,360px);height:100vh;transition:grid-template-columns .25s ease}
-body[data-convs="cerrado"] .app{--cw:0px}
-body[data-derecha="cerrado"] .app{--rw:0px}
-body[data-convs="cerrado"] .convs,body[data-derecha="cerrado"] .exp{visibility:hidden}
-@media (min-width:1181px){body[data-convs="cerrado"] .convs{border-right:0}body[data-derecha="cerrado"] .exp{border-left:0}}
+/* ---------- estructura: tres zonas ---------- */
+.app{display:grid;grid-template-columns:var(--sw) minmax(0,1fr) var(--fw);height:100vh;transition:grid-template-columns .22s ease}
+body[data-ficha="cerrada"],body[data-vista="hoy"]{--fw:0px}
+body[data-modo="borrador"]:not([data-ficha="cerrada"]):not([data-vista="hoy"]){--fw:520px}
+body.riel{--sw:60px}
 
-/* barra izquierda */
-.side{background:var(--sheet-2);border-right:1px solid var(--rule);display:flex;flex-direction:column;min-height:0;padding:14px 12px 10px}
-.logo{display:flex;align-items:center;gap:8px;padding:2px 6px 14px}
-.logo i{display:block;width:76px;height:28px;background:var(--logo) left center/contain no-repeat}
-.beta{font:500 9.5px var(--type);letter-spacing:.6px;text-transform:uppercase;border:1px solid var(--rule-strong);color:var(--graphite);padding:1px 5px;border-radius:4px}
-.side .btn.primary{width:100%;justify-content:flex-start;padding:9px 14px}
-.buscar{display:flex;align-items:center;gap:8px;margin:10px 0 14px;padding:8px 12px;border-radius:10px;background:var(--sheet);border:1px solid var(--rule);color:var(--faint);font-size:14px}
-.buscar input{border:0;background:transparent;outline:0;width:100%;color:var(--ink)}
-.side-scroll{overflow:auto;min-height:0;flex:1;margin:0 -4px;padding:0 4px}
-.grupo{margin-bottom:16px}
-.grupo .label{display:block;padding:0 8px 6px}
-.agenda{display:grid;gap:2px}
-.ag{display:grid;grid-template-columns:46px 1fr;gap:8px;padding:6px 8px;border-radius:8px;font-size:13.5px}
-.ag:hover{background:var(--hover)}
-.ag b{font:400 12px/1.7 var(--type);color:var(--faint)}
-.ag.vencido b{color:var(--danger)}
-.ag.pronto b{color:var(--warn)}
-.ag span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.expi{display:block;padding:8px 10px;border-radius:9px;cursor:pointer}
-.expi:hover{background:var(--hover)}
-.expi.on{background:var(--selected);box-shadow:inset 2px 0 var(--accent)}
-.expi .n{font:12px var(--type);color:var(--faint)}
-.expi.on .n{color:var(--accent)}
-.expi .t{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.side-pie{border-top:1px solid var(--rule);padding-top:8px;margin-top:8px;display:flex;align-items:center;gap:4px}
-.side-pie .priv{flex:1;display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--graphite);padding:0 6px}
-.side-pie .priv svg{color:var(--ok)}
+/* izquierda */
+.side{background:var(--paper);border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:12px;padding:14px 12px 10px;min-width:0;min-height:0;overflow:hidden}
+.logo{display:block;width:76px;height:28px;margin:2px 6px 2px;background:var(--logo) left center/contain no-repeat}
+.buscar{display:flex;align-items:center;gap:8px;border:1px solid var(--rule);background:var(--sheet);border-radius:9px;padding:7px 10px;color:var(--faint);font-size:13px;text-align:left;width:100%}
+.buscar span{flex:1}
+.buscar kbd{font:12px var(--type)}
+.nav{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:9px;font-size:14px;width:100%;text-align:left}
+.nav:hover{background:var(--hover)}
+.nav.on{background:var(--selected)}
+.nav .cnt{margin-left:auto;font:12px var(--type);color:var(--warn);background:var(--warn-soft);border-radius:100px;padding:1px 8px}
+.secc{display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 8px}
+.secc .ib{width:28px;height:28px}
+.exps{overflow:auto;min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:2px;margin:0 -4px;padding:0 4px}
+.exps > *,.convs > *{min-width:0}
+.exp{display:block;width:100%;text-align:left;padding:7px 8px;border-radius:9px}
+.exp:hover{background:var(--hover)}
+.exp.on{background:var(--selected)}
+.exp .n{font:12px var(--type);color:var(--faint)}
+.exp .n em{font-style:normal;color:var(--warn);margin-left:6px}
+.exp .t{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.convs{margin:2px 0 6px 12px;padding-left:8px;border-left:1px solid var(--rule-strong);display:grid;grid-template-columns:minmax(0,1fr);gap:1px}
+.conv{display:block;width:100%;text-align:left;font-size:13px;color:var(--graphite);padding:5px 8px;border-radius:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv:hover{background:var(--hover);color:var(--ink)}
+.conv.on{background:var(--sheet);color:var(--ink);box-shadow:0 0 0 1px var(--rule)}
+.conv.nueva{color:var(--accent)}
+.conv.todas{color:var(--faint)}
+.pie{border-top:1px solid var(--rule);padding:8px 4px 0;display:flex;align-items:center;gap:4px;font-size:12px;color:var(--graphite)}
+.pie .seg{flex:1;display:flex;align-items:center;gap:6px}
+.pie .seg svg{color:var(--ok);width:15px;height:15px}
+.pie .ib{width:30px;height:30px}
+/* riel */
+.riel-ico{display:none}
+body.riel .side{padding:14px 8px 10px;align-items:center}
+body.riel .side > :not(.riel-ico){display:none}
+body.riel .riel-ico{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
+.riel-ico .marca{width:30px;height:30px;background:var(--icono) center/contain no-repeat;margin-bottom:6px}
+.riel-ico .abajo{margin-top:auto}
+.riel-ico .dot{position:relative}
+.riel-ico .dot::after{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--warn)}
 
-/* conversaciones del expediente */
-.convs{min-width:0;border-right:1px solid var(--rule);background:var(--paper);display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.convs-cab{display:flex;align-items:center;justify-content:space-between;padding:16px 12px 10px 16px}
-.convs-cab b{font-weight:500}
-.convs-lista{overflow:auto;padding:0 8px 12px;display:grid;gap:2px;align-content:start}
-.conv{padding:9px 10px;border-radius:9px;cursor:pointer;display:grid;gap:2px}
-.conv:hover{background:var(--hover)}
-.conv.on{background:var(--selected)}
-.conv .t{font-size:14px;line-height:1.35}
-.conv .m{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:center;font-size:12px;color:var(--faint)}
-.conv .res{white-space:nowrap;color:var(--ok);display:inline-flex;align-items:center;gap:3px}
-.conv .res svg{width:13px;height:13px}
-.conv-dia{padding:10px 10px 4px;font-size:12px;color:var(--faint)}
+/* centro */
+.centro{background:var(--sheet);display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid var(--rule)}
+body[data-ficha="cerrada"] .centro,body[data-vista="hoy"] .centro{border-right:0}
+.cab{display:flex;align-items:center;gap:8px;min-height:58px;padding:8px 14px 8px 20px;border-bottom:1px solid var(--rule)}
+.cab .tit{flex:1;min-width:0}
+.cab .miga{display:block;font-size:12px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cab .miga .num{color:var(--faint)}
+.cab .titulo{display:block;font-size:17px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.solo-movil{display:none!important}
+.scroll{flex:1;overflow:auto;min-height:0}
+.col{max-width:700px;margin:0 auto;padding:0 24px}
+.vista{display:none}
+body[data-vista="hoy"] .v-hoy,body[data-vista="inicio"] .v-inicio,body.en-chat .v-chat{display:block}
 
-/* chat */
-.chat{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--sheet)}
-.chat-cab{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--rule);min-height:60px}
-.chat-cab .titulo{flex:1;min-width:0}
-.chat-cab .titulo b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat-cab .titulo span{display:block;font:12px var(--type);color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.solo-movil{display:none}
-.medidor{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:100px;border:1px solid var(--rule);font-size:12.5px;color:var(--graphite);white-space:nowrap}
-.medidor .barra{width:64px;height:5px;border-radius:5px;background:var(--rule);overflow:hidden}
-.medidor .barra i{display:block;height:100%;width:var(--uso,30%);background:var(--graphite);border-radius:5px;transition:width .4s ease,background .3s}
-.medidor.alto{border-color:color-mix(in srgb,var(--warn) 45%,transparent);color:var(--warn)}
-.medidor.alto .barra i{background:var(--warn)}
-.hilo-wrap{flex:1;overflow:auto;min-height:0}
-.hilo{max-width:760px;margin:0 auto;padding:24px 24px 12px;display:flex;flex-direction:column;gap:20px}
-.viene{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--graphite);background:var(--sheet-2);border:1px solid var(--rule);border-radius:10px;padding:8px 12px}
-.viene svg{color:var(--accent)}
-.viene a{color:var(--accent);text-decoration:none}
-.msg-u{align-self:flex-end;max-width:82%;background:var(--bubble);border-radius:16px 16px 4px 16px;padding:10px 14px}
-.msg-a{display:grid;gap:10px}
-.leyo{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--faint)}
-.leyo svg{width:15px;height:15px}
-.msg-a p{margin:0}
-.msg-a ul,.msg-a ol{margin:0;padding-left:22px;display:grid;gap:5px}
-.fichas{display:flex;flex-wrap:wrap;gap:6px}
-.ficha{font:12px var(--type);padding:3px 9px;border-radius:100px;border:1px solid;background:transparent}
-.ficha.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
-.ficha.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
-.enviado{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:12.5px;color:var(--faint)}
-.enviado a{color:var(--graphite)}
-.enviado .acc{display:flex}
-.enviado .acc .icon-btn{width:28px;height:28px}
-.doc-sug{display:flex;align-items:center;gap:10px;border:1px solid var(--rule);border-radius:12px;padding:10px 12px;background:var(--paper)}
-.doc-sug .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
-.doc-sug div{flex:1;min-width:0}
-.doc-sug b{display:block;font-weight:500;font-size:14px}
-.doc-sug span{font-size:12.5px;color:var(--faint)}
+/* hilo */
+.hilo{padding-top:26px;padding-bottom:18px;display:flex;flex-direction:column;gap:14px}
+.yo{align-self:flex-end;max-width:80%;background:var(--sheet-2);border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:16px;line-height:1.5}
+.resp{display:grid;gap:10px;font-size:16px;line-height:1.62}
+.resp p{margin:0}
+.resp ul,.resp ol{margin:0;padding-left:22px;display:grid;gap:6px}
+.leyo{display:inline-block;font-size:13px;color:var(--faint);text-align:left;justify-self:start}
+.leyo u{text-decoration:none;border-bottom:1px dotted var(--faint)}
+.leyo:hover{color:var(--ink)}
+.leyo-lista{display:grid;gap:4px;font-size:13px;color:var(--graphite);border-left:2px solid var(--rule-strong);padding:2px 0 2px 12px}
+.leyo-lista b{font-weight:500;color:var(--ink)}
+.cita{display:inline-flex;align-items:center;gap:4px;font:12px var(--type);border:1px solid var(--rule-strong);border-radius:6px;padding:1px 6px;white-space:nowrap;color:var(--ink);background:var(--paper);vertical-align:1px}
+.cita:hover{border-color:var(--accent)}
+.cita i{font-style:normal;color:var(--ok)}
+.verif{display:flex;gap:8px;align-items:flex-start;background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.5}
+.verif svg{width:16px;height:16px;margin-top:1px}
+.recibo{font-size:12px;color:var(--faint);line-height:1.6}
+.recibo button{color:var(--accent)}
+.borr{display:flex;align-items:center;gap:12px;border:1px solid var(--rule);border-radius:12px;padding:10px 12px;background:var(--paper);font-size:14px}
+.borr .ic{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent);flex:none}
+.borr div{flex:1;min-width:0}
+.borr b{display:block;font-weight:500}
+.borr span{font-size:12px;color:var(--faint)}
+.prop{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--rule);border-radius:12px;padding:10px 14px;font-size:14px}
+.prop b{font-weight:500}
+.prop button{color:var(--accent);font-weight:500;white-space:nowrap}
+.prop.hecho{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,var(--rule))}
+.continua{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--graphite);border:1px solid var(--rule);border-radius:10px;padding:9px 12px;background:var(--paper)}
+.continua svg{color:var(--accent);width:16px;height:16px}
+.ya{display:grid;gap:6px;font-size:14px}
+.ya .r{display:grid;grid-template-columns:150px 1fr;gap:12px}
+.ya .r span:first-child{color:var(--faint)}
+.atajos{display:flex;flex-wrap:wrap;gap:8px}
+.atajo{border:1px solid var(--rule-strong);border-radius:100px;padding:6px 12px;font-size:13px;background:var(--sheet)}
+.atajo:hover{border-color:var(--accent);color:var(--accent)}
+body:not([data-vista="nueva"]) .solo-nueva,body[data-vista="nueva"] .solo-conv{display:none!important}
 
-/* propuesta de memoria */
-.propuesta{border:1px solid color-mix(in srgb,var(--accent) 40%,var(--rule));border-radius:14px;background:var(--paper);overflow:hidden}
-.prop-cab{display:flex;gap:10px;align-items:flex-start;padding:14px 16px 10px}
-.prop-cab .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
-.prop-cab b{display:block;font-weight:500}
-.prop-cab span{font-size:13px;color:var(--graphite)}
-.prop-items{display:grid;border-top:1px solid var(--rule)}
-.prop-item{display:grid;grid-template-columns:20px 1fr;gap:10px;padding:10px 16px;border-bottom:1px solid var(--rule);align-items:start;cursor:pointer}
-.prop-item input{margin:3px 0 0;accent-color:var(--accent);width:16px;height:16px}
-.prop-item .sec{font:500 11px var(--ui);letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
-.prop-item .txt{font-size:14px}
-.prop-item .nota{display:flex;gap:6px;align-items:flex-start;margin-top:6px;font-size:12.5px;color:var(--warn);background:var(--warn-soft);border-radius:8px;padding:6px 8px}
-.prop-item .nota svg{width:15px;height:15px;margin-top:1px}
-.prop-acc{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px}
-.prop-hecho{display:flex;align-items:center;gap:8px;padding:12px 16px;font-size:14px;color:var(--ok)}
-.prop-hecho a{color:var(--graphite);margin-left:auto}
+/* aviso de conversación larga */
+.larga{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:700px;margin:0 auto 10px;padding:10px 24px 0;border-top:1px dashed var(--rule-strong);font-size:13px;color:var(--graphite)}
+.larga b{font-weight:500;color:var(--ink)}
+.larga .acc{display:flex;gap:6px;flex:none}
+.larga.alta{border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);border-radius:12px;background:var(--warn-soft);padding:10px 14px;margin:0 auto 10px;max-width:652px}
+.larga.alta b,.larga.alta{color:var(--warn)}
+body:not([data-vista="larga"]):not([data-vista="limite"]) .larga{display:none}
 
-/* "Folio recuerda" y chat nuevo */
-.recuerda{border:1px solid var(--rule);border-radius:14px;padding:14px 16px;background:var(--paper);display:grid;gap:10px}
-.recuerda .filas{display:grid;gap:6px;font-size:14px}
-.recuerda .fila{display:grid;grid-template-columns:120px 1fr;gap:10px}
-.recuerda .fila span:first-child{color:var(--faint)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1px solid var(--rule-strong);background:var(--sheet);border-radius:100px;padding:6px 12px;font-size:13.5px}
-.chip:hover{border-color:var(--accent);color:var(--accent)}
+/* caja de texto */
+body:not(.en-chat) .pie-chat{display:none}
+.pie-chat{padding:0 24px 16px;position:relative}
+.caja{max-width:652px;margin:0 auto;border:1px solid var(--rule-strong);border-radius:16px;background:var(--sheet);box-shadow:var(--shadow);padding:10px 10px 8px 14px;position:relative}
+.caja textarea{display:block;width:100%;border:0;outline:0;background:transparent;resize:none;height:44px;font-size:16px;line-height:1.45}
+.caja textarea::placeholder{color:var(--faint)}
+.caja .fila{display:flex;align-items:center;gap:8px}
+.chips{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.chip{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px;border:1px solid var(--rule);border-radius:100px;padding:3px 10px;color:var(--faint);background:var(--paper)}
+.chip.on{border-color:var(--rule-strong);color:var(--ink)}
+.chip svg{width:13px;height:13px}
+.chip:not(.on) svg{visibility:hidden;width:0}
+.destino{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;color:var(--graphite);background:var(--accent-soft);border-radius:100px;padding:5px 10px}
+.destino svg{width:13px;height:13px;color:var(--accent)}
+.destino .num{font-size:12px}
+body[data-modo="borrador"] .destino .modelo{display:none}
+.enviar{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--on-accent);flex:none}
+.menu{position:absolute;left:14px;bottom:calc(100% + 6px);width:330px;background:var(--sheet);border:1px solid var(--rule-strong);border-radius:12px;box-shadow:var(--shadow);padding:6px;z-index:20}
+.menu .t{padding:6px 8px;font-size:12px;color:var(--faint)}
+.menu button{display:grid;width:100%;text-align:left;padding:7px 8px;border-radius:8px;font-size:14px}
+.menu button:hover{background:var(--hover)}
+.menu button small{font-size:12px;color:var(--faint)}
+.menu .num{font-size:13px}
 
-/* inicio del expediente */
-.inicio{max-width:720px;margin:0 auto;padding:12vh 24px 24px;display:grid;gap:22px}
-.inicio h1{font:400 28px/1.3 var(--display);letter-spacing:-.02em;margin:0;text-align:center}
-.inicio .sub{text-align:center;margin-top:-12px;color:var(--faint);font:13px var(--type)}
-.ultimos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.ultimo{border:1px solid var(--rule);border-radius:12px;padding:12px;background:var(--paper);cursor:pointer;display:grid;gap:4px}
-.ultimo:hover{border-color:var(--rule-strong)}
-.ultimo b{font-weight:500;font-size:14px;line-height:1.35}
-.ultimo span{font-size:12px;color:var(--faint)}
+/* hoy */
+.hoy{padding-top:34px;padding-bottom:40px;display:grid;gap:26px}
+.hoy h1{margin:0;font:500 26px/1.2 var(--display);letter-spacing:-.01em}
+.hoy .sub{margin-top:-20px;font-size:14px;color:var(--faint)}
+.grupo{display:grid;gap:4px}
+.grupo .lbl{margin-bottom:4px}
+.fila-hoy{display:grid;grid-template-columns:62px 1fr auto;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--rule);text-align:left;width:100%;font-size:14px}
+.fila-hoy:hover{background:var(--hover)}
+.fila-hoy .f{font:12px var(--type);color:var(--faint)}
+.fila-hoy .f.w{color:var(--warn)}
+.fila-hoy .f.d{color:var(--danger)}
+.fila-hoy small{display:block;font-size:12px;color:var(--faint)}
+.fila-hoy .ir{font-size:13px;color:var(--accent);white-space:nowrap}
+.nota{font-size:12px;color:var(--faint);margin:0}
 
-/* aviso de contexto y caja de texto */
-.pie-chat{padding:0 24px 16px}
-.pie-chat > *{max-width:760px;margin-left:auto;margin-right:auto}
-.aviso-ctx{display:flex;gap:12px;align-items:flex-start;border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);background:var(--warn-soft);border-radius:14px;padding:12px 14px;margin-bottom:10px}
-.aviso-ctx svg{color:var(--warn);margin-top:2px}
-.aviso-ctx b{display:block;font-weight:500}
-.aviso-ctx p{margin:2px 0 10px;font-size:13.5px;color:var(--graphite)}
-.caja{border:1px solid var(--rule-strong);border-radius:18px;background:var(--sheet);box-shadow:var(--shadow);padding:10px 10px 8px 14px}
-.caja textarea{width:100%;border:0;outline:0;background:transparent;resize:none;min-height:46px;font-size:15px}
-.caja-acc{display:flex;align-items:center;gap:6px}
-.caja-acc .rev{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--graphite);margin-right:auto;padding-left:4px}
-.caja-acc .rev input{accent-color:var(--accent)}
-.enviar{width:36px;height:36px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center}
-.destino{text-align:center;font-size:12px;color:var(--faint);margin-top:8px}
+/* inicio */
+.inicio{padding-top:34px;padding-bottom:40px;display:grid;gap:16px}
+.inicio h1{margin:0;font:500 26px/1.2 var(--display);letter-spacing:-.01em}
+.inicio .meta{margin-top:-10px;font-size:14px;color:var(--faint)}
+.nov{border:1px solid var(--rule);border-radius:12px;padding:12px 14px;background:var(--paper);display:grid;gap:6px}
+.nov .r{display:grid;grid-template-columns:50px 1fr;gap:10px;font-size:14px}
+.nov .r .num{color:var(--faint);padding-top:1px}
+.nov .w{color:var(--warn)}
+.inicio .caja{max-width:none}
+.lista-conv{border-top:1px solid var(--rule)}
+.lc{display:flex;justify-content:space-between;gap:14px;padding:11px 4px;border-bottom:1px solid var(--rule);width:100%;text-align:left}
+.lc:hover{background:var(--hover)}
+.lc b{display:block;font-weight:500;font-size:14px}
+.lc small{font-size:13px;color:var(--faint)}
+.lc .e{text-align:right;white-space:nowrap}
+.lc .e i{display:block;font-style:normal;font-size:12px;color:var(--ok)}
+.lc .e i.w{color:var(--warn)}
 
-/* panel derecho: el expediente */
-.exp{min-width:0;border-left:1px solid var(--rule);background:var(--paper);display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.exp-cab{padding:14px 14px 0 18px}
-.exp-cab .fila1{display:flex;align-items:center;gap:8px}
-.exp-cab .num{flex:1;font:13px var(--type);color:var(--accent)}
-.exp-cab h2{font:500 17px/1.35 var(--ui);margin:4px 0 2px}
-.exp-cab .estado{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--graphite)}
-.exp-cab .estado i{width:7px;height:7px;border-radius:50%;background:var(--accent)}
-.tabs{display:flex;gap:2px;margin:12px -4px 0;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--rule)}
-.tab{border:0;background:transparent;padding:9px 7px 10px;font-size:13px;color:var(--graphite);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
-.tab.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:500}
-.exp-body{overflow:auto;padding:16px 18px 24px;flex:1;min-height:0}
-.pane{display:none;gap:18px}
-.pane.on{display:grid}
-.bloque{display:grid;gap:8px}
-.bloque .label{display:flex;justify-content:space-between;align-items:center}
-.bloque .label a{font:500 12px var(--ui);letter-spacing:0;text-transform:none;color:var(--accent);text-decoration:none}
-.plazo{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;border:1px solid color-mix(in srgb,var(--warn) 40%,var(--rule));background:var(--warn-soft);border-radius:12px;padding:10px 12px}
-.plazo .f{font:500 13px var(--type);color:var(--warn);text-align:center;line-height:1.2}
+/* derecha: ficha */
+.ficha{background:var(--paper);display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.fcab{display:flex;align-items:center;gap:6px;min-height:58px;padding:8px 10px 8px 16px;border-bottom:1px solid var(--rule)}
+.tabs{display:flex;gap:2px;flex:1;min-width:0}
+.tab{padding:6px 8px;border-radius:8px;font-size:13px;color:var(--faint);white-space:nowrap}
+.tab .num{color:inherit}
+.tab.on{color:var(--ink);background:var(--selected);font-weight:500}
+.volver{display:flex;align-items:center;gap:6px;flex:1;font-size:13px;color:var(--graphite)}
+.volver:hover{color:var(--ink)}
+.fcuerpo{flex:1;overflow:auto;min-height:0;padding:16px}
+.panel{display:none;gap:18px}
+.panel.on{display:grid}
+.bloque{display:grid;gap:6px}
+.estado{font-size:14px}
+.plazo{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:center;background:var(--warn-soft);border-radius:10px;padding:10px 12px}
+.plazo .num{color:var(--warn);text-align:center;font-size:13px;line-height:1.3}
 .plazo b{display:block;font-weight:500;font-size:14px}
-.plazo span{font-size:12.5px;color:var(--warn)}
-.lista{display:grid}
-.lista .it{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:14px}
-.lista .it:last-child{border-bottom:0}
-.lista .it .f{font:12px/1.8 var(--type);color:var(--faint)}
-.parte{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--rule);font-size:14px}
-.parte:last-child{border-bottom:0}
-.parte span{font-size:12.5px;color:var(--faint);text-align:right}
-.cliente{color:var(--accent)!important}
-.docfield{font-size:14px;line-height:1.6;padding:2px 0 10px;border-bottom:1px solid var(--rule)}
-.pend{display:flex;gap:10px;align-items:flex-start;font-size:14px;padding:4px 0}
+.plazo small{font-size:12px;color:var(--warn)}
+.sin{font-size:13px;color:var(--faint)}
+.cambios{background:var(--sheet);border:1px solid var(--rule-strong);border-radius:12px;padding:10px 12px 12px;transition:box-shadow .3s}
+.cambios.foco{box-shadow:0 0 0 3px var(--accent-soft),0 0 0 1px var(--accent)}
+.cambios .cc{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px}
+.cambios .cc b{font-weight:500;font-size:14px}
+.cambios .cc span{font-size:12px;color:var(--faint);text-align:right}
+.cb{display:grid;grid-template-columns:14px 1fr auto;gap:8px;padding:8px 0;border-top:1px solid var(--rule);font-size:13px;align-items:start}
+.cb .s{font:13px var(--type);color:var(--ok);line-height:1.4}
+.cb .s.m,.cb .s.p{color:var(--warn)}
+.cb .k{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.05em}
+.cb .antes{display:block;font-size:12px;color:var(--faint);text-decoration:line-through;margin-top:2px}
+.cb .si-no{display:flex;gap:2px}
+.cb .si-no button{display:grid;place-items:center;width:26px;height:26px;border-radius:7px;color:var(--faint)}
+.cb .si-no button:hover{background:var(--hover);color:var(--ink)}
+.cb .si-no button.on{background:var(--ok-soft);color:var(--ok)}
+.cb .si-no button.no.on{background:var(--danger-soft);color:var(--danger)}
+.cb.rechazado .txt{color:var(--faint);text-decoration:line-through}
+.cb.pz{background:var(--warn-soft);margin:0 -12px;padding:8px 12px;border-top-color:transparent}
+.cb.pz .confirmar{font-size:13px;font-weight:500;color:var(--warn);white-space:nowrap}
+.cb.pz .pregunta{grid-column:2 / 4;display:grid;gap:6px;font-size:13px;color:var(--warn)}
+.cb.pz .pregunta div{display:flex;gap:6px}
+.cambios .acc{display:flex;gap:8px;margin-top:10px}
+.pend{display:flex;gap:8px;align-items:flex-start;font-size:14px;padding:2px 0}
 .pend input{accent-color:var(--accent);margin-top:4px}
-.cambio{display:grid;gap:3px;padding:10px 12px;border-radius:10px;background:var(--sheet);border:1px solid var(--rule);font-size:13.5px}
-.cambio .m{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--faint)}
-.cambio .m a{margin-left:auto;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:3px}
-.cambio .m a svg{width:13px;height:13px}
-.cambio .de{font-size:12px;color:var(--graphite)}
-.cambio.nuevo{border-color:color-mix(in srgb,var(--accent) 45%,var(--rule));animation:aparece .5s ease}
-@keyframes aparece{from{opacity:0;transform:translateY(-4px)}}
-.doc{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--rule)}
-.doc .ic{width:32px;height:32px;border-radius:8px;background:var(--sheet-2);display:grid;place-items:center;font:500 9.5px var(--type);color:var(--graphite)}
-.doc b{display:block;font-weight:400;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.doc span{font-size:12px;color:var(--faint)}
-.doc .nuevo-tag{color:var(--accent)}
-.priv-nota{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--graphite);border-top:1px solid var(--rule);padding-top:12px}
-.priv-nota svg{color:var(--ok)}
+.pend.nuevo{color:var(--ok)}
+.doct{font-size:14px;line-height:1.6}
+.doct mark{background:var(--ok-soft);color:inherit;border-radius:3px}
+.parte{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:2px 0}
+.parte .num{color:var(--faint)}
+.mas{font-size:13px}
+.li{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:14px;align-items:center}
+.li .num{color:var(--faint)}
+.li small{display:block;font-size:12px;color:var(--faint)}
+.li small.w{color:var(--warn)}
+.doc-ic{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--sheet-2);font:12px var(--type);color:var(--graphite)}
+/* modo fuente */
+.fuente h3{margin:0;font-size:17px;font-weight:500}
+.fuente .ubi{font-size:12px;color:var(--faint)}
+.vig{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ok);background:var(--ok-soft);border-radius:100px;padding:3px 10px;width:fit-content}
+.texto-ley{font-size:14px;line-height:1.65;white-space:pre-line;background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:14px}
+.texto-ley mark{background:var(--accent-soft);color:inherit;border-radius:3px;padding:0 2px}
+/* modo borrador */
+.escrito{background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:22px 24px;font-size:14px;line-height:1.65;display:grid;gap:10px}
+.escrito h4{margin:6px 0 0;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.escrito p{margin:0}
+.escrito .sum{text-align:right;font-weight:500}
+.escrito .hueco{background:var(--warn-soft);color:var(--warn);border-radius:4px;padding:0 4px}
+.borr-acc{display:flex;flex-wrap:wrap;gap:8px}
 
-/* estados del prototipo */
-.hilo-actual,.hilo-nuevo{display:contents}
-body:not([data-estado="contexto"]) .aviso-ctx{display:none}
-body:not([data-estado="memoria"]) .propuesta{display:none}
-body[data-estado="inicio"] .hilo,body:not([data-estado="inicio"]) .inicio{display:none}
-body[data-estado="nuevo"] .hilo-actual,body:not([data-estado="nuevo"]) .hilo-nuevo{display:none}
-body[data-estado="inicio"] .pie-chat{display:none}
+/* vista previa del envío */
+.velo{position:fixed;inset:0;background:rgba(11,18,32,.45);z-index:50;display:grid;place-items:center;padding:16px}
+.modal{width:min(720px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;background:var(--sheet);border:1px solid var(--rule-strong);border-radius:16px;box-shadow:0 30px 80px -30px rgba(0,0,0,.6);overflow:hidden}
+.modal .mc{display:flex;align-items:flex-start;gap:12px;padding:18px 18px 12px}
+.modal .mc div{flex:1}
+.modal h2{margin:0;font-size:17px;font-weight:500}
+.modal .mc p{margin:4px 0 0;font-size:13px;color:var(--graphite)}
+.envio{margin:0 18px;overflow:auto;border:1px solid var(--rule);border-radius:12px;background:var(--paper);padding:12px 14px;font:13px/1.6 var(--type);white-space:pre-wrap;color:var(--ink);font-variant-ligatures:none}
+.envio mark{background:var(--accent-soft);color:var(--accent);border-radius:3px;padding:0 2px}
+.reemp{margin:10px 18px 0;font-size:13px}
+.reemp summary{cursor:pointer;color:var(--graphite)}
+.reemp table{border-collapse:collapse;margin-top:6px;width:100%}
+.reemp td{padding:4px 6px;border-bottom:1px solid var(--rule)}
+.reemp td:last-child{font-family:var(--type);font-size:12px;color:var(--accent)}
+.modal .mp{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--rule);margin-top:12px}
+.modal .mp label{flex:1;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--graphite)}
+.modal .mp input{accent-color:var(--accent)}
+.modal .tercero{padding:0 18px;font-size:12px;color:var(--faint);margin:8px 0 0}
 
 /* aviso flotante */
-.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:var(--paper);border-radius:12px;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:14px;font-size:14px;box-shadow:0 18px 40px -16px rgba(0,0,0,.5);z-index:60}
-.toast button{border:0;background:transparent;color:var(--accent);font-weight:500;padding:4px 6px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:var(--paper);border-radius:12px;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:14px;font-size:14px;box-shadow:0 18px 40px -16px rgba(0,0,0,.5);z-index:60;white-space:nowrap}
+.toast button{color:#5ED6C5;font-weight:500;padding:4px 6px}
 :root[data-theme="dark"] .toast button{color:#0F766E}
 
 /* barra de estados del prototipo (no es parte de la interfaz) */
-.proto{position:fixed;right:16px;bottom:16px;z-index:70;background:#0B1220;color:#F4F1EA;border-radius:14px;padding:10px;display:grid;gap:8px;width:250px;font-size:12.5px;box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
-.proto b{font-weight:500;color:#9AA8B8;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.proto{position:fixed;right:14px;bottom:14px;z-index:70;background:#0B1220;color:#F4F1EA;border-radius:14px;padding:10px;display:grid;gap:8px;width:262px;font-size:12px;box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
+.proto b{font-weight:500;color:#9AA8B8;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding-right:26px}
 .proto .ops{display:flex;flex-wrap:wrap;gap:4px}
-.proto button{border:1px solid rgba(244,241,234,.18);background:transparent;color:#F4F1EA;border-radius:100px;padding:4px 9px;font-size:12px}
+.proto button{border:1px solid rgba(244,241,234,.18);color:#F4F1EA;border-radius:100px;padding:3px 9px;font-size:12px}
 .proto button.on{background:#35C7B3;border-color:#35C7B3;color:#0B1220}
-.proto .min{position:absolute;top:6px;right:8px;border:0;padding:2px 6px}
+.proto .min{position:absolute;top:6px;right:8px;border:0}
 .proto.plegada{width:auto}
-.proto.plegada > :not(.min):not(.titulo){display:none}
-.proto .titulo{padding-right:24px}
+.proto.plegada .ops{display:none}
 
-/* ---------- tabletas y celular ---------- */
-.velo{display:none}
-@media (max-width:1180px){
-  .app{grid-template-columns:240px minmax(0,1fr)}
-  .convs,.exp{position:fixed;top:0;bottom:0;z-index:40;box-shadow:0 0 40px rgba(0,0,0,.25);transition:transform .25s ease}
-  .convs{left:240px;width:260px}
-  .exp{right:0;width:min(380px,100vw)}
-  body[data-convs="cerrado"] .convs{transform:translateX(-120%)}
-  body[data-derecha="cerrado"] .exp{transform:translateX(110%)}
-  body[data-convs="cerrado"] .convs,body[data-derecha="cerrado"] .exp{visibility:visible}
-}
-@media (max-width:820px){
+/* ---------- celular y tableta angosta ---------- */
+.velo-m{display:none}
+@media (max-width:1023px){
   .app{grid-template-columns:minmax(0,1fr)}
-  .side{position:fixed;top:0;bottom:0;left:0;width:280px;z-index:45;transform:translateX(-105%);transition:transform .25s ease}
+  .side{position:fixed;top:0;bottom:0;left:0;width:284px;z-index:45;transform:translateX(-105%);transition:transform .22s ease;box-shadow:0 0 40px rgba(0,0,0,.25)}
   body[data-side="abierto"] .side{transform:none}
-  .convs{left:0;width:280px}
-  .exp{width:100vw}
-  .solo-movil{display:inline-grid}
-  .solo-pc{display:none}
-  .medidor .barra{width:36px}
-  .medidor .txt{display:none}
-  .hilo{padding:18px 16px 10px}
-  .pie-chat{padding:0 12px 12px}
-  .inicio{padding-top:6vh}
-  .ultimos{grid-template-columns:1fr}
-  .velo{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:35}
-  body[data-side="abierto"] .velo,body[data-convs="abierto"] .velo{display:block}
-  .proto{left:12px;right:12px;width:auto;bottom:12px}
+  .ficha{position:fixed;left:0;right:0;bottom:0;height:86vh;z-index:46;border-radius:18px 18px 0 0;border-top:1px solid var(--rule-strong);box-shadow:0 -20px 50px -20px rgba(0,0,0,.4);transform:translateY(105%);transition:transform .25s ease}
+  body.ficha-movil .ficha{transform:none}
+  .centro{border-right:0}
+  .solo-movil{display:inline-grid!important}
+  .solo-pc{display:none!important}
+  .cab{padding:8px 10px}
+  .col{padding:0 16px}
+  .pie-chat{padding:0 10px 10px}
+  .destino .modelo{display:none}
+  .larga{flex-direction:column;align-items:flex-start;padding:10px 16px 0}
+  .larga.alta{margin:0 10px 10px}
+  .ya .r{grid-template-columns:1fr;gap:0}
+  .velo-m{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:44}
+  body[data-side="abierto"] .velo-m,body.ficha-movil .velo-m{display:block}
+  .menu{width:calc(100% - 28px)}
+  .proto{left:10px;right:10px;width:auto;bottom:10px}
 }
 </style>
-<style>:root{--logo-claro:url(data:image/webp;base64,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);--logo-oscuro:url(data:image/webp;base64,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)}</style>
+<style>:root{--logo-claro:url(data:image/webp;base64,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);--logo-oscuro:url(data:image/webp;base64,UklGRloPAABXRUJQVlA4WAoAAAAQAAAApgAAPwAAQUxQSCUJAAAR8EcAtPRm2/YttoMQIUQJUUK4plChlCrnFK6prrGUClVCnZRraCnXfF1V5Z5P1zzP81BKqdxTlSqlnFMIFUKFKCFCONgWi2OvvfY+0iv9OyIgSpJUt5kTZwsLZTnxtPMF4DYlKTAGl5fl/lL7fWN+MqsutaIKih1i1m/s/r16ZTwQH+nlwjaFOjLkRQentQ9feLSQvHyKqiZhZFprsWjYOvhkdbaYtrvNiJdVhoSBuDmLYufoq/Vni6lL4I3Au5W/bN/t2UUdt8P2wVpqpD+b36/fvQLJlqFgpIxNVd788aTrVbSeBzWyqUKRzVlMqsCuf6a0sPXLbUfRkI4TI+sSTQpDfNaiBFFSQSAWnXv9x5NzZJdiSJVRenEMbtk+oaanJGxRgVg0PTEfNT8j8PuRPc32LJqERBOGB2eynkWrEbWRQ0Hhk/3/FiDH3LOQYBQhgOk+dRt7t6ozObmoUhB0iP47eq5gJuVJGOfYLmKeLOs3dv6yfD0v9NZkayT5kAYaS5DzOAk2TzpIgg2atXdvlrOml48m/yWNJJFoipdkJubWvzlua6lo9ylObfSokSYsSk5AsHRxdu2Tg7OQHd9EnEVuJEGcgFwXwxBnObzY9FwpI+lLPVBefne3VuJufyRPyGRTZOwSDLU2xcpIeH7840blSl6e6zgHI5udfmF59b3dGUi0KTLDAkkF9/5eLT+QZFPQn+ASaTMy3H1JjULCAghSpxbW3v1lHBSotZ3b53LB1m4R1J+xmOLlYrNLiPNsGE44Jm5esPTU+lf23Yh+8UX5WVzShXw+X8iy+03+/ftX8vGPHdJzUc76YfP04JutlSdKuZTd9m3FycKjN2/VGt3eokDtop06xEEYYnsMFCwhEfWeAhX75CmA/F2SesDZ8fa7a5WZpPg4mYRczgpbE9HhiuUr5XL50eiMWfn69UhGNv4Wioh0PhKNFOqQetnYbgGg0KTQ2nih0Atar7hak1Ss73R18rJ3QcWiQaaGg4hNMk05pJsxX1QOIHdKfIIzOfY+EVkXcGnkBOsvzBbkgNVRo9NC/CQewSlh5MOIT9DUWeNm/Oabq0dJNkR2FtIWqDjjl+zYs0cioZymL4bGqnEY0kJcp8buRsnPUNOirdk1aiTHJ5964ZUZoeXwmFyIKwDkeiy7kQKIiRmwyffAcAIC+bGlHyhXN785bPaZrgooAQ/7YlgoKLeJ6PYDsc+fII3kf1AjzXtrbnpu9cPa3Y4WnrAO6cTleu12p9OO7KzdbrVX414ioCBTWX1qCFvPr0xenONk+YVb20dnA5LuZ/dTOpbR9EIynUolk6kkM7kbWX9A7kaSC7gqiCt0nzAOkiZEHha5x2yBklmMMQUnMpmkIwbK9HZ2ifIUGqTTLqFwGBN7EEc/RUU3gVdd1aN/+W+z220ffbKQYfW1paJ1yY97u7s7e6ugLKHB7LsHp53zs8NP5tIAykXMj3yf7yEocKF80pI4r3a2xkC5KXNNt22hy+Ik1d7M2HU5shnCbdDJspMlFbjWOwoeqBGh1Ym0JmovWA/rVGDGrKtDPOBCi/tEaOk0QltzoLi7KJC6GQAHCx7vr3SJV1XoRrQJSiQfYRRoOmJCH+3b4x3yj4heB2W7CzFNP4KSQdqanJ5iNlPkaXpAmkhYpAj9nUMCZGDhDHlCbR69FdF1UBcJ0qNORPndDJtWz9gYi9ZAax/zoCBoylgdTOW7Rg0iOoTyCh4OEUQ5nQbgmqRRMLYaVPAJhUwh1beqldePiaujdto4L+AX0lzoyZuVypsnttDTBAwHq/IONG2AkgZfsR0bmV0zkpQ0FzFY5oF89oyQKX4FlJ+Dkq16ideocm4JXQE1FIxorlyUgkVQ3kseRgBfkDYh1Y8C8FHngQ6PcSsJCYkrDJP9Ce9B4TRYw1Spz2vb4CdDaVsclF73TfLPDnMAyTMjRdOb9mQTwLPEo/coJE7dHEPKErouCV0iJCN0yqD9QUIhsReRqg+D88i6551Or54GmCKm+zwl6TN1RDI3STizdcQMscq1k6LQ28T+1KonVhwYKCHL6mcBXGhaTWeMpdOZJChYIm3E7IDIKud3SDR8qJI2ofgGRDa4lg+dLkagXG+0sO/xXvJErHP+IjPLa3voeaPXOa/LzFvxHNqNXMk0aw/QLHlEXiHNJgWZ64TEUNwNJI7sJ7biFc8dDqJnRKwrBCelJluDiTeyuonICne3ZBY4exBIJ9M2a5xNmSrne8t5gy7QwtGEAMCTZ3l9jmU+4SH7RMguiCwYkPZlvudNYTPOJC3u+wQV8go3vitoQiN3GpQtZaxrCZSKCRzCBKIRqkuS0Fwf0TAXL1vAozcfgPLYULnXueo2V3MSQKBYZdkzMUEZl6eVGaGf1IV5UPEE21xoLwNwdAFoWvYAIyqgwH0hIv1ibamDW6SZvt+ltURBxBRkx/fW/i3xCROizeY4Dr7vWFTHAByXMNxfRGS6yJvK6c18IpGrnBAiq0xJQFsQGnJ9tCbl5VwiMb50m4cLzYbSnMRMbln2yO/cnlpOflmlkD90GrSaPeKVDdmXWqohO+Qn8AqFyIX2m80BF0ohvWnqsx8bdGF0XI/wyl5yylG7pJlSbQ2orLJHCeXgioBSe9EhCNXI055SwPqT/3rHfSCy/EYA4AF5AJA+Io0kiWc9OQvKZDuwdw3pYx+hB2kwVvFFvEC+HpGtcJ3ZbPDHRbceSP1IpLVQB020nWHiVAN15NnshxoxxCNgx7YRai+wtCb6Kslrk6iTHtaWG614PeCmxXVVnc7IqLaI1ZMXbVaBawvaXCpzzOq20DZrn5bQ+rwlVMFkP95NXR3EiH7THQXY7Zy1IyszQe7Maq3LtXf3llKCnh8b9UajcZgBKJw06vW7jXftMGSW93tc6PluJQFKqMGVgf9bKyTyt9e44RWEVDKVSiX9vxPKTFdWVhanMwAOydLXCG6h2ZmFmytLU2muSTp6pL1i4sqjwXnzpPaX0kX88CQpGNoPP75CFUx3KdSIHt9S6V6rvr/zxdYLi7MzxfF0wGJ+YT+RqT+BUAWlOgkWnp8e7Xyy8UJlduqBsYSH7hH/x6dk9audH999c2W+XMqnlUdEL43/I3RX3TMiIw0AAFZQOCAOBgAA8BsAnQEqpwBAAD5tMJRHJCKiISdTPLCADYllPY/uem8bFGU3A9N6KAORqFyX3z8Jj0R7cT9penA9B28G+gB+oHWVfuZ+3fwAfsB//8oA/SuC5LgPHnFDpmGdf229gP+U/1frQehP+vBtAWr+h8+9N+u3zT7d99H1ZaKeJApSZFxEUPv/c/wTaBjP3Ihn/UPWlEHXg26jaccdA6v+0+YyJw+WQlIXnbWWOJX8/KP5nBhuy3Gt3tcdj88HjTKd3bSj3HDaBejY2UvROBuw2yptjAVpUl8OIhRMO207QzOfYq1cW6YukMKQAAD+sA78WSla9/4bZBLr/zXrz8fupmvA6gc0Lbuj0XqMdO1WO9EcczKbL7DgGzksdJKAI4QQhYkI6SigQbWcPgvLHKTio16Eu2JCE9sNhype6UMnbYOM5ERk+V0cCfUVWxYL1yCy/jTXMUWMvEk9wbjT55V2lJ8k91w9+sJfaoVKlob69dH3fQ5hs5GzNeD3G1SdG6otkgb7Votej/JTtlIK8ZoLl80uJsUxPW6X9h2KbZPewqRq48702E+q/y/CoOnpJs/b/XSdgz0MjjLQQ4/8uye6OgASvKd5r/AurMxy3rTDNNvXcgiz4gQ1+Qzhcc3EM6kgdWHtzlLQkvVdZcra31GSf7fBRTUATpCFlimqdXabMpnBoo43dNqo/s3Pz5izqOTCiKItAL3wwqT94RRc3ZWpHXkYAb+mABlrkjawSmCbKnooqkmnkKXOh8V9DsPdVoyxuyauS3wG9+os7qbTfoP0pFS0hjmavstsBAv2OqP2SX3BS+d/PPQ5uT1zO6voF7REBOUfQvYKIkw2eEbF6/Ix8Th/P/NsYTk70hpFkDfuv0nMieR6KI6GAcnUSN337D+SrOUziF5EX/wBEtEDgft0061e5JQQBYcN6pM6pWzSTfQXS7vS/Q5Ktt/uWDHf6VCxa85pcGy87XG/287osrmmFc9lOj7/+bRhPX3+BQ7gx+vmammmuwLyEmEktXBM8WdRaAFN3wQGu7z23gHYl2fUFVE7Wu1aTXVH+OjyV7QFHrFnUos1GPHE8ENPjg/BW2GoX4jllZwyZukn7zVvyLvt//DTA/Gel5Asu8ghIo6y76OhAGiY50SN5AZz5Dj6Lg5zf15rWleXJz4XoLNooLxWJdNWMdF6gQK4a9g0nIeUOd7ew/iyRIpYxA1lDIqURB47vOH04X/t7cCCY84xoQTa5+LptaheWgHvMAUBPP5YnkcoykEc4XrRzGpq27GLvPz5V5MldkGQLArnC8lih3ENp5xn7qA4ByMfAm9lwjV9LFAkeUNuymEJO9bbPlgTTyJomHRzXPHLNYTcn6v94mNscBiGWrVTYC4Vj3ftc97ZHXqImR6Z3MHNyaDrpMuPZCVNrkwdP0u/Y4v0bf9qHxoZyMULamYUQYfiWL9HPF4rQSJ4grlpP4N2FgIoUVThzEaYIT4E2d2a1LEjs1H3aoPPscq7kyNh3nRYG+VdrHhjixhD/prmItDliYXuiSQiAF8ery1L9NZa6J0KtNknFEZ7AV6KF9jhKG88mF73AB3g7Ri1IgKWzQSt3HkCh3PhKA0k2wa6aZ5EkaevDK+giBpH44qnhdmlt0Pn4HZQ6dTlKRzn6NKEBb+IkhfiZ60QVyn0n/OXmAdvco1xdFgM7V0E+WrBWSDWcy+0LsLazPCHiQxLn75hGnk5YaoUv/6DcXucFzNhYHCkNvYwZglcC9v5+bxtROsYxTH/kJ5MK/ldQrAglznqnSCq9WXQTov/QcG3YlmNNV+72ZQ+HAJUyX4mGt+PDVmDGAljPKfWNl+ymgfah8w3P/jgL+u7FmQsNhMO2QnQWDXA4S8BKn57vFo+6BW+Foem/Ncs7OwsvffAiqwbbnFUhf883dKAYtGJCTLIurXfBzfSipngB6z9fSdm3upnog39a229DqjAWrkAjxZvJWnZTRBbXKtec0uDZjG5AdufcMj0843AvCeO9Y3t5kCoBh6ymku/pXSGS3nql0Zh7zM3ZzjCfdwQ5dysvQGTHrIH4e+Qth4OLvq7hC5AAAA=);--icono:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAA/1BMVEUHHD0AAAAIHkEHHDwHGzwJIkQHHD4HGTsIHD4AADoHHD4HHT4AAFUJHUETSFoDF0gvtqErp5cPOVAYWGQAAH8JHEAdaG8EIkUHHEAnmI0CJjwIHUAHHUAjh4Mvs54edXYhfHsNIDoFIEEIHUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAqs6GaAAAAQHRSTlP8AP1JL/7SEHAEsZEDMf0M/f39/QJv/RKX/RLRrP39/f0nL18AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFxC43AAAAa9JREFUeNplk9l26yAMRYUQs2c7aTM1vbf//48Vgri41YOXsbZ1NAHqZeQ1vdX3EMJWX0GeXVAECGBjYmwsrq4B2DT70bAhWJsx10Yg7xjw+vQeLVYMoitAt3F4QwxQ/jCSYDlazCocISiPKEDn3kIJzJhHyCEgpBs7BeiVN5D1e6nGFoCz7/PfIuFOKQfnPCN1FdDATmMEUmOucOy/kkWtdgCJ7rdeG9RbYom711dVJK4iUXJRqqcuS0gBGIP6ieDIsua71/q/kK7XJ59dOOYyiQhAmoicm64NVqHbUiqNYo3duFwV9vE54taBsw0AaK/ZoX26W8tHn/twMLQxOzhPzNM7SR+OhHheB/cXaAnkcR0A/M1qFVqA/cYsw/n5NPXs1FFiuMwf0zTPn/WHxDUfgcd5HcyuxU3pGDgIo1nW8+dlXqXiTmaBPykM8zxNH/Pl8VxAuhR+A491WIypCaPsVSuRq1hKDihN2NShCoR14iLWpgkZ+NekuHARy34a68VJBv4agvFlNWAL0bxmYOROSVI331zeVMZjbeTF480jcm7fGrmbPd+V9qPsXAW+AXUmEDVNeDFWAAAAAElFTkSuQmCC)}</style>
 </head>
-<body data-estado="chat" data-derecha="abierto" data-convs="abierto" data-side="cerrado">
+<body data-vista="chat" data-modo="ficha" data-ficha="abierta" data-side="cerrado">
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
-  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5.5h14a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1h-8l-4.5 3.5V16H5a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1z"/></symbol>
-  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M14.5 4.5v15"/></symbol>
+  <symbol id="i-hoy" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></symbol>
+  <symbol id="i-carpeta" viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-ficha" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M14.5 4.5v15"/></symbol>
   <symbol id="i-cerrar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
-  <symbol id="i-clip" viewBox="0 0 24 24"><path d="m20 11.5-7.8 7.8a5 5 0 0 1-7.1-7.1l8.2-8.2a3.4 3.4 0 0 1 4.8 4.8l-8.2 8.2a1.7 1.7 0 0 1-2.4-2.4l7.5-7.5"/></symbol>
   <symbol id="i-enviar" viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></symbol>
   <symbol id="i-candado" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
-  <symbol id="i-ajustes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3.6 15H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9.7 4.4V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1.3z"/></symbol>
-  <symbol id="i-memoria" viewBox="0 0 24 24"><path d="M12 3.5 4.5 7.5v5c0 4 3.2 7 7.5 8 4.3-1 7.5-4 7.5-8v-5z"/><path d="m8.8 12 2.2 2.2 4.4-4.4"/></symbol>
-  <symbol id="i-deshacer" viewBox="0 0 24 24"><path d="M9 7 4.5 11.5 9 16"/><path d="M4.5 11.5H15a4.5 4.5 0 0 1 0 9h-3"/></symbol>
-  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6.5 3.5h7l4 4v12.5a.5.5 0 0 1-.5.5H6.5a.5.5 0 0 1-.5-.5v-16a.5.5 0 0 1 .5-.5z"/><path d="M13.5 3.5v4h4M9 12.5h6M9 16h4"/></symbol>
-  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
-  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-ajustes" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+  <symbol id="i-volver" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
   <symbol id="i-flecha" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6.5 3.5h7l4 4v12.5a.5.5 0 0 1-.5.5H6.5a.5.5 0 0 1-.5-.5v-16a.5.5 0 0 1 .5-.5z"/><path d="M13.5 3.5v4h4M9 12.5h6M9 16h4"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-aviso" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17h.01"/></symbol>
-  <symbol id="i-copiar" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></symbol>
-  <symbol id="i-leer" viewBox="0 0 24 24"><path d="M4 5.5h6a2 2 0 0 1 2 2V19a1.5 1.5 0 0 0-1.5-1.5H4zM20 5.5h-6a2 2 0 0 0-2 2V19a1.5 1.5 0 0 1 1.5-1.5H20z"/></symbol>
+  <symbol id="i-puntos" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/></symbol>
 </svg>
 
 <div class="app">
-  <!-- ============ izquierda: expedientes ============ -->
+  <!-- ================= izquierda: expedientes ================= -->
   <aside class="side" aria-label="Expedientes">
-    <div class="logo"><i role="img" aria-label="Folio"></i><span class="beta">Beta</span></div>
-    <button class="btn primary"><svg class="i"><use href="#i-mas"/></svg>Nuevo expediente</button>
-    <label class="buscar"><svg class="i"><use href="#i-buscar"/></svg><input placeholder="Buscar expediente o parte"></label>
-    <div class="side-scroll">
-      <div class="grupo">
-        <span class="label">Agenda</span>
-        <div class="agenda">
-          <div class="ag vencido"><b>16/10</b><span>Exp. 00987 · Presentar alegatos</span></div>
-          <div class="ag pronto"><b>Hoy</b><span>Exp. 00311 · Audiencia de medidas</span></div>
-          <div class="ag pronto"><b>28/10</b><span>Exp. 00123 · Absolver traslado</span></div>
-          <div class="ag"><b>31/10</b><span>Exp. 01544 · Pedir copias</span></div>
-        </div>
+    <i class="logo" role="img" aria-label="Folio"></i>
+    <button class="buscar"><svg class="i"><use href="#i-buscar"/></svg><span>Buscar</span><kbd>Ctrl K</kbd></button>
+    <button class="nav nav-hoy" data-ir="hoy"><svg class="i"><use href="#i-hoy"/></svg>Hoy<span class="cnt">4</span></button>
+    <div class="secc"><span class="lbl">Expedientes</span><button class="ib" aria-label="Nuevo expediente" title="Nuevo expediente"><svg class="i"><use href="#i-mas"/></svg></button></div>
+    <div class="exps">
+      <button class="exp on exp-activo" data-ir="inicio"><div class="n">00123-2026-0-1501-JR-PE-01</div><div class="t">Apropiación ilícita · etapa intermedia</div></button>
+      <div class="convs">
+        <button class="conv on solo-nueva" data-ir="nueva">Nueva conversación</button>
+        <button class="conv conv-abs" data-ir="chat">Absolución del traslado acusatorio</button>
+        <button class="conv">Estrategia de defensa y pericia</button>
+        <button class="conv">Ordenar movimientos del CEJ</button>
+        <button class="conv nueva" data-ir="nueva">+ Nueva conversación</button>
+        <button class="conv todas" data-ir="inicio">Ver todas (5)</button>
       </div>
-      <div class="grupo">
-        <span class="label">Expedientes</span>
-        <a class="expi on"><div class="n">00123-2026</div><div class="t">Apropiación ilícita · Etapa intermedia</div></a>
-        <a class="expi"><div class="n">00987-2025</div><div class="t">Alimentos · Apelación</div></a>
-        <a class="expi"><div class="n">01544-2026</div><div class="t">Estafa · Investigación preparatoria</div></a>
-        <a class="expi"><div class="n">00311-2026</div><div class="t">Medidas de protección · Ley 30364</div></a>
-        <a class="expi"><div class="n">00072-2026</div><div class="t">Desalojo · Sentencia</div></a>
-      </div>
+      <button class="exp" data-otro><div class="n">00987-2025<em>16/10</em></div><div class="t">Alimentos · apelación</div></button>
+      <button class="exp" data-otro><div class="n">01544-2026</div><div class="t">Estafa · investigación preparatoria</div></button>
+      <button class="exp" data-otro><div class="n">00311-2026<em>31/10</em></div><div class="t">Medidas de protección · Ley 30364</div></button>
+      <button class="exp" data-otro><div class="n">00072-2026</div><div class="t">Desalojo · sentencia</div></button>
     </div>
-    <div class="side-pie">
-      <span class="priv"><svg class="i"><use href="#i-candado"/></svg>Solo en este equipo · cifrado</span>
-      <button class="icon-btn" aria-label="Ajustes"><svg class="i"><use href="#i-ajustes"/></svg></button>
+    <div class="pie">
+      <span class="seg"><svg class="i"><use href="#i-candado"/></svg>Cifrado en este equipo</span>
+      <button class="ib" aria-label="Bloquear" title="Bloquear"><svg class="i"><use href="#i-candado"/></svg></button>
+      <button class="ib" aria-label="Ajustes" title="Ajustes"><svg class="i"><use href="#i-ajustes"/></svg></button>
     </div>
-  </aside>
-
-  <!-- ============ conversaciones del expediente ============ -->
-  <aside class="convs" aria-label="Conversaciones del expediente">
-    <div class="convs-cab"><b>Conversaciones</b><button class="icon-btn" data-ir="nuevo" aria-label="Nuevo chat" title="Nuevo chat"><svg class="i"><use href="#i-mas"/></svg></button></div>
-    <div class="convs-lista">
-      <div class="conv on conv-nuevo" hidden><div class="t">Nuevo chat</div><div class="m">Ahora · viene de «Absolución…»</div></div>
-      <div class="conv-dia">Hoy</div>
-      <div class="conv on conv-actual"><div class="t">Absolución del traslado acusatorio</div><div class="m">14 mensajes</div></div>
-      <div class="conv-dia">Esta semana</div>
-      <div class="conv"><div class="t">Estrategia de defensa y pericia contable</div><div class="m">32 mensajes · <span class="res"><svg class="i"><use href="#i-memoria"/></svg>resumen en la memoria</span></div></div>
-      <div class="conv"><div class="t">Ordenar movimientos del CEJ</div><div class="m">6 mensajes · <span class="res"><svg class="i"><use href="#i-memoria"/></svg>en la memoria</span></div></div>
-      <div class="conv-dia">Octubre</div>
-      <div class="conv"><div class="t">Lectura de la disposición de formalización</div><div class="m">18 mensajes · <span class="res"><svg class="i"><use href="#i-memoria"/></svg>en la memoria</span></div></div>
-      <div class="conv"><div class="t">Primera entrevista con el cliente</div><div class="m">9 mensajes · <span class="res"><svg class="i"><use href="#i-memoria"/></svg>en la memoria</span></div></div>
+    <!-- riel (cuando falta espacio) -->
+    <div class="riel-ico">
+      <i class="marca" role="img" aria-label="Folio"></i>
+      <button class="ib" aria-label="Buscar"><svg class="i"><use href="#i-buscar"/></svg></button>
+      <button class="ib dot" data-ir="hoy" aria-label="Hoy"><svg class="i"><use href="#i-hoy"/></svg></button>
+      <button class="ib on" data-abrir-side aria-label="Expedientes" title="Expedientes"><svg class="i"><use href="#i-carpeta"/></svg></button>
+      <button class="ib abajo" aria-label="Cifrado en este equipo · Bloquear" title="Cifrado en este equipo · Bloquear"><svg class="i"><use href="#i-candado"/></svg></button>
     </div>
   </aside>
 
-  <!-- ============ centro: el agente ============ -->
-  <main class="chat" aria-label="Agente">
-    <header class="chat-cab">
-      <button class="icon-btn solo-movil" data-alternar="side" aria-label="Expedientes"><svg class="i"><use href="#i-menu"/></svg></button>
-      <button class="icon-btn solo-pc on" data-alternar="convs" aria-label="Conversaciones"><svg class="i"><use href="#i-chat"/></svg></button>
-      <div class="titulo">
-        <b class="titulo-chat">Absolución del traslado acusatorio</b>
-        <span>Exp. 00123-2026-0-1501-JR-PE-01 · Etapa intermedia</span>
-      </div>
-      <div class="medidor" title="Cuánto de esta conversación cabe en lo que lee el agente"><span class="txt">Contexto</span><span class="barra"><i></i></span><span class="pct">38 %</span></div>
-      <button class="icon-btn solo-movil" data-alternar="convs" aria-label="Conversaciones"><svg class="i"><use href="#i-chat"/></svg></button>
-      <button class="icon-btn on" data-alternar="derecha" aria-label="Expediente"><svg class="i solo-pc"><use href="#i-panel"/></svg><svg class="i solo-movil"><use href="#i-info"/></svg></button>
+  <!-- ================= centro: el Agente ================= -->
+  <main class="centro" aria-label="Agente">
+    <header class="cab">
+      <button class="ib solo-movil" data-alternar-side aria-label="Expedientes"><svg class="i"><use href="#i-menu"/></svg></button>
+      <div class="tit"><span class="miga"></span><span class="titulo"></span></div>
+      <button class="btn solo-pc con-chat" data-ir="nueva"><svg class="i"><use href="#i-mas"/></svg>Nueva conversación</button>
+      <button class="ib con-chat ctx" aria-label="Más opciones de la conversación" title=""><svg class="i"><use href="#i-puntos"/></svg></button>
+      <button class="ib on con-ficha" data-alternar-ficha aria-label="Ficha del expediente" title="Ficha del expediente"><svg class="i"><use href="#i-ficha"/></svg></button>
     </header>
 
-    <div class="hilo-wrap">
-      <!-- inicio del expediente (sin chat abierto) -->
-      <section class="inicio">
-        <h1>¿En qué trabajamos hoy en este expediente?</h1>
-        <div class="sub">Exp. 00123-2026-0-1501-JR-PE-01 · Apropiación ilícita</div>
-        <div class="caja"><textarea placeholder="Pregunta, pide un borrador o pega el seguimiento del CEJ…"></textarea>
-          <div class="caja-acc"><label class="rev"><input type="checkbox" checked>Revisar antes de enviar</label><button class="icon-btn" aria-label="Adjuntar documento"><svg class="i"><use href="#i-clip"/></svg></button><button class="enviar" aria-label="Enviar"><svg class="i"><use href="#i-enviar"/></svg></button></div>
+    <div class="scroll">
+      <!-- ---------- Hoy ---------- -->
+      <section class="vista v-hoy"><div class="col hoy">
+        <h1>Hoy</h1>
+        <div class="sub">Domingo 18 de octubre · lo que pide tu atención en todos tus expedientes</div>
+        <div class="grupo"><span class="lbl">Plazos por confirmar</span>
+          <button class="fila-hoy" data-ir="chat" data-ficha-foco><span class="f w">28/10</span><span>Absolver el traslado de la acusación<small><span class="num">00123-2026</span> · propuesto por el agente, por verificar</small></span><span class="ir">Revisar</span></button>
         </div>
-        <div class="chips"><button class="chip">Preparar la absolución del traslado</button><button class="chip">¿Qué pendientes tengo?</button><button class="chip">Revisar plazos</button></div>
-        <div class="recuerda">
-          <span class="label">Folio recuerda</span>
-          <div class="filas">
-            <div class="fila"><span>Estado</span><span>Etapa intermedia: acusación notificada el 14/10</span></div>
-            <div class="fila"><span>Próximo plazo</span><span>28/10 · Absolver traslado (por verificar)</span></div>
-            <div class="fila"><span>Pendientes</span><span>Ofrecer pericia contable · Ubicar al testigo de descargo</span></div>
+        <div class="grupo"><span class="lbl">Fechas que registraste</span>
+          <button class="fila-hoy" data-otro><span class="f d">16/10</span><span>Presentar alegatos<small><span class="num">00987-2025</span> · la fecha ya pasó: ¿lo marcas como hecho?</small></span><span class="ir">Abrir</span></button>
+          <button class="fila-hoy" data-otro><span class="f">31/10</span><span>Audiencia de medidas de protección<small><span class="num">00311-2026</span> · 09:30</small></span><span class="ir">Abrir</span></button>
+        </div>
+        <div class="grupo"><span class="lbl">Cambios de memoria por revisar</span>
+          <button class="fila-hoy" data-ir="chat" data-ficha-foco><span class="f">3</span><span>Cambios propuestos en «Absolución del traslado acusatorio»<small><span class="num">00123-2026</span> · hechos, estrategia y pendientes</small></span><span class="ir">Revisar</span></button>
+        </div>
+        <div class="grupo"><span class="lbl">Movimientos sin revisar</span>
+          <button class="fila-hoy" data-otro><span class="f">2</span><span>Movimientos pegados del CEJ el 17/10<small><span class="num">01544-2026</span></small></span><span class="ir">Revisar</span></button>
+        </div>
+        <p class="nota">Folio no calcula plazos: aquí ves las fechas que registraste y las que propuso el agente. Verifícalas en la resolución y en tu casilla.</p>
+      </div></section>
+
+      <!-- ---------- Inicio del expediente ---------- -->
+      <section class="vista v-inicio"><div class="col inicio">
+        <h1>Apropiación ilícita</h1>
+        <div class="meta">Carlos Mendoza Ríos (tu cliente) · 2.º Juzgado de Investigación Preparatoria · etapa intermedia</div>
+        <div class="nov">
+          <span class="lbl">Desde tu última visita · <span class="num">12/10</span></span>
+          <div class="r"><span class="num">14/10</span><span>Nuevo movimiento: se notifica el requerimiento acusatorio</span></div>
+          <div class="r"><span class="num">28/10</span><span class="w">Plazo propuesto por el agente: absolver el traslado (por verificar)</span></div>
+          <div class="r"><span class="num">—</span><span>2 pendientes abiertos · 1 documento que el agente aún no leyó</span></div>
+        </div>
+        <div class="caja" data-caja>
+          <div class="menu" hidden></div>
+          <textarea rows="1" placeholder="¿Qué necesitas hoy en este expediente?" aria-label="Escribe al agente"></textarea>
+          <div class="fila">
+            <div class="chips"><button class="chip on" data-chip><svg class="i"><use href="#i-check"/></svg>Memoria</button><button class="chip on" data-chip><svg class="i"><use href="#i-check"/></svg>4 documentos</button><button class="chip on" data-chip><svg class="i"><use href="#i-check"/></svg>Biblioteca</button></div>
+            <button class="destino" data-envio title="Ver lo que se enviará"><svg class="i"><use href="#i-candado"/></svg>OpenRouter<span class="modelo">· <span class="num">claude-sonnet-5.5</span></span></button>
+            <button class="enviar" data-ir="chat" aria-label="Enviar"><svg class="i"><use href="#i-enviar"/></svg></button>
           </div>
         </div>
-        <div class="bloque"><span class="label">Conversaciones recientes</span>
-          <div class="ultimos">
-            <div class="ultimo" data-ir="chat"><b>Absolución del traslado acusatorio</b><span>Hoy · 14 mensajes</span></div>
-            <div class="ultimo"><b>Estrategia de defensa y pericia contable</b><span>Martes · resumen en la memoria</span></div>
-            <div class="ultimo"><b>Ordenar movimientos del CEJ</b><span>Lunes · en la memoria</span></div>
+        <div class="atajos"><button class="atajo" data-ir="borrador">Preparar la absolución del traslado</button><button class="atajo">Resumir el requerimiento acusatorio</button><button class="atajo">/pegar-cej</button></div>
+        <div class="bloque"><span class="lbl">Conversaciones</span>
+          <div class="lista-conv">
+            <button class="lc" data-ir="chat"><span><b>Absolución del traslado acusatorio</b><small>Observaciones formales y oferta de la pericia</small></span><span class="e"><span class="num">hoy</span><i class="w estado-abs">3 cambios por revisar</i></span></button>
+            <button class="lc"><span><b>Estrategia de defensa y pericia contable</b><small>Objeto de la pericia y testigo de descargo</small></span><span class="e"><span class="num">13/10</span><i>✓ en la memoria</i></span></button>
+            <button class="lc"><span><b>Ordenar movimientos del CEJ</b><small>4 movimientos ordenados y revisados</small></span><span class="e"><span class="num">09/10</span><i>✓ en la memoria</i></span></button>
           </div>
         </div>
-      </section>
+      </div></section>
 
-      <div class="hilo">
-        <!-- conversación actual -->
-        <div class="hilo-actual">
-          <div class="viene"><svg class="i"><use href="#i-flecha"/></svg><span>Continúa de <a href="#">«Estrategia de defensa y pericia contable»</a> · su resumen está en la memoria</span></div>
+      <!-- ---------- Conversación ---------- -->
+      <section class="vista v-chat"><div class="col hilo">
+        <!-- conversación nueva que continúa la anterior -->
+        <div class="continua solo-nueva"><svg class="i"><use href="#i-flecha"/></svg><span>Continúa de <a href="#" data-ir="chat">«Absolución del traslado acusatorio»</a> · Folio guardó un resumen y la memoria está al día</span></div>
+        <div class="ya solo-nueva">
+          <span class="lbl">El agente parte de</span>
+          <div class="r"><span>Estado</span><span>Etapa intermedia: acusación notificada el 14/10/2026</span></div>
+          <div class="r"><span>Estrategia</span><span>Observar la imprecisión de la imputación y ofrecer la pericia contable</span></div>
+          <div class="r"><span>Resumen anterior</span><span>Esquema de absolución preparado; falta el objeto y el perito de la pericia</span></div>
+        </div>
+        <div class="atajos solo-nueva"><button class="atajo">Redactar las observaciones formales</button><button class="atajo">Preparar el ofrecimiento de la pericia</button><button class="atajo">¿Qué falta para presentar?</button></div>
 
-          <div class="msg-u">Ya me notificaron el requerimiento acusatorio. ¿Qué observaciones puedo plantear y cuánto plazo tengo?</div>
-
-          <div class="msg-a">
-            <div class="leyo"><svg class="i"><use href="#i-leer"/></svg>Leyó la memoria del expediente, 2 documentos y 3 artículos</div>
-            <p>Según la memoria, el requerimiento acusatorio contra Carlos Mendoza Ríos se notificó el <b>14/10/2026</b>. En esta etapa puedes:</p>
-            <ul>
-              <li><b>Observar la acusación por defectos formales:</b> la imputación no precisa qué hizo Carlos Mendoza Ríos en cada uno de los hechos.</li>
-              <li><b>Ofrecer la pericia contable</b> que tienes pendiente, con su objeto y el perito propuesto.</li>
-              <li><b>Oponerte a prueba de la acusación:</b> la declaración de María Quispe Rojas no se actuó en la investigación.</li>
-            </ul>
-            <p>Sobre el plazo, el art. 350 del NCPP señala diez días desde la notificación. Verifica la fecha en la resolución y en tu casilla SINOE antes de calcularlo.</p>
-            <div class="fichas"><span class="ficha ok">✓ Art. 350 NCPP · vigente</span><span class="ficha ok">✓ Art. 352 NCPP · vigente</span></div>
-            <div class="enviado"><span>Enviado a OpenRouter · Claude Sonnet 5.5 · 6 datos reemplazados</span><a href="#">Ver lo que se envió</a><span class="acc"><button class="icon-btn" aria-label="Copiar"><svg class="i"><use href="#i-copiar"/></svg></button></span></div>
+        <div class="yo solo-conv">Ya me notificaron el requerimiento acusatorio. ¿Qué observaciones puedo plantear y cuánto plazo tengo?</div>
+        <div class="resp solo-conv">
+          <button class="leyo" data-leyo>Leyó <u>la memoria</u>, <u>2 documentos</u> y <u>3 artículos</u><span> ▸</span></button>
+          <div class="leyo-lista" hidden>
+            <span><b>Memoria:</b> estado, hechos, estrategia y pendientes</span>
+            <span><b>Documentos:</b> Requerimiento acusatorio.pdf (págs. 3–7) · Informe contable interno.pdf (pág. 12)</span>
+            <span><b>Biblioteca:</b> arts. 349, 350 y 352 del Código Procesal Penal (textos al <span class="num">01/10/2026</span>)</span>
           </div>
-
-          <div class="msg-u">Prepárame el esquema del escrito de absolución.</div>
-
-          <div class="msg-a">
-            <div class="leyo"><svg class="i"><use href="#i-leer"/></svg>Leyó la memoria del expediente y 1 documento</div>
-            <p>Aquí tienes el esquema. Lo que está entre corchetes lo completas tú:</p>
-            <ol>
-              <li><b>Sumilla:</b> absuelvo traslado de la acusación y formulo observaciones.</li>
-              <li><b>Observaciones formales</b> a la acusación (imprecisión de la imputación).</li>
-              <li><b>Ofrecimiento de prueba:</b> pericia contable [objeto, perito y puntos].</li>
-              <li><b>Oposición</b> a la declaración de María Quispe Rojas.</li>
-              <li><b>Anexos</b> [cargo de notificación, copias].</li>
-            </ol>
-            <div class="doc-sug"><span class="ic"><svg class="i"><use href="#i-doc"/></svg></span><div><b>Esquema de absolución del traslado</b><span>Borrador · se guarda solo en este equipo</span></div><button class="btn sm">Guardar como documento</button></div>
-            <div class="enviado"><span>Enviado a OpenRouter · Claude Sonnet 5.5 · 4 datos reemplazados</span><a href="#">Ver lo que se envió</a></div>
-          </div>
-
-          <!-- propuesta de memoria (al cambiar de chat, al continuar o al guardar un documento) -->
-          <section class="propuesta" aria-label="Propuesta de cambios en la memoria">
-            <div class="prop-cab"><span class="ic"><svg class="i"><use href="#i-memoria"/></svg></span><div><b>Folio propone 4 cambios en la memoria</b><span>De esta conversación. Nada cambia sin tu clic.</span></div></div>
-            <div class="prop-items">
-              <label class="prop-item"><input type="checkbox" checked><div><div class="sec">Hechos</div><div class="txt">El 14/10/2026 se notificó el requerimiento acusatorio contra Carlos Mendoza Ríos.</div></div></label>
-              <label class="prop-item"><input type="checkbox" checked><div><div class="sec">Estrategia</div><div class="txt">Observar la acusación por imprecisión de la imputación y oponerse a la declaración de María Quispe Rojas.</div></div></label>
-              <label class="prop-item"><input type="checkbox" checked><div><div class="sec">Pendientes</div><div class="txt">Completar el esquema de absolución: objeto y perito de la pericia contable.</div></div></label>
-              <label class="prop-item"><input type="checkbox"><div><div class="sec">Plazos</div><div class="txt"><span class="mono">28/10/2026</span> · Absolver el traslado de la acusación</div><div class="nota"><svg class="i"><use href="#i-aviso"/></svg>Verifica la fecha con la resolución y tu casilla SINOE antes de marcarlo.</div></div></label>
-            </div>
-            <div class="prop-acc"><button class="btn primary" data-aplicar>Aplicar 3 seleccionados</button><button class="btn">Revisar uno por uno</button><button class="btn ghost">Descartar</button></div>
-            <div class="prop-hecho" hidden><svg class="i"><use href="#i-check"/></svg>3 cambios aplicados a la memoria<a href="#" data-deshacer>Deshacer</a></div>
-          </section>
+          <p>Según la memoria, el requerimiento acusatorio contra tu cliente se notificó el <b>14/10/2026</b>. En esta etapa puedes:</p>
+          <ul>
+            <li><b>Observar la acusación por defectos formales</b> <button class="cita" data-cita>Art. 350.1.a CPP <i>✓ vigente</i></button>: la imputación no precisa qué hizo Carlos Mendoza Ríos en cada hecho.</li>
+            <li><b>Ofrecer la pericia contable</b> que tienes pendiente, con el perito y los hechos sobre los que declarará <button class="cita" data-cita>Art. 350.1.f CPP <i>✓</i></button>.</li>
+            <li><b>Pedir el sobreseimiento</b> si el informe contable no sostiene la apropiación <button class="cita" data-cita>Art. 350.1.d CPP <i>✓</i></button>.</li>
+          </ul>
+          <div class="verif"><svg class="i"><use href="#i-aviso"/></svg><span>El art. 350 señala diez días desde la notificación. Folio no calcula plazos: verifica la fecha en la resolución y en tu casilla antes de anotarlo.</span></div>
+          <div class="recibo">Enviado a OpenRouter con tu cuenta · Claude Sonnet 5.5 · 6 datos reemplazados · <button data-envio>Ver lo que se envió</button></div>
         </div>
 
-        <!-- chat nuevo que continúa el anterior -->
-        <div class="hilo-nuevo">
-          <div class="viene"><svg class="i"><use href="#i-flecha"/></svg><span>Viene de <a href="#" data-ir="chat">«Absolución del traslado acusatorio»</a>. Folio guardó un resumen y la memoria quedó al día (3 cambios).</span></div>
-          <div class="recuerda">
-            <span class="label">Folio recuerda</span>
-            <div class="filas">
-              <div class="fila"><span>Estado</span><span>Etapa intermedia: acusación notificada el 14/10</span></div>
-              <div class="fila"><span>Estrategia</span><span>Observar la imputación y oponerse a la declaración de María Quispe Rojas</span></div>
-              <div class="fila"><span>Próximo plazo</span><span>28/10 · Absolver traslado (por verificar)</span></div>
-              <div class="fila"><span>Último documento</span><span>Esquema de absolución del traslado</span></div>
-            </div>
-          </div>
-          <div class="chips"><button class="chip">Redactar las observaciones formales</button><button class="chip">Preparar el ofrecimiento de la pericia</button><button class="chip">¿Qué falta para presentar?</button></div>
+        <div class="yo solo-conv">Prepárame el esquema del escrito de absolución.</div>
+        <div class="resp solo-conv">
+          <button class="leyo" data-leyo>Leyó <u>la memoria</u> y <u>1 documento</u><span> ▸</span></button>
+          <div class="leyo-lista" hidden><span><b>Memoria:</b> estrategia y pendientes</span><span><b>Documentos:</b> Requerimiento acusatorio.pdf</span></div>
+          <p>Listo. Dejé el esquema al lado para que lo revises; lo que va entre corchetes lo completas tú.</p>
+          <div class="borr"><span class="ic"><svg class="i"><use href="#i-doc"/></svg></span><div><b>Esquema de absolución del traslado</b><span>Borrador del agente · aún no está guardado</span></div><button class="btn" data-ir="borrador">Abrir al lado</button></div>
+          <div class="recibo">Enviado a OpenRouter con tu cuenta · Claude Sonnet 5.5 · 4 datos reemplazados · <button data-envio>Ver lo que se envió</button></div>
         </div>
-      </div>
+
+        <div class="prop solo-conv"><span>El agente propone <b>3 cambios</b> en la memoria y <b>1 plazo</b> por confirmar</span><button data-revisar>Revisar en la ficha →</button></div>
+      </div></section>
     </div>
 
+    <!-- aviso de conversación larga (solo desde ~70 %) -->
+    <div class="larga" role="status"><span><b>Esta conversación ya es larga.</b> Para que el agente no pierda precisión, sigue en una nueva: Folio guarda un resumen.</span><span class="acc"><button class="btn tinta" data-ir="nueva">Seguir en una nueva</button><button class="btn" data-ir="chat">Seguir aquí</button></span></div>
+
     <div class="pie-chat">
-      <div class="aviso-ctx" role="status"><svg class="i"><use href="#i-aviso"/></svg><div><b>Esta conversación está cerca del límite</b><p>Para que el agente no pierda precisión, continúa en un chat nuevo: Folio guarda un resumen y te propone actualizar la memoria.</p><div class="chips"><button class="btn primary sm" data-ir="nuevo">Continuar en un chat nuevo</button><button class="btn sm ghost" data-ir="chat">Seguir aquí</button></div></div></div>
-      <div class="caja"><textarea placeholder="Pregunta sobre este expediente…"></textarea>
-        <div class="caja-acc"><label class="rev"><input type="checkbox" checked>Revisar antes de enviar</label><button class="icon-btn" aria-label="Adjuntar documento"><svg class="i"><use href="#i-clip"/></svg></button><button class="enviar" aria-label="Enviar"><svg class="i"><use href="#i-enviar"/></svg></button></div>
+      <div class="caja" data-caja>
+        <div class="menu" hidden></div>
+        <textarea rows="1" placeholder="Escribe al agente · @ para citar un documento · / para acciones" aria-label="Escribe al agente"></textarea>
+        <div class="fila">
+          <div class="chips"><button class="chip on" data-chip><svg class="i"><use href="#i-check"/></svg>Memoria</button><button class="chip on" data-chip><svg class="i"><use href="#i-check"/></svg>2 documentos</button><button class="chip on" data-chip><svg class="i"><use href="#i-check"/></svg>Biblioteca</button></div>
+          <button class="destino" data-envio title="Ver lo que se enviará"><svg class="i"><use href="#i-candado"/></svg>OpenRouter<span class="modelo">· <span class="num">claude-sonnet-5.5</span></span></button>
+          <button class="enviar" aria-label="Enviar"><svg class="i"><use href="#i-enviar"/></svg></button>
+        </div>
       </div>
-      <div class="destino">Se envía a OpenRouter con los datos personales reemplazados. Verifica toda norma y plazo.</div>
     </div>
   </main>
 
-  <!-- ============ derecha: el expediente ============ -->
-  <aside class="exp" aria-label="Expediente">
-    <div class="exp-cab">
-      <div class="fila1"><span class="num">00123-2026-0-1501-JR-PE-01</span><button class="icon-btn" data-alternar="derecha" aria-label="Cerrar"><svg class="i"><use href="#i-cerrar"/></svg></button></div>
-      <h2>Apropiación ilícita</h2>
-      <span class="estado"><i></i>Etapa intermedia · 2.º Juzgado de Investigación Preparatoria</span>
-      <div class="tabs" role="tablist">
-        <button class="tab on" data-tab="resumen">Resumen</button><button class="tab" data-tab="memoria">Memoria</button><button class="tab" data-tab="documentos">Documentos</button><button class="tab" data-tab="movimientos">Movimientos</button><button class="tab" data-tab="partes">Partes</button>
-      </div>
+  <!-- ================= derecha: ficha del expediente ================= -->
+  <aside class="ficha" aria-label="Ficha del expediente">
+    <div class="fcab">
+      <div class="tabs modo-ficha"><button class="tab on" data-tab="ficha">Ficha</button><button class="tab" data-tab="docs">Documentos <span class="num">4</span></button><button class="tab" data-tab="movs">Movimientos <span class="num">4</span></button></div>
+      <button class="volver modo-otro" data-modo-ficha hidden><svg class="i"><use href="#i-volver"/></svg>Volver a la ficha</button>
+      <button class="ib" data-alternar-ficha aria-label="Cerrar la ficha" title="Cerrar la ficha"><svg class="i"><use href="#i-cerrar"/></svg></button>
     </div>
-    <div class="exp-body">
-      <div class="pane on" data-pane="resumen">
-        <div class="bloque"><span class="label">Próximo plazo</span>
-          <div class="plazo"><span class="f">28/10<br><small>10 días</small></span><div><b>Absolver el traslado de la acusación</b><span>Por verificar con la resolución</span></div></div>
+    <div class="fcuerpo">
+      <!-- Ficha -->
+      <div class="panel on" data-panel="ficha">
+        <div class="bloque"><span class="lbl">Estado</span><div class="estado">Etapa intermedia: requerimiento acusatorio notificado el 14/10/2026</div></div>
+        <div class="bloque"><span class="lbl">Próximo plazo</span>
+          <div class="sin plazo-no">Ningún plazo confirmado · hay 1 propuesto abajo</div>
+          <div class="plazo plazo-si" hidden><span class="num">28/10</span><div><b>Absolver el traslado de la acusación</b><small>Confirmado por ti el 18/10 · verifícalo con la resolución</small></div></div>
         </div>
-        <div class="bloque"><span class="label">Partes</span>
-          <div class="parte"><b style="font-weight:400">Carlos Mendoza Ríos</b><span class="cliente">Imputado · tu cliente</span></div>
-          <div class="parte"><b style="font-weight:400">María Quispe Rojas</b><span>Agraviada</span></div>
-        </div>
-        <div class="bloque"><span class="label">Últimos movimientos <a href="#" data-tab-ir="movimientos">Ver todos</a></span>
-          <div class="lista">
-            <div class="it"><span class="f">14/10</span><span>Se notifica el requerimiento acusatorio</span></div>
-            <div class="it"><span class="f">02/10</span><span>Fiscalía presenta requerimiento acusatorio</span></div>
-            <div class="it"><span class="f">18/08</span><span>Se formaliza la investigación preparatoria</span></div>
+        <section class="cambios" aria-label="Cambios propuestos por el agente">
+          <div class="cc"><b>Cambios propuestos por el agente</b><span>de «Absolución del traslado»</span></div>
+          <div class="cb" data-cb="hechos"><span class="s">+</span><div class="txt"><div class="k">Hechos</div>El 14/10/2026 se notificó el requerimiento acusatorio.</div><span class="si-no"><button class="si on" aria-label="Aceptar"><svg class="i"><use href="#i-check"/></svg></button><button class="no" aria-label="Rechazar"><svg class="i"><use href="#i-cerrar"/></svg></button></span></div>
+          <div class="cb" data-cb="estrategia"><span class="s m">~</span><div class="txt"><div class="k">Estrategia · cambia</div>Observar la imprecisión de la imputación, ofrecer la pericia contable y evaluar el sobreseimiento.<span class="antes">Antes: cuestionar el informe contable con una pericia de parte.</span></div><span class="si-no"><button class="si on" aria-label="Aceptar"><svg class="i"><use href="#i-check"/></svg></button><button class="no" aria-label="Rechazar"><svg class="i"><use href="#i-cerrar"/></svg></button></span></div>
+          <div class="cb" data-cb="pendientes"><span class="s">+</span><div class="txt"><div class="k">Pendientes</div>Completar el objeto y el perito de la pericia contable.</div><span class="si-no"><button class="si on" aria-label="Aceptar"><svg class="i"><use href="#i-check"/></svg></button><button class="no" aria-label="Rechazar"><svg class="i"><use href="#i-cerrar"/></svg></button></span></div>
+          <div class="cb pz"><span class="s p">!</span><div class="txt"><div class="k">Plazo · por confirmar</div><span class="num">28/10/2026</span> · absolver el traslado de la acusación</div><button class="confirmar" data-confirmar>Confirmar</button>
+            <div class="pregunta" hidden><span>¿Verificaste la fecha en la resolución y en tu casilla?</span><div><button class="btn" data-plazo-si>Sí, confirmar</button><button class="btn" data-plazo-no>Todavía no</button></div></div>
           </div>
-        </div>
-        <div class="bloque"><span class="label">Pendientes</span>
+          <div class="acc"><button class="btn prim" data-aplicar>Aplicar 3 cambios</button><button class="btn" data-descartar>Descartar</button></div>
+        </section>
+        <div class="bloque"><span class="lbl">Pendientes</span>
           <label class="pend"><input type="checkbox">Ofrecer la pericia contable</label>
           <label class="pend"><input type="checkbox">Ubicar al testigo de descargo</label>
+          <label class="pend nuevo" data-aplicado="pendientes" hidden><input type="checkbox">Completar el objeto y el perito de la pericia contable</label>
         </div>
-        <div class="priv-nota"><svg class="i"><use href="#i-candado"/></svg>Este expediente solo está en este equipo, cifrado.</div>
+        <div class="bloque"><span class="lbl">Hechos clave</span><div class="doct">Carlos Mendoza Ríos es acusado de apropiarse de S/ 48 000 de la empresa que administraba (2024). La Fiscalía se basa en un informe contable interno y en la declaración de María Quispe Rojas. <mark data-aplicado="hechos" hidden>El 14/10/2026 se notificó el requerimiento acusatorio.</mark></div></div>
+        <div class="bloque"><span class="lbl">Partes</span>
+          <div class="parte"><span>Carlos Mendoza Ríos · imputado, tu cliente</span><span class="num">[PERSONA_1]</span></div>
+          <div class="parte"><span>María Quispe Rojas · agraviada</span><span class="num">[PERSONA_2]</span></div>
+        </div>
+        <a class="mas" href="#">Ver la memoria completa →</a>
       </div>
-
-      <div class="pane" data-pane="memoria">
-        <div class="bloque"><span class="label">Lo que consta (hechos)</span><div class="docfield">Carlos Mendoza Ríos es acusado de apropiarse de S/ 48 000 de la empresa donde era administrador (2024). La Fiscalía se basa en un informe contable interno y en la declaración de María Quispe Rojas. <span class="cambio-ok" hidden><mark style="background:var(--accent-soft);color:inherit">El 14/10/2026 se notificó el requerimiento acusatorio.</mark></span></div></div>
-        <div class="bloque"><span class="label">Tu criterio (estrategia)</span><div class="docfield">Cuestionar el informe contable con una pericia de parte. <span class="cambio-ok" hidden><mark style="background:var(--accent-soft);color:inherit">Observar la imprecisión de la imputación y oponerse a la declaración de María Quispe Rojas.</mark></span></div></div>
-        <div class="bloque"><span class="label">Pendientes</span>
-          <label class="pend"><input type="checkbox">Ofrecer la pericia contable</label>
-          <label class="pend"><input type="checkbox">Ubicar al testigo de descargo</label>
-          <label class="pend cambio-ok" hidden><input type="checkbox">Completar el esquema de absolución: objeto y perito</label>
-        </div>
-        <div class="bloque"><span class="label">Cambios recientes <a href="#">Historial</a></span>
-          <div class="cambio nuevo cambio-ok" hidden><div class="m">Ahora · 3 cambios<a href="#" data-deshacer><svg class="i"><use href="#i-deshacer"/></svg>Deshacer</a></div><div>Hechos, estrategia y pendientes actualizados</div><div class="de">De «Absolución del traslado acusatorio»</div></div>
-          <div class="cambio"><div class="m">Martes 19:12 · Resumen<a href="#"><svg class="i"><use href="#i-deshacer"/></svg>Deshacer</a></div><div>Estrategia: pericia de parte contra el informe contable</div><div class="de">De «Estrategia de defensa y pericia contable»</div></div>
-          <div class="cambio"><div class="m">Lunes 09:40 · Movimientos<a href="#"><svg class="i"><use href="#i-deshacer"/></svg>Deshacer</a></div><div>3 movimientos del CEJ agregados</div><div class="de">De «Ordenar movimientos del CEJ»</div></div>
-        </div>
-      </div>
-
-      <div class="pane" data-pane="documentos">
-        <label class="buscar" style="margin:0"><svg class="i"><use href="#i-buscar"/></svg><input placeholder="Buscar en documentos"></label>
+      <!-- Documentos -->
+      <div class="panel" data-panel="docs">
         <div>
-          <div class="doc cambio-doc" hidden><span class="ic">DOC</span><div><b>Esquema de absolución del traslado</b><span class="nuevo-tag">Nuevo · creado en el chat</span></div></div>
-          <div class="doc"><span class="ic">PDF</span><div><b>Requerimiento acusatorio.pdf</b><span>24 páginas · 14/10</span></div></div>
-          <div class="doc"><span class="ic">PDF</span><div><b>Disposición de formalización.pdf</b><span>11 páginas · 18/08</span></div></div>
-          <div class="doc"><span class="ic">PDF</span><div><b>Informe contable interno.pdf</b><span>36 páginas · 18/08</span></div></div>
-          <div class="doc"><span class="ic">DOCX</span><div><b>Notas de la entrevista.docx</b><span>3 páginas · 02/08</span></div></div>
+          <div class="li"><span class="doc-ic">PDF</span><span>Requerimiento acusatorio.pdf<small>24 páginas · 14/10</small></span></div>
+          <div class="li"><span class="doc-ic">PDF</span><span>Informe contable interno.pdf<small>36 páginas · 18/08</small></span></div>
+          <div class="li"><span class="doc-ic">PDF</span><span>Disposición de formalización.pdf<small>11 páginas · 18/08</small></span></div>
+          <div class="li"><span class="doc-ic">DOC</span><span>Notas de la entrevista.docx<small class="w">el agente aún no lo leyó</small></span></div>
+          <div class="li doc-borrador" hidden><span class="doc-ic">DOC</span><span>Esquema de absolución del traslado<small>guardado desde la conversación · hoy</small></span></div>
         </div>
         <button class="btn"><svg class="i"><use href="#i-mas"/></svg>Agregar documento</button>
       </div>
-
-      <div class="pane" data-pane="movimientos">
-        <div class="lista">
-          <div class="it"><span class="f">14/10/2026</span><span>Se notifica el requerimiento acusatorio</span></div>
-          <div class="it"><span class="f">02/10/2026</span><span>Fiscalía presenta requerimiento acusatorio</span></div>
-          <div class="it"><span class="f">18/08/2026</span><span>Se formaliza la investigación preparatoria</span></div>
-          <div class="it"><span class="f">30/07/2026</span><span>Ingreso de la denuncia</span></div>
+      <!-- Movimientos -->
+      <div class="panel" data-panel="movs">
+        <div>
+          <div class="li"><span class="num">14/10/2026</span><span>Se notifica el requerimiento acusatorio</span></div>
+          <div class="li"><span class="num">02/10/2026</span><span>La Fiscalía presenta el requerimiento acusatorio</span></div>
+          <div class="li"><span class="num">18/08/2026</span><span>Se formaliza la investigación preparatoria</span></div>
+          <div class="li"><span class="num">30/07/2026</span><span>Ingreso de la denuncia</span></div>
         </div>
         <button class="btn">Pegar desde el CEJ</button>
       </div>
-
-      <div class="pane" data-pane="partes">
-        <div>
-          <div class="parte"><b style="font-weight:400">Carlos Mendoza Ríos<br><span class="mono" style="text-align:left">DNI ••••4521</span></b><span class="cliente">Imputado · tu cliente</span></div>
-          <div class="parte"><b style="font-weight:400">María Quispe Rojas</b><span>Agraviada</span></div>
-          <div class="parte"><b style="font-weight:400">Fiscalía Provincial Penal</b><span>Acusa</span></div>
+      <!-- Fuente -->
+      <div class="panel fuente" data-panel="fuente">
+        <div class="bloque">
+          <span class="lbl">Fuente citada</span>
+          <h3>Art. 350 · Código Procesal Penal</h3>
+          <span class="ubi">Notificación de la acusación y objeción de los demás sujetos procesales · Libro Tercero · Sección II La etapa intermedia</span>
+          <span class="vig"><svg class="i" style="width:13px;height:13px"><use href="#i-check"/></svg>Vigente desde el 24/05/2025 (Ley N.° 32348)</span>
         </div>
-        <div class="priv-nota"><svg class="i"><use href="#i-candado"/></svg>Antes de consultar a la IA, los nombres y documentos se reemplazan por marcadores.</div>
+        <div class="texto-ley">1. La acusación será notificada a los demás sujetos procesales. En el plazo de diez días éstas podrán:
+<mark>a) Observar la acusación del Fiscal por defectos formales, requiriendo su corrección;</mark>
+b) Deducir excepciones y otros medios de defensa, cuando no hayan sido planteadas con anterioridad o se funden en hechos nuevos;
+c) Solicitar la imposición o revocación de una medida de coerción o la actuación de prueba anticipada conforme a los artículos 242 y 243, en lo pertinente;
+<mark>d) Pedir el sobreseimiento;</mark>
+e) Instar la aplicación, si fuere el caso, de un criterio de oportunidad o para los casos de flagrancia, de una terminación anticipada. […]
+<mark>f) Ofrecer pruebas para el juicio, adjuntando la lista de testigos y peritos que deben ser convocados al debate, con indicación de nombre, profesión y domicilio, precisando los hechos acerca de los cuales serán examinados en el curso del debate.</mark> […]
+g) Objetar la reparación civil o reclamar su incremento o extensión, para lo cual se ofrecerán los medios de prueba pertinentes para su actuación en el juicio oral; o,
+h) Plantear cualquier otra cuestión que tienda a preparar mejor el juicio.
+2. […]</div>
+        <p class="nota">Texto tomado del SPIJ, actualizado al <span class="num">01/10/2026</span>. La biblioteca de Folio no es una edición oficial: verifica en la fuente antes de usar el artículo en un escrito.</p>
+      </div>
+      <!-- Borrador -->
+      <div class="panel" data-panel="borrador">
+        <div class="bloque"><span class="lbl">Borrador del agente · revísalo antes de usarlo</span><h3 style="margin:0;font-size:17px;font-weight:500">Esquema de absolución del traslado</h3></div>
+        <div class="escrito">
+          <p class="sum">Sumilla: absuelvo traslado de la acusación y formulo observaciones</p>
+          <p>SEÑOR JUEZ DEL 2.º JUZGADO DE INVESTIGACIÓN PREPARATORIA:</p>
+          <p>Carlos Mendoza Ríos, en el expediente N.° 00123-2026-0-1501-JR-PE-01, ante usted digo:</p>
+          <h4>I. Observaciones formales (art. 350.1.a)</h4>
+          <p>La acusación no precisa la conducta atribuida en cada uno de los hechos: <span class="hueco">[detallar hechos 1 a 3 y la omisión en cada uno]</span>.</p>
+          <h4>II. Sobreseimiento (art. 350.1.d)</h4>
+          <p><span class="hueco">[evaluar si el informe contable sostiene la apropiación]</span></p>
+          <h4>III. Ofrecimiento de prueba (art. 350.1.f)</h4>
+          <p>Pericia contable de parte a cargo de <span class="hueco">[nombre, profesión y domicilio del perito]</span>, sobre <span class="hueco">[puntos de la pericia]</span>.</p>
+          <h4>Anexos</h4>
+          <p><span class="hueco">[cargo de notificación · copias]</span></p>
+        </div>
+        <div class="borr-acc"><button class="btn prim" data-guardar>Guardar como documento</button><button class="btn">Copiar</button><button class="btn" data-ir="chat">Pedir cambios en la conversación</button></div>
+        <p class="nota">Borrador de apoyo: la redacción final, la verificación de normas y plazos, y la firma son tuyas.</p>
       </div>
     </div>
   </aside>
 </div>
-<div class="velo"></div>
+<div class="velo-m"></div>
 
-<div class="toast" role="status" hidden><span>Memoria actualizada · 3 cambios</span><button data-deshacer>Deshacer</button></div>
+<!-- vista previa del envío -->
+<div class="velo" data-modal hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="envio-t">
+    <div class="mc"><div><h2 id="envio-t">Lo que se enviará a OpenRouter con tu cuenta</h2><p>Folio reemplazó 6 datos personales en tu equipo antes de enviar. Este es el texto exacto que sale.</p></div><button class="ib" data-cerrar-modal aria-label="Cerrar"><svg class="i"><use href="#i-cerrar"/></svg></button></div>
+    <div class="envio">=== MEMORIA DEL EXPEDIENTE ===
+Materia: apropiación ilícita · etapa intermedia
+Partes: <mark>[PERSONA_1]</mark> (imputado, cliente) · <mark>[PERSONA_2]</mark> (agraviada)
+Hechos: <mark>[PERSONA_1]</mark>, DNI <mark>[DNI_1]</mark>, es acusado de apropiarse de S/ 48 000 de la empresa que administraba…
+Estrategia: cuestionar el informe contable con una pericia de parte.
+
+=== FRAGMENTOS DE DOCUMENTOS ===
+--- Requerimiento acusatorio.pdf (pág. 4) ---
+…se atribuye a <mark>[PERSONA_1]</mark>, domiciliado en <mark>[DIRECCION_1]</mark>, haber dispuesto…
+
+=== NORMAS VIGENTES (biblioteca al 01/10/2026) ===
+Art. 350 CPP · Art. 352 CPP
+
+=== PREGUNTA ===
+Ya me notificaron el requerimiento acusatorio. ¿Qué observaciones puedo plantear y cuánto plazo tengo?</div>
+    <details class="reemp"><summary>Ver los 6 reemplazos (solo los ves tú)</summary>
+      <table><tr><td>Carlos Mendoza Ríos</td><td>[PERSONA_1]</td></tr><tr><td>María Quispe Rojas</td><td>[PERSONA_2]</td></tr><tr><td>DNI del cliente</td><td>[DNI_1]</td></tr><tr><td>Domicilio del cliente</td><td>[DIRECCION_1]</td></tr><tr><td>Teléfono</td><td>[TELEFONO_1]</td></tr><tr><td>Correo</td><td>[CORREO_1]</td></tr></table>
+    </details>
+    <p class="tercero">Modelo de terceros: Claude Sonnet 5.5 de Anthropic, vía OpenRouter, con tu cuenta. Folio no tiene servidores y no guarda copia de lo que envías.</p>
+    <div class="mp"><label><input type="checkbox" checked>Revisar siempre antes de enviar</label><button class="btn" data-cerrar-modal>Cancelar</button><button class="btn prim" data-cerrar-modal>Enviar</button></div>
+  </div>
+</div>
+
+<div class="toast" role="status" hidden><span class="toast-t"></span><button data-deshacer>Deshacer</button></div>
 
 <!-- barra para recorrer los estados del prototipo -->
 <div class="proto">
-  <span class="titulo"><b>Prototipo · estados</b></span>
+  <b>Prototipo · estados</b>
   <button class="min" aria-label="Plegar">–</button>
-  <div class="ops" data-grupo="estado">
-    <button data-ir="chat" class="on">Chat</button>
-    <button data-ir="contexto">Contexto lleno</button>
-    <button data-ir="memoria">Propuesta de memoria</button>
-    <button data-ir="nuevo">Chat nuevo</button>
-    <button data-ir="inicio">Inicio del expediente</button>
+  <div class="ops" data-grupo>
+    <button data-ir="hoy">Hoy</button><button data-ir="inicio">Inicio</button><button data-ir="chat">Conversación</button><button data-ir="fuente">Fuente</button><button data-ir="borrador">Borrador</button><button data-ir="larga">Larga (70 %)</button><button data-ir="limite">Al límite (90 %)</button><button data-ir="nueva">Nueva</button><button data-ir="envio">Vista previa</button>
   </div>
-  <div class="ops">
-    <button data-alternar="convs">Conversaciones</button>
-    <button data-alternar="derecha">Panel derecho</button>
-    <button data-tema>Claro / oscuro</button>
-  </div>
+  <div class="ops"><button data-alternar-ficha>Ficha</button><button data-tema>Claro / oscuro</button></div>
 </div>
 
 <script>
 (function(){
-  var b=document.body,raiz=document.documentElement;
-  var USO={chat:38,contexto:92,memoria:41,nuevo:6,inicio:0};
-  var TITULO={chat:'Absolución del traslado acusatorio',contexto:'Absolución del traslado acusatorio',memoria:'Absolución del traslado acusatorio',nuevo:'Nuevo chat',inicio:'Inicio del expediente'};
-  var med=document.querySelector('.medidor'),toast=document.querySelector('.toast'),t;
-  function ir(e){
-    b.dataset.estado=e;
-    med.style.setProperty('--uso',USO[e]+'%');
-    med.querySelector('.pct').textContent=USO[e]+' %';
-    med.classList.toggle('alto',USO[e]>=70);
-    med.hidden=e==='inicio';
-    document.querySelector('.titulo-chat').textContent=TITULO[e];
-    document.querySelector('.conv-nuevo').hidden=e!=='nuevo';
-    document.querySelector('.conv-actual').classList.toggle('on',e!=='nuevo');
-    document.querySelectorAll('[data-grupo=estado] button').forEach(function(x){x.classList.toggle('on',x.dataset.ir===e)});
-    if(e==='nuevo')aplicar(false);
-    document.querySelector('.hilo-wrap').scrollTop=e==='memoria'?1e6:0;
-    if(innerWidth<=820)b.dataset.convs='cerrado';
+  var b=document.body,raiz=document.documentElement,mq=matchMedia('(max-width:1023px)');
+  var TIT={hoy:['','Hoy'],inicio:['<span class="num">00123-2026-0-1501-JR-PE-01</span>','Inicio del expediente'],
+    chat:['<span class="num">00123-2026</span> · Apropiación ilícita','Absolución del traslado acusatorio'],
+    nueva:['<span class="num">00123-2026</span> · Apropiación ilícita','Nueva conversación']};
+  var USO={chat:'38 %',larga:'74 %',limite:'92 %',nueva:'6 %'};
+  var $=function(s,c){return (c||document).querySelector(s)},$$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
+  var toast=$('.toast'),tt,deshacerFn=null;
+
+  function aviso(txt,fn){$('.toast-t').textContent=txt;deshacerFn=fn||null;$('[data-deshacer]',toast).hidden=!fn;toast.hidden=false;clearTimeout(tt);tt=setTimeout(function(){toast.hidden=true},5000)}
+  function tab(n){$$('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.tab===n)});$$('.panel').forEach(function(p){p.classList.toggle('on',p.dataset.panel===n)})}
+  function modo(m){
+    b.dataset.modo=m;
+    $('.modo-ficha').hidden=m!=='ficha';$('.modo-otro').hidden=m==='ficha';
+    if(m==='ficha')tab('ficha');else $$('.panel').forEach(function(p){p.classList.toggle('on',p.dataset.panel===m)});
+    $('.fcuerpo').scrollTop=0;riel();
   }
-  function aplicar(conAviso){
-    document.querySelectorAll('.cambio-ok,.cambio-doc').forEach(function(x){x.hidden=false});
-    document.querySelector('.prop-acc').hidden=true;document.querySelector('.prop-hecho').hidden=false;
-    if(conAviso){toast.hidden=false;clearTimeout(t);t=setTimeout(function(){toast.hidden=true},5000);
-      if(b.dataset.derecha==='cerrado'&&innerWidth>1180)b.dataset.derecha='abierto';tab('memoria')}
+  function fichaAbierta(){return mq.matches?b.classList.contains('ficha-movil'):b.dataset.ficha==='abierta'}
+  function sincFicha(){$$('[data-alternar-ficha]').forEach(function(x){if(x.closest('.ficha'))return;x.classList.toggle('on',fichaAbierta())})}
+  function abrirFicha(){if(mq.matches)b.classList.add('ficha-movil');else b.dataset.ficha='abierta';riel();sincFicha()}
+  function riel(){
+    var abierta=b.dataset.ficha==='abierta'&&b.dataset.vista!=='hoy';
+    b.classList.toggle('riel',!mq.matches&&abierta&&(innerWidth<1280||(b.dataset.modo==='borrador'&&innerWidth<1440)));
+  }
+  function ir(v){
+    var vista=(v==='fuente'||v==='borrador'||v==='envio')?'chat':v;
+    b.dataset.vista=vista;
+    b.classList.toggle('en-chat',['chat','larga','limite','nueva'].indexOf(vista)>=0);
+    var t=TIT[vista==='larga'||vista==='limite'?'chat':vista];
+    $('.cab .miga').innerHTML=t[0];$('.cab .miga').hidden=!t[0];$('.cab .titulo').textContent=t[1];
+    $$('.con-chat').forEach(function(x){x.hidden=!b.classList.contains('en-chat')});
+    $('.con-ficha').hidden=vista==='hoy';
+    var u=USO[vista];$('.ctx').title=u?'Contexto usado: '+u+' del presupuesto de esta conversación':'';
+    $('.larga').classList.toggle('alta',v==='limite');
+    $('.larga .acc .btn').className=v==='limite'?'btn prim':'btn tinta';
+    $('.nav-hoy').classList.toggle('on',v==='hoy');
+    $('.exp-activo').classList.toggle('on',v!=='hoy');
+    $('.conv-abs').classList.toggle('on',['chat','fuente','borrador','larga','limite','envio'].indexOf(v)>=0);
+    modo(v==='fuente'?'fuente':v==='borrador'?'borrador':'ficha');
+    if(mq.matches){b.dataset.side='cerrado';b.classList.toggle('ficha-movil',v==='fuente'||v==='borrador')}
+    else if(v==='fuente'||v==='borrador')b.dataset.ficha='abierta';
+    $('[data-modal]').hidden=v!=='envio';
+    $$('[data-grupo] button').forEach(function(x){x.classList.toggle('on',x.dataset.ir===v)});
+    $('.scroll').scrollTop=(vista==='chat'||vista==='larga'||vista==='limite')?1e6:0;
+    riel();sincFicha();
+  }
+  function contar(){var n=$$('.cb:not(.pz) .si.on').length,bt=$('[data-aplicar]');bt.textContent='Aplicar '+n+(n===1?' cambio':' cambios');bt.disabled=!n;bt.style.opacity=n?'':'.5'}
+  function plazoPendiente(){return !$('.cb.pz').hidden}
+  function aplicar(){
+    var ok={};$$('.cb[data-cb]').forEach(function(c){ok[c.dataset.cb]=$('.si',c).classList.contains('on')});
+    var n=$$('.cb:not(.pz) .si.on').length;
+    $$('[data-aplicado]').forEach(function(x){x.hidden=!ok[x.dataset.aplicado]});
+    $$('.cb:not(.pz)').forEach(function(x){x.hidden=true});$('.cambios .acc').hidden=true;
+    if(!plazoPendiente())$('.cambios').hidden=true;
+    resumenProp(n);
+    aviso('Memoria actualizada · '+n+(n===1?' cambio':' cambios'),deshacer);
+  }
+  function resumenProp(n){
+    var pend=plazoPendiente();
+    $('.prop').innerHTML='<span>✓ '+n+(n===1?' cambio aplicado':' cambios aplicados')+' a la memoria'+(pend?' · falta confirmar 1 plazo':'')+'</span><button data-revisar>Ver en la ficha →</button>';
+    $('.prop').classList.add('hecho');
+    $('.estado-abs').textContent=pend?'1 plazo por confirmar':'✓ en la memoria';$('.estado-abs').classList.toggle('w',pend);
   }
   function deshacer(){
-    document.querySelectorAll('.cambio-ok,.cambio-doc').forEach(function(x){x.hidden=true});
-    document.querySelector('.prop-acc').hidden=false;document.querySelector('.prop-hecho').hidden=true;toast.hidden=true;
+    $$('[data-aplicado]').forEach(function(x){x.hidden=true});
+    $$('.cb').forEach(function(x){x.hidden=false;x.classList.remove('rechazado')});
+    $$('.si-no').forEach(function(s){$('.si',s).classList.add('on');$('.no',s).classList.remove('on')});
+    $('.cambios .acc').hidden=false;$('.cambios').hidden=false;
+    $('.plazo-si').hidden=true;$('.plazo-no').hidden=false;$('.pregunta').hidden=true;$('[data-confirmar]').hidden=false;
+    $('.prop').innerHTML='<span>El agente propone <b>3 cambios</b> en la memoria y <b>1 plazo</b> por confirmar</span><button data-revisar>Revisar en la ficha →</button>';
+    $('.prop').classList.remove('hecho');$('.estado-abs').textContent='3 cambios por revisar';$('.estado-abs').classList.add('w');
+    toast.hidden=true;contar();
   }
-  function tab(n){
-    document.querySelectorAll('.tab').forEach(function(x){x.classList.toggle('on',x.dataset.tab===n)});
-    document.querySelectorAll('.pane').forEach(function(x){x.classList.toggle('on',x.dataset.pane===n)});
+  function revisar(){abrirFicha();modo('ficha');var c=$('.cambios');if(c.hidden)return;c.scrollIntoView({block:'center'});c.classList.add('foco');setTimeout(function(){c.classList.remove('foco')},1600)}
+  var ACC=[['/absolver-traslado','Esquema para absolver el traslado de la acusación'],['/resumir-documento','Resumen de un documento del expediente'],['/pegar-cej','Ordenar movimientos copiados del CEJ'],['/preparar-audiencia','Puntos para la audiencia de control de acusación']];
+  var DOCS=[['Requerimiento acusatorio.pdf','24 págs. · 14/10'],['Informe contable interno.pdf','36 págs.'],['Disposición de formalización.pdf','11 págs.'],['Movimiento del 14/10','notificación del requerimiento']];
+  function menu(caja,tipo){
+    var m=$('.menu',caja);if(!m)return;
+    if(!tipo){m.hidden=true;return}
+    var lista=tipo==='/'?ACC:DOCS;
+    m.innerHTML='<div class="t">'+(tipo==='/'?'Acciones · cada una recuerda verificar plazos y normas':'Citar en tu mensaje')+'</div>'+lista.map(function(x){return '<button type="button"><span class="'+(tipo==='/'?'num':'')+'">'+x[0]+'</span><small>'+x[1]+'</small></button>'}).join('');
+    m.hidden=false;
   }
-  function alternar(zona){
-    b.dataset[zona]=b.dataset[zona]==='abierto'?'cerrado':'abierto';
-    if(innerWidth<=820&&zona!=='side'&&b.dataset[zona]==='abierto')b.dataset.side='cerrado';
-    document.querySelectorAll('.chat-cab [data-alternar='+zona+']').forEach(function(x){x.classList.toggle('on',b.dataset[zona]==='abierto')});
-  }
-  document.addEventListener('click',function(ev){
-    var el=ev.target.closest('[data-ir],[data-alternar],[data-tab],[data-tab-ir],[data-aplicar],[data-deshacer],[data-tema],.velo,.proto .min');
-    if(!el)return;
-    if(el.tagName==='A')ev.preventDefault();
-    if(el.dataset.ir)ir(el.dataset.ir);
-    else if(el.dataset.alternar)alternar(el.dataset.alternar);
-    else if(el.dataset.tab)tab(el.dataset.tab);
-    else if(el.dataset.tabIr)tab(el.dataset.tabIr);
-    else if(el.hasAttribute('data-aplicar'))aplicar(true);
-    else if(el.hasAttribute('data-deshacer'))deshacer();
-    else if(el.hasAttribute('data-tema'))raiz.dataset.theme=raiz.dataset.theme==='dark'?'light':'dark';
-    else if(el.classList.contains('velo')){b.dataset.side='cerrado';b.dataset.convs='cerrado'}
-    else if(el.classList.contains('min')){var p=el.parentNode;p.classList.toggle('plegada');el.textContent=p.classList.contains('plegada')?'+':'–'}
+
+  document.addEventListener('click',function(e){
+    if(e.target.classList.contains('velo')){$('[data-modal]').hidden=true;return}
+    if(e.target.classList.contains('velo-m')){b.dataset.side='cerrado';b.classList.remove('ficha-movil');sincFicha();return}
+    var el=e.target.closest('button,a');if(!el)return;
+    if(el.tagName==='A'&&el.getAttribute('href')==='#')e.preventDefault();
+    var d=el.dataset;
+    if(d.ir){ir(d.ir);if(el.hasAttribute('data-ficha-foco'))setTimeout(revisar,60);return}
+    if('otro' in d){aviso('En el prototipo solo está armado el expediente 00123-2026');return}
+    if('alternarFicha' in d){if(mq.matches)b.classList.toggle('ficha-movil');else b.dataset.ficha=b.dataset.ficha==='abierta'?'cerrada':'abierta';riel();sincFicha();return}
+    if('alternarSide' in d){b.dataset.side=b.dataset.side==='abierto'?'cerrado':'abierto';return}
+    if('abrirSide' in d){b.dataset.ficha='cerrada';riel();sincFicha();return}
+    if(d.tab){tab(d.tab);return}
+    if('modoFicha' in d){modo('ficha');return}
+    if('cita' in d){abrirFicha();modo('fuente');return}
+    if('leyo' in d){var l=el.nextElementSibling;l.hidden=!l.hidden;el.lastChild.textContent=l.hidden?' ▸':' ▾';return}
+    if('revisar' in d){revisar();return}
+    if('envio' in d){$('[data-modal]').hidden=false;return}
+    if('cerrarModal' in d){$('[data-modal]').hidden=true;return}
+    if('chip' in d){el.classList.toggle('on');return}
+    if(el.classList.contains('si')||el.classList.contains('no')){var cb=el.closest('.cb');$$('.si-no button',cb).forEach(function(x){x.classList.toggle('on',x===el)});cb.classList.toggle('rechazado',el.classList.contains('no'));contar();return}
+    if('aplicar' in d){aplicar();return}
+    if('descartar' in d){$$('.cb:not(.pz)').forEach(function(x){x.hidden=true});$('.cambios .acc').hidden=true;if(!plazoPendiente())$('.cambios').hidden=true;aviso('Cambios descartados',deshacer);return}
+    if('confirmar' in d){el.hidden=true;$('.pregunta').hidden=false;return}
+    if('plazoNo' in d){$('.pregunta').hidden=true;$('[data-confirmar]').hidden=false;return}
+    if('plazoSi' in d){$('.cb.pz').hidden=true;$('.plazo-no').hidden=true;$('.plazo-si').hidden=false;if($('.cambios .acc').hidden){$('.cambios').hidden=true;resumenProp($$('[data-aplicado]:not([hidden])').length+1)}aviso('Plazo confirmado: 28/10 · absolver el traslado',deshacer);return}
+    if('deshacer' in d){if(deshacerFn)deshacerFn();return}
+    if('guardar' in d){$('.doc-borrador').hidden=false;aviso('Guardado en Documentos del expediente');return}
+    if('tema' in d){raiz.dataset.theme=raiz.dataset.theme==='dark'?'light':'dark';return}
+    if(el.classList.contains('min')){var p=el.parentNode;p.classList.toggle('plegada');el.textContent=p.classList.contains('plegada')?'+':'–';return}
   });
-  if(matchMedia('(prefers-color-scheme:dark)').matches)raiz.dataset.theme='dark';
-  if(innerWidth<=1180){b.dataset.convs='cerrado';b.dataset.derecha='cerrado'}
+  $$('[data-caja] textarea').forEach(function(t){
+    t.addEventListener('input',function(){var v=t.value,c=t.closest('[data-caja]');menu(c,/^\/\S*$/.test(v)?'/':/(^|\s)@\S*$/.test(v)?'@':null)});
+    t.addEventListener('keydown',function(e){if(e.key==='Escape')menu(t.closest('[data-caja]'),null)});
+  });
+  addEventListener('keydown',function(e){if(e.key==='Escape')$('[data-modal]').hidden=true});
+  addEventListener('resize',function(){riel();sincFicha()});
+
   var q=new URLSearchParams(location.search);
+  if(matchMedia('(prefers-color-scheme:dark)').matches)raiz.dataset.theme='dark';
   if(q.get('tema'))raiz.dataset.theme=q.get('tema');
-  ir(q.get('estado')||'chat');
-  if(q.get('derecha'))b.dataset.derecha=q.get('derecha');
-  if(q.get('convs'))b.dataset.convs=q.get('convs');
-  if(q.get('tab'))tab(q.get('tab'));
-  if(q.get('proto')==='0')document.querySelector('.proto').hidden=true;
+  if(q.get('ficha')==='0')b.dataset.ficha='cerrada';
+  if(q.get('proto')==='0')$('.proto').hidden=true;
+  ir(q.get('vista')||'chat');
+  if(mq.matches&&q.get('ficha')==='1')abrirFicha();
+  contar();
 })();
 </script>
 <style>/* Tipografías de la app (src/fonts.css, OFL) */
