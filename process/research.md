@@ -74,3 +74,22 @@ Diseño evaluado por si se retoma:
 - No compite en costo (equipo de miles de soles vs S/2–60/mes de API). Argumento único: "nada sale de tu oficina".
 - Cliente ideal: estudio con varios abogados y casos sensibles (familia, violencia, penal).
 - Cobrar por instalación requiere RUC (recibos por honorarios) y consulta previa de incompatibilidad.
+
+## 8. Interfaces de la competencia (revisión con Playwright, 2026-10-18)
+> Solo páginas públicas, sin iniciar sesión. Capturas fuera del repo (derechos de terceros). Sirve para E10 (rediseño v0.6).
+
+| Producto | Lo que se ve | Qué aprender | Qué evitar |
+|---|---|---|---|
+| **DOXS.AI** (chat.doxs.ai) | Clon tipo ChatGPT en oscuro: chats agrupados por fecha a la izquierda, chat al centro, panel derecho de "Indicaciones" (biblioteca de prompts), botón "Ser Pro". Respuestas como lista de casaciones con "Fundamento" y "Link de descarga". Precios: gratis, Pro S/35, Max S/200 | La fuente primero: cada resultado con su fundamento y enlace | Botón de venta permanente; chat genérico sin expediente |
+| **DOXS CEJFLOW** | Chat por expediente: cabecera "EXP. … · Civil · Lima · 5.º Juzgado"; tarjeta de respuesta con pie de fuente ("Art. 478 CPC · Movimiento del 12/02 en este expediente"); panel de novedades con contador de pendientes y resumen por movimiento | Pie de fuente dentro de cada respuesta, enlazado a lo que la originó; contador de novedades | Afirma plazos como hechos ("30 días hábiles") sin pedir verificación |
+| **Lexius** | Azul saturado; decenas de funciones (canciones, páginas web, pódcast); "Llamada con el Abogado Virtual" con selector "Contexto para la llamada: documentos seleccionados" | Selector explícito de contexto (qué documentos entran) | Sobrecarga de funciones sin foco |
+| **Magnar** (Chile→Perú, +7000 abogados en Perú, Serie A US$8M) | Editorial premium (crema, imágenes clásicas); caja "Hazme una pregunta difícil"; "Encárgale un objetivo: planifica, investiga y entrega trabajo listo para tu revisión" | Modelo de **encargo** con entregable para revisar, no solo chat | — (orientado a estudios grandes) |
+| **Lexana** | Editorial cálido con serif e itálica ("Hecha para *Despachos*"), píldoras negras; gestión de expedientes con hitos, SINOE por WhatsApp; precios US$15/50 | Calma visual y tono profesional | "Análisis predictivo de jueces" (riesgo ético) |
+| **DereJ – IA** | Oscuro índigo; catálogo de 35+ herramientas con insignias Gratis/Pro/Premium/Elite | Herramientas como accesos rápidos contextuales | Rejilla de herramientas que abruma |
+| **Juztina** | Solo selector de país (juztina.ai); sin interfaz pública | — | — |
+
+**Agregados por la segunda opinión (2026-10-18):** Alega (bandeja SINOE con estados; asistente a nivel despacho), ArgosLex ("foco prioritario para hoy"; muchos módulos), CEJBOT (S/10–40; resumen de novedades con aviso de "orientativo"), LEXA (S/0–499; tarjeta de notificación procesada; avisa cambios de ley), Arxatec (asistente dentro del caso, sobrio y monocromo), AbogacIA (S/229–649 anual; panel administrativo del CEJ), Legalix (consulta al público por WhatsApp). Referentes: ChatGPT/Claude Projects (conversaciones dentro del proyecto), Harvey (panel derecho contextual; modelo de terceros declarado), Legora (fuentes y acciones en la caja de texto), Canvas (borrador al lado).
+
+**Patrones comunes:** (1) chat tipo ChatGPT con historial a la izquierda; (2) dos estéticas dominantes: índigo/violeta SaaS (DOXS, DereJ) y editorial cálida (Lexana, Magnar); (3) nadie muestra qué datos salen ni dónde se guardan; (4) nadie tiene memoria del caso visible y editable por el abogado.
+
+**Para Folio (E10):** cabecera de expediente en el chat; pie de fuente en cada respuesta que enlace a la memoria, movimiento, documento o artículo usado; selector de contexto sobre la caja de texto (memoria, documentos, normas) unido al medidor de contexto; modo "encargo" que produce un documento editable al lado del chat; "Qué cambió desde tu última visita". Diferencia: privacidad visible, memoria editable con historial, verificación de plazos y normas, gratis con cuenta propia.
