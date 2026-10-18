@@ -11,7 +11,7 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 - E6 App de escritorio (Electron) y conectores CEJ/SINOE — ⏳
 - E7 Endurecimiento de seguridad — ⏳
 - E8 Biblioteca legal peruana actualizada (normas vigentes, verificador de citas) — 🔄 F0 ✅ · F1 ✅ publicada en v0.4.0 con 7 normas · ⏳ 4 normas + CP parte 2 · ⏳ F2
-- E9 Rediseño UX/UI v0.5.0 "el expediente primero" — ✅ publicada en v0.5.0 (F1–F6) · 💤 sitio (T-411) → process/specs/rediseno-ux-v0.5.md
+- E9 Rediseño UX/UI v0.5.0 "el expediente primero" — ✅ publicada en v0.5.0 (F1–F6) · ✅ sitio (T-411) → process/specs/rediseno-ux-v0.5.md
 
 ## E9 · Rediseño UX/UI v0.5.0 (spec aprobado 2026-10-03)
 | # | Tarea | Fase | Estado |
@@ -26,7 +26,7 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 | T-408 | Documentos en lista con insignias y buscador | F4 | ✅ |
 | T-409 | Agente: detalle técnico plegable, "Folio recuerda", acciones rápidas contextuales | F5 | ✅ |
 | T-410 | Microinteracciones + accesibilidad + e2e y capturas nuevas | F6 | ✅ |
-| T-411 | Sitio web con la paleta nueva | F7 | 💤 después de que el usuario revise la app |
+| T-411 | Sitio web con la paleta nueva (+ animaciones: demo, seudonimización, diagrama) | F7 | ✅ 2026-10-18 |
 | T-412 | Release v0.5.0 (✅ 2026-10-03) + prueba de 10 segundos con abogados (en T-205, ⏳) | — | 🔄 |
 
 ## Publicación (v0.2.0 → v0.4.0)
