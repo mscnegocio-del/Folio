@@ -405,11 +405,18 @@ Reglas:
 4. Los datos personales pueden estar reemplazados por marcadores como [PERSONA_1], [DOC_1] o [DNI_1]. Úsalos tal cual y no intentes adivinar los datos reales.
 5. Responde en español del Perú, claro y directo, con viñetas cuando ayude. Si preparas un borrador de escrito, usa la estructura habitual peruana (sumilla, destinatario, datos del expediente, petitorio, fundamentos, medios probatorios si corresponde, anexos) y deja entre corchetes lo que el abogado debe completar.
 6. Todo lo que produces es un borrador de apoyo. La decisión y la firma son del abogado.`;
-function buildContext(e, docTexts, q) {
-  const frags = retrieve(e, docTexts, q, 4);
-  let t = `FECHA DE HOY: ${todayISO()}\n\n=== MEMORIA DEL EXPEDIENTE ===\n${memoryText(e)}`;
-  if (frags.length) t += `\n\n=== FRAGMENTOS DE DOCUMENTOS (texto extraído en el equipo del abogado) ===\n` + frags.map(f => `--- ${f.name} ---\n${f.text}`).join('\n\n');
-  return { text: t, frags };
+// o.memoria / o.docs: lo que el abogado deja leer al agente (chips de la caja, v0.6 · F3).
+// o.citados: documentos y movimientos citados con @ (van aunque los documentos estén desactivados: el abogado los pidió).
+function buildContext(e, docTexts, q, o = {}) {
+  const { memoria = true, docs = true, citados = { docs: [], movs: [] } } = o;
+  const frags = [], seen = new Set(), add = f => { const k = f.name + '|' + f.text.slice(0, 80); if (!seen.has(k)) { seen.add(k); frags.push(f); } };
+  if (citados.docs.length) retrieve({ ...e, docs: e.docs.filter(d => citados.docs.includes(d.id)) }, docTexts, q, 2 * citados.docs.length).forEach(add);
+  if (docs) retrieve(e, docTexts, q, 4).forEach(add);
+  let t = `FECHA DE HOY: ${todayISO()}\n\n=== MEMORIA DEL EXPEDIENTE ===\n${memoria ? memoryText(e) : '(En esta consulta el abogado no compartió la memoria del expediente.)'}`;
+  const movs = e.movimientos.filter(v => citados.movs.includes(v.id));
+  if (movs.length) t += `\n\n=== MOVIMIENTOS CITADOS POR EL ABOGADO ===\n` + movs.map(v => `- ${v.fecha || 's/f'}: ${v.acto}${v.sumilla ? '. ' + v.sumilla : ''}`).join('\n');
+  if (frags.length) t += `\n\n=== FRAGMENTOS DE DOCUMENTOS (texto extraído en el equipo del abogado) ===\n` + frags.slice(0, 6).map(f => `--- ${f.name} ---\n${f.text}`).join('\n\n');
+  return { text: t, frags: frags.slice(0, 6) };
 }
 function parseJSONLoose(s) {
   let t = String(s || '').replace(/```(?:json)?/gi, '').trim();

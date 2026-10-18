@@ -87,6 +87,7 @@ folio/
 - Citas en línea: `checkCitations()` devuelve `raw` (texto normalizado con `citeText`); `citasEnLinea()` pone cada chip al final del párrafo o ítem que la contiene y deja el resto debajo (`.fichas`).
 - Cada respuesta guarda `meta.frags` (documentos leídos) y `meta.secciones` (partes de la memoria enviadas) para "Leyó…" y "el agente aún no lo leyó".
 - Movimientos nuevos guardan `addedAt` (para "Desde tu última visita").
+- Caja (F3): `prepararEnvio(text)` arma la consulta una sola vez (chips `S.ctx`, citas `@«…»` con `citadosEn`, planner, `system0`, historial); `vistaPrevia()` y `sendChat()` usan ese mismo armado, así la vista previa es lo que sale. `abrirEnvio()` es la ventana del prototipo (`#velo-envio`, promesa); `reviewPayload()` también la usa para memoria y CEJ. Menú `@` y `/`: `actualizarMenu`, `elegirMenu`, `teclaMenu`, `acciones(e)`.
 
 ## Diseño visual (v0.5, "el expediente primero" — spec: `process/specs/rediseno-ux-v0.5.md`; la estructura la reemplaza la v0.6)
 - Paleta del logo: azul marino + teal. Claro: fondo `#F7F5F0`, hoja `#FFFFFF`, tinta `#0B1220`, acento `#0F766E`. Oscuro: fondo `#0B1220`, superficie `#111B2A`, tinta `#F4F1EA`, acento `#35C7B3`. El teal (`--accent`) es solo para acción principal, activo, foco, enlaces e identidad.

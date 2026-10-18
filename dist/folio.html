@@ -731,7 +731,7 @@ details.guide code{font-family:var(--type);font-size:.85em;background:var(--shee
 .v6 .menu{position:absolute;left:14px;bottom:calc(100% + 6px);width:330px;background:var(--sheet);border:1px solid var(--rule-strong);border-radius:12px;box-shadow:var(--shadow-caja);padding:6px;z-index:20}
 .v6 .menu .t{padding:6px 8px;font-size:12px;color:var(--faint)}
 .v6 .menu button{display:grid;width:100%;text-align:left;padding:7px 8px;border-radius:8px;font-size:14px}
-.v6 .menu button:hover{background:var(--hover)}
+.v6 .menu button:hover,.v6 .menu button.on{background:var(--hover)}   /* .on: elegido con el teclado */
 .v6 .menu button small{font-size:12px;color:var(--faint)}
 .v6 .menu .num{font-size:13px}
 
@@ -1328,11 +1328,18 @@ Reglas:
 4. Los datos personales pueden estar reemplazados por marcadores como [PERSONA_1], [DOC_1] o [DNI_1]. Úsalos tal cual y no intentes adivinar los datos reales.
 5. Responde en español del Perú, claro y directo, con viñetas cuando ayude. Si preparas un borrador de escrito, usa la estructura habitual peruana (sumilla, destinatario, datos del expediente, petitorio, fundamentos, medios probatorios si corresponde, anexos) y deja entre corchetes lo que el abogado debe completar.
 6. Todo lo que produces es un borrador de apoyo. La decisión y la firma son del abogado.`;
-function buildContext(e, docTexts, q) {
-  const frags = retrieve(e, docTexts, q, 4);
-  let t = `FECHA DE HOY: ${todayISO()}\n\n=== MEMORIA DEL EXPEDIENTE ===\n${memoryText(e)}`;
-  if (frags.length) t += `\n\n=== FRAGMENTOS DE DOCUMENTOS (texto extraído en el equipo del abogado) ===\n` + frags.map(f => `--- ${f.name} ---\n${f.text}`).join('\n\n');
-  return { text: t, frags };
+// o.memoria / o.docs: lo que el abogado deja leer al agente (chips de la caja, v0.6 · F3).
+// o.citados: documentos y movimientos citados con @ (van aunque los documentos estén desactivados: el abogado los pidió).
+function buildContext(e, docTexts, q, o = {}) {
+  const { memoria = true, docs = true, citados = { docs: [], movs: [] } } = o;
+  const frags = [], seen = new Set(), add = f => { const k = f.name + '|' + f.text.slice(0, 80); if (!seen.has(k)) { seen.add(k); frags.push(f); } };
+  if (citados.docs.length) retrieve({ ...e, docs: e.docs.filter(d => citados.docs.includes(d.id)) }, docTexts, q, 2 * citados.docs.length).forEach(add);
+  if (docs) retrieve(e, docTexts, q, 4).forEach(add);
+  let t = `FECHA DE HOY: ${todayISO()}\n\n=== MEMORIA DEL EXPEDIENTE ===\n${memoria ? memoryText(e) : '(En esta consulta el abogado no compartió la memoria del expediente.)'}`;
+  const movs = e.movimientos.filter(v => citados.movs.includes(v.id));
+  if (movs.length) t += `\n\n=== MOVIMIENTOS CITADOS POR EL ABOGADO ===\n` + movs.map(v => `- ${v.fecha || 's/f'}: ${v.acto}${v.sumilla ? '. ' + v.sumilla : ''}`).join('\n');
+  if (frags.length) t += `\n\n=== FRAGMENTOS DE DOCUMENTOS (texto extraído en el equipo del abogado) ===\n` + frags.slice(0, 6).map(f => `--- ${f.name} ---\n${f.text}`).join('\n\n');
+  return { text: t, frags: frags.slice(0, 6) };
 }
 function parseJSONLoose(s) {
   let t = String(s || '').replace(/```(?:json)?/gi, '').trim();
@@ -1797,7 +1804,7 @@ const S = {
   visitaPrevia: null,   // fecha de la visita anterior al expediente abierto ("Desde tu última visita")
   // v0.6 · tres zonas: vista central, ficha (abierta/cerrada, pestaña y modo), barra y hoja en el celular, chips de la caja
   vista: 'inicio', vistaPrev: null, ficha: 'abierta', fichaTab: 'ficha', fichaModo: 'ficha', fuente: null, borrador: null,
-  sideOpen: false, fichaMovil: false, ctx: { memoria: true, docs: true, biblioteca: true }
+  sideOpen: false, fichaMovil: false, ctx: { memoria: true, docs: true, biblioteca: true }, menu: null
 };
 const root = () => $('#root');
 // Logo de Folio (imagen incluida en el HTML por build.py, variante clara u oscura según el tema) + insignia Beta
@@ -2046,6 +2053,7 @@ async function doUnlock(pass) {
   } catch (e) { btn.disabled = false; err.textContent = e instanceof FolioError ? e.message : 'No se pudo abrir la bóveda.'; }
 }
 function lockNow(msg) {
+  cerrarEnvio(false); S.menu = null;
   if (S.sending && S.abort) S.abort.abort();
   Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, consent: null, updateHidden: false, screen: 'lock', vista: 'inicio', sideOpen: false, fichaMovil: false });
   closeDialog(); render(); if (msg) toast(msg);
@@ -2415,7 +2423,8 @@ function cajaHTML(donde) {
   const chips = [chip('memoria', 'Memoria'), e.docs.length ? chip('docs', plural(e.docs.length, 'documento', 'documentos')) : '', Lib.installed() ? chip('biblioteca', 'Biblioteca') : ''].join('');
   const ph = donde === 'inicio' ? '¿Qué necesitas hoy en este expediente?' : 'Escribe al agente · @ para citar un documento · / para acciones';
   return `<form class="caja" data-form="chat" data-donde="${donde}">
-    <textarea id="q" rows="1" placeholder="${ph}" aria-label="Escribe al agente"${S.sending ? ' disabled' : ''}></textarea>
+    <div class="menu" id="menu-caja" role="listbox" aria-label="Sugerencias" hidden></div>
+    <textarea id="q" rows="1" placeholder="${ph}" aria-label="Escribe al agente" autocomplete="off"${S.sending ? ' disabled' : ''}></textarea>
     <div class="fila">
       <div class="chips">${chips}</div>
       <button type="button" class="destino" data-action="destino" title="Ver lo que se enviará">${ic('candado')}${esc(s.provider === 'custom' ? 'Servidor propio' : provLabel(s.provider))}<span class="modelo">· <span class="num">${esc(s.model.split('/').pop())}</span></span></button>
@@ -2723,16 +2732,17 @@ function msgHTML(m, i) {
   const { html, resto } = citasEnLinea(md(m.content), m.citas);
   const viejo = m.citas?.age >= NORMAS_STALE_ALERT ? `<div class="verif">${ic('aviso')}<span>Tu biblioteca legal tiene ${m.citas.age} días sin actualizarse: puede no incluir cambios recientes.</span></div>` : '';
   const plazo = PLAZO_RE.test(m.content) ? `<div class="verif">${ic('aviso')}<span>Folio no calcula plazos: verifica la fecha en la resolución y en tu casilla antes de anotarlo.</span></div>` : '';
-  return `<div class="resp">${leyoHTML(m)}${html}${resto ? `<div class="fichas">${resto}</div>` : ''}${plazo}${viejo}${ESCRITO_RE.test(m.content) ? borrHTML(m, i) : ''}${reciboHTML(m)}</div>`;
+  return `<div class="resp">${leyoHTML(m)}${html}${resto ? `<div class="fichas">${resto}</div>` : ''}${plazo}${viejo}${ESCRITO_RE.test(m.content) ? borrHTML(m, i) : ''}${reciboHTML(m, i)}</div>`;
 }
 /* "Leyó la memoria, 2 documentos y 3 artículos ▸": se despliega con cada fuente */
 function leyoHTML(m) {
   const t = m.meta; if (!t) return '';
   const docs = [...new Set(t.frags || [])], arts = t.normas || [];
-  const partes = ['<u>la memoria</u>'];
+  const partes = t.memoria === false ? [] : ['<u>la memoria</u>'];
   if (docs.length) partes.push(`<u>${plural(docs.length, 'documento', 'documentos')}</u>`);
   if (arts.length) partes.push(`<u>${plural(arts.length, 'artículo', 'artículos')}</u>`);
-  const lista = [`<span><b>Memoria:</b> ${t.secciones?.length ? esc(listaY(t.secciones)) : 'la del expediente'}</span>`];
+  if (!partes.length) return '';
+  const lista = t.memoria === false ? [] : [`<span><b>Memoria:</b> ${t.secciones?.length ? esc(listaY(t.secciones)) : 'la del expediente'}</span>`];
   if (docs.length) lista.push(`<span><b>Documentos:</b> ${docs.map(esc).join(' · ')}</span>`);
   if (arts.length) {
     const por = {}; arts.forEach(s => { const [id, n] = s.split(' '); (por[id] = por[id] || []).push(n); });
@@ -2766,11 +2776,11 @@ function citasEnLinea(html, citas) {
   return { html: tpl.innerHTML, resto: resto.join('') };
 }
 /* Recibo: a quién se envió, con qué modelo de terceros y cuántos datos se reemplazaron */
-function reciboHTML(m) {
+function reciboHTML(m, i) {
   const t = m.meta; if (!t) return '';
   const modelo = OR_RECOMMENDED.find(r => r.id === t.model)?.name || String(t.model || '').split('/').pop();
   const donde = t.provider === 'custom' ? 'Procesado en tu servidor propio' : `Enviado a ${esc(provLabel(t.provider))} con tu cuenta`;
-  return `<div class="recibo">${donde} · ${esc(modelo)} · ${t.pseudo ? plural(t.replaced, 'dato reemplazado', 'datos reemplazados') : 'sin reemplazo de datos'} · <button data-action="ver-envio">Ver lo que se envió</button></div>`;
+  return `<div class="recibo">${donde} · ${esc(modelo)} · ${t.pseudo ? plural(t.replaced, 'dato reemplazado', 'datos reemplazados') : 'sin reemplazo de datos'} · <button data-action="ver-envio" data-i="${i}">Ver lo que se envió</button></div>`;
 }
 /* Borrador listo: tarjeta "Abrir al lado" → Ficha en modo Borrador */
 function borrTitulo(m) {
@@ -2817,46 +2827,165 @@ async function deleteChat() {
   await saveExp(); render(); toast('Conversación borrada.');
 }
 
-function highlightTokens(s) { return esc(s).replace(/\[(?:PERSONA|DOC|CORREO|RUC|TELEFONO|DNI|DIRECCION)_\d+\]/g, t => `<mark>${t}</mark>`); }
-async function reviewPayload(system, messages, P, kind, plannerText = null, withNormas = false) {
-  if (!S.settings.review) return true;
-  const s = S.settings;
-  let instr = system, data = '';
-  const cut = system.indexOf('\n\nFECHA DE HOY:');
-  if (cut >= 0) { instr = system.slice(0, cut); data = system.slice(cut + 2); }
-  const convo = messages.map(m => `[${m.role === 'user' ? 'Abogado' : 'Agente'}]\n${m.content}`).join('\n\n');
-  const r = await askDialog({ title: 'Revisa lo que se enviará', wide: true, ok: 'Enviar', collect: d => ({ skip: $('#rv-skip', d).checked }),
-    body: `<p>Este es el texto exacto que saldrá de tu equipo hacia <strong>${esc(provLabel(s.provider))}</strong> (${esc(s.model)})${PROVIDERS[s.provider]?.abroad ? ', con servidores fuera del Perú' : ''}. ${P.enabled ? `Se reemplazaron <strong>${P.count()}</strong> datos personales; aparecen resaltados.` : '<strong>El reemplazo de datos está desactivado.</strong>'}</p>
-      ${P.enabled ? '<p class="small muted">Revisa si queda algún nombre, apodo o dato que identifique a alguien. Si lo ves, cancela y agrégalo como parte en la memoria.</p>' : ''}
-      ${plannerText ? `<p class="payload-label">1. Búsqueda de normas (consulta corta previa)</p><div class="payload">${highlightTokens(plannerText)}</div>` : ''}
-      <p class="payload-label">${plannerText ? '2. ' : ''}Consulta y datos del caso</p>
-      <div class="payload">${highlightTokens(convo + (data ? '\n\n' + data : ''))}</div>
-      ${withNormas ? '<p class="small muted" style="margin-top:.5rem">Al final se agregarán los artículos encontrados en tu biblioteca legal: textos públicos de normas peruanas, sin datos del caso.</p>' : ''}
-      <details class="instr"><summary>Instrucciones fijas de Folio para el modelo (no contienen datos del caso)</summary><div class="payload">${highlightTokens(instr)}</div></details>
-      <label class="row small" style="margin-top:.8rem"><input type="checkbox" id="rv-skip"> No volver a mostrar antes de cada envío (puedes reactivarlo en Ajustes)</label>` });
-  if (!r) return false;
-  if (r.skip) { S.settings.review = false; await saveSettings(); }
-  return true;
+/* ============================================================
+   Caja de texto (v0.6 · F3): chips, @ para citar, / para acciones, vista previa exacta del envío
+   ============================================================ */
+// Menciones con @: @«nombre del documento» o @«Movimiento del dd/mm/aaaa · acto»
+const movLabel = v => `Movimiento del ${fmtDate(v.fecha)} · ${v.acto}`;
+function citadosEn(e, text) {
+  const out = { docs: [], movs: [] };
+  for (const [, n] of String(text).matchAll(/@«([^»\n]+)»/g)) {
+    const d = e.docs.find(x => x.name === n); if (d) { if (!out.docs.includes(d.id)) out.docs.push(d.id); continue; }
+    const v = e.movimientos.find(x => movLabel(x) === n); if (v && !out.movs.includes(v.id)) out.movs.push(v.id);
+  }
+  return out;
 }
+// Acciones con nombre jurídico. Cada una recuerda verificar plazos y normas.
+const VERIFICA = 'Recuérdame verificar los plazos en la resolución y en mi casilla, y las normas que cites.';
+function acciones(e) {
+  const penal = e.especialidad === 'Penal';
+  return [
+    ['/absolver-traslado', penal ? 'Esquema para absolver el traslado de la acusación' : 'Esquema para absolver un traslado',
+      { texto: `Prepara el esquema del escrito para absolver el traslado${penal ? ' de la acusación' : ''}: observaciones, fundamentos y medios probatorios. Deja entre corchetes lo que debo completar. ${VERIFICA}` }],
+    ['/resumir-documento', 'Resumen de un documento del expediente', { texto: 'Resume este documento del expediente en pocas líneas: qué pide o resuelve, fechas y puntos clave. ' + VERIFICA + ' @', arroba: true }],
+    ['/pegar-cej', 'Ordenar movimientos copiados del CEJ', { cej: true }],
+    ['/preparar-audiencia', penal ? 'Puntos para la audiencia de control de acusación' : 'Puntos para preparar la próxima audiencia',
+      { texto: `Prepara los puntos para la audiencia${penal ? ' de control de acusación' : ''}: qué plantear, en qué orden y qué pruebas llevar. ${VERIFICA}` }]
+  ];
+}
+function cerrarMenu() { S.menu = null; const m = $('#menu-caja'); if (m) { m.hidden = true; m.innerHTML = ''; } }
+function pintarMenu() {
+  const m = $('#menu-caja'), mn = S.menu; if (!m || !mn) return;
+  const t = mn.tipo === '/' ? 'Acciones · cada una recuerda verificar plazos y normas' : mn.items.length ? 'Citar en tu mensaje' : 'No hay documentos ni movimientos que coincidan';
+  m.innerHTML = `<div class="t">${t}</div>${mn.items.map((x, i) => `<button type="button" class="${i === mn.sel ? 'on' : ''}" data-action="menu-pick" data-i="${i}" role="option" aria-selected="${i === mn.sel}"><span class="${mn.tipo === '/' ? 'num' : ''}">${esc(x[0])}</span><small>${esc(x[1])}</small></button>`).join('')}`;
+  m.hidden = false;
+}
+function actualizarMenu(q) {
+  const e = S.exp, v = q.value, antes = v.slice(0, q.selectionStart);
+  if (/^\/\S*$/.test(v)) {
+    const f = v.toLowerCase();
+    S.menu = { tipo: '/', items: acciones(e).filter(a => a[0].startsWith(f)), sel: 0 };
+    if (!S.menu.items.length) return cerrarMenu();
+    return pintarMenu();
+  }
+  const m = antes.match(/(^|\s)@([^\s@«»]*)$/);
+  if (!m) return cerrarMenu();
+  const f = norm(m[2]), docs = [...e.docs].sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''));
+  const items = [...docs.map(d => [d.name, [d.type === 'pdf' && d.pages ? `${d.pages} págs.` : '', ddmm(d.addedAt)].filter(Boolean).join(' · ')]),
+    ...sortedMovs(e).slice(0, 6).map(x => [movLabel(x), x.sumilla || 'movimiento del expediente'])].filter(x => !f || norm(x[0]).includes(f)).slice(0, 8);
+  S.menu = { tipo: '@', items, sel: 0, desde: antes.length - m[2].length - 1 };
+  pintarMenu();
+}
+async function elegirMenu(i) {
+  const q = $('#q'), mn = S.menu; if (!q || !mn || !mn.items[i]) return;
+  if (mn.tipo === '@') {
+    const fin = q.selectionStart, ins = `@«${mn.items[i][0]}» `;
+    q.value = q.value.slice(0, mn.desde) + ins + q.value.slice(fin);
+    const pos = mn.desde + ins.length; cerrarMenu(); q.focus(); q.setSelectionRange(pos, pos); return;
+  }
+  const accion = mn.items[i][2]; cerrarMenu();
+  if (accion.cej) { q.value = ''; await pasteCEJ(); return; }
+  q.value = accion.texto; q.focus(); q.setSelectionRange(q.value.length, q.value.length);
+  if (accion.arroba) actualizarMenu(q);
+}
+function teclaMenu(ev) {
+  const mn = S.menu; if (!mn) return false;
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { if (!mn.items.length) return false; mn.sel = (mn.sel + (ev.key === 'ArrowDown' ? 1 : mn.items.length - 1)) % mn.items.length; pintarMenu(); return true; }
+  if ((ev.key === 'Enter' || ev.key === 'Tab') && !ev.shiftKey && mn.items.length) { elegirMenu(mn.sel); return true; }
+  if (ev.key === 'Escape') { cerrarMenu(); return true; }
+  return false;
+}
+
+/* Modelo de terceros, dicho siempre como tal (D-41) */
+const FABRICANTE = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', deepseek: 'DeepSeek', 'meta-llama': 'Meta', mistralai: 'Mistral', 'x-ai': 'xAI', qwen: 'Alibaba', moonshotai: 'Moonshot AI' };
+const nombreModelo = id => OR_RECOMMENDED.find(r => r.id === id)?.name || String(id || '').split('/').pop();
+function modeloTercero(provider, model) {
+  if (provider === 'custom') return `Modelo en tu servidor propio: ${model}. Nada sale de tu red.`;
+  const fab = provider === 'openrouter' ? FABRICANTE[String(model).split('/')[0]] : provider === 'openai' ? 'OpenAI' : provider === 'anthropic' ? 'Anthropic' : '';
+  return `Modelo de terceros: ${nombreModelo(model)}${fab ? ` de ${fab}` : ''}${provider === 'openrouter' ? ', vía OpenRouter' : ''}, con tu cuenta. Folio no tiene servidores: lo que envías va directo de tu equipo al proveedor.`;
+}
+function reemplazosEn(P, texto) { return P.enabled ? Object.entries(P.map).filter(([tok]) => texto.includes(tok)).map(([tok, real]) => [real, tok]) : []; }
+
+/* Vista previa del envío: la misma ventana antes de enviar (si "Revisar siempre" está activo), desde la píldora y en "Ver lo que se envió" */
+let envioPend = null;
+function cerrarEnvio(v) { const p = envioPend; envioPend = null; $('#velo-envio')?.remove(); if (p) p(v); }
+function abrirEnvio({ antes = true, provider, model, n, texto, reemp = [], instr = '', puedeEnviar = true }) {
+  cerrarEnvio(false); cerrarMenu();
+  const dest = provider === 'custom' ? 'tu servidor propio' : `${provLabel(provider)} con tu cuenta`;
+  const sub = n == null ? 'Este es el texto que salió de tu equipo.' : n > 0 ? `Folio reemplazó ${plural(n, 'dato personal', 'datos personales')} en tu equipo antes de enviar. Este es el texto exacto que ${antes ? 'sale' : 'salió'}.`
+    : S.settings.pseudo ? `Folio no encontró datos personales que reemplazar. Este es el texto exacto que ${antes ? 'sale' : 'salió'}.` : `El reemplazo de datos está desactivado: el proveedor recibe los nombres reales. Este es el texto exacto que ${antes ? 'sale' : 'salió'}.`;
+  const v = $('#v6'); if (!v) return Promise.resolve(false);
+  v.insertAdjacentHTML('beforeend', `<div class="velo" id="velo-envio">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="envio-t">
+      <div class="mc"><div><h2 id="envio-t">Lo que se ${antes ? 'enviará' : 'envió'} a ${esc(dest)}</h2><p>${esc(sub)}</p></div><button class="ib" data-action="envio-cerrar" aria-label="Cerrar">${ic('cerrar')}</button></div>
+      <div class="envio">${highlightTokens(texto)}</div>
+      ${reemp.length ? `<details class="reemp"><summary>Ver los ${plural(reemp.length, 'reemplazo', 'reemplazos')} (solo los ves tú)</summary><table>${reemp.map(([r, t]) => `<tr><td>${esc(r)}</td><td>${esc(t)}</td></tr>`).join('')}</table></details>` : ''}
+      ${instr ? `<details class="reemp"><summary>Ver las instrucciones fijas de Folio para el modelo (no contienen datos del caso)</summary><div class="envio" style="margin:6px 0 0">${esc(instr)}</div></details>` : ''}
+      <p class="tercero">${esc(modeloTercero(provider, model))}</p>
+      <div class="mp">${antes
+        ? `<label><input type="checkbox" id="envio-revisar" ${S.settings.review ? 'checked' : ''}>Revisar siempre antes de enviar</label><button class="pb" data-action="envio-cerrar">Cancelar</button><button class="pb prim" data-action="envio-enviar" ${puedeEnviar ? '' : 'disabled title="Escribe tu consulta primero"'}>Enviar</button>`
+        : `<label></label><button class="pb prim" data-action="envio-cerrar">Cerrar</button>`}</div>
+    </div></div>`);
+  setTimeout(() => $(antes && puedeEnviar ? '[data-action="envio-enviar"]' : '#velo-envio [data-action="envio-cerrar"]')?.focus(), 30);
+  return new Promise(r => { envioPend = r; });
+}
+function highlightTokens(s) { return esc(s).replace(/\[(?:PERSONA|DOC|CORREO|RUC|TELEFONO|DNI|DIRECCION)_\d+\]/g, t => `<mark>${t}</mark>`); }
+// Datos del caso del texto de sistema (lo que sigue a "FECHA DE HOY"); las instrucciones fijas van aparte
+function partirSistema(system) { const c = system.indexOf('\n\nFECHA DE HOY:'); return c >= 0 ? [system.slice(0, c), system.slice(c + 2)] : [system, '']; }
+// Revisión antes de enviar (memoria y CEJ): misma ventana del prototipo
+async function reviewPayload(system, messages, P) {
+  if (!S.settings.review) return true;
+  const [instr, data] = partirSistema(system), texto = [data, ...messages.map(m => m.content)].filter(Boolean).join('\n\n');
+  return abrirEnvio({ provider: S.settings.provider, model: S.settings.model, n: P.enabled ? reemplazosEn(P, texto).length : 0, texto, reemp: reemplazosEn(P, texto), instr });
+}
+
+/* Armado único de la consulta: lo usan la vista previa y el envío, así lo que se muestra es lo que sale */
 function historyFor(e) {
   const h = activeChat(e).mensajes.filter(m => m.role === 'user' || m.role === 'assistant').slice(-8).map(m => ({ role: m.role, content: m.content }));
   while (h.length && h[0].role !== 'user') h.shift();
   const out = []; for (const m of h) { if (out.length && out[out.length - 1].role === m.role) out[out.length - 1].content += '\n\n' + m.content; else out.push({ ...m }); }
   return out;
 }
-async function sendChat(text) {
-  const e = S.exp, s = S.settings; text = text.trim(); if (!text || S.sending) return;
-  const P = makePseudo(e, s.pseudo);
-  const ctx = buildContext(e, S.docTexts, text);
-  await Lib.load(); const lib = Lib.installed();
-  const usePlanner = lib && s.legalPlanner !== false;
+function prepararEnvio(text) {
+  const e = S.exp, s = S.settings, c = S.ctx, P = makePseudo(e, s.pseudo);
+  const docs = c.docs && e.docs.length > 0, citados = citadosEn(e, text);
+  const ctx = buildContext(e, S.docTexts, text, { memoria: c.memoria, docs, citados });
+  const lib = Lib.installed() && c.biblioteca, usePlanner = lib && s.legalPlanner !== false;
   const plannerSystem = PLANNER_PROMPT + normasCatalogText();
-  const plannerUser = usePlanner ? P.apply(`Especialidad: ${e.especialidad || 'sin indicar'}\nMateria: ${e.materia || 'sin indicar'}\nEstado procesal: ${e.estado || 'sin indicar'}\n\nConsulta del abogado:\n${text}`) : '';
+  const plannerUser = usePlanner ? P.apply(`Especialidad: ${e.especialidad || 'sin indicar'}\nMateria: ${e.materia || 'sin indicar'}\nEstado procesal: ${c.memoria ? e.estado || 'sin indicar' : 'sin indicar'}\n\nConsulta del abogado:\n${text}`) : '';
   const system0 = P.apply(SYSTEM_PROMPT + (lib ? LEGAL_RULES : '') + '\n\n' + ctx.text);
   const hist = historyFor(e).map(m => ({ role: m.role, content: P.apply(m.content) }));
-  let messages = [...hist, { role: 'user', content: P.apply(text) }];
+  const messages = [...hist, { role: 'user', content: P.apply(text) }];
   if (messages.length >= 2 && messages[messages.length - 2].role === 'user') { const last = messages.pop(); messages[messages.length - 1].content += '\n\n' + last.content; }
-  if (!(await reviewPayload(system0, messages, P, 'chat', usePlanner ? plannerUser : null, lib))) return;
+  return { e, s, P, ctx, lib, usePlanner, plannerSystem, plannerUser, system0, messages, text };
+}
+// Texto que se muestra: datos del caso, normas, conversación anterior y la pregunta (con marcadores)
+function textoEnvio(x, normas = null, historial = true) {
+  const [, data] = partirSistema(x.system0), prev = x.messages.slice(0, -1), q = x.messages[x.messages.length - 1].content;
+  const corte = Lib.manifest?.actualizadoAl ? ` (biblioteca al ${fmtDate(Lib.manifest.actualizadoAl)})` : '';
+  const partes = [data];
+  if (x.lib) partes.push(`=== NORMAS VIGENTES${corte} ===\n${normas ?? 'Folio agregará los artículos de tu biblioteca que pida la búsqueda de normas: textos públicos, sin datos del caso.'}`);
+  if (prev.length) partes.push(historial ? `=== CONVERSACIÓN ANTERIOR ===\n${prev.map(m => `[${m.role === 'user' ? 'Abogado' : 'Agente'}]\n${m.content}`).join('\n\n')}` : `=== CONVERSACIÓN ANTERIOR ===\n(${plural(prev.length, 'mensaje anterior', 'mensajes anteriores')} de esta conversación)`);
+  partes.push(`=== PREGUNTA ===\n${q}`);
+  if (x.usePlanner && normas == null) partes.push(`=== BÚSQUEDA DE NORMAS (consulta corta que sale antes, sin la memoria) ===\n${x.plannerUser}`);
+  return partes.join('\n\n');
+}
+async function vistaPrevia(x, { puedeEnviar = true } = {}) {
+  const texto = textoEnvio(x), reemp = reemplazosEn(x.P, texto);
+  return abrirEnvio({ provider: x.s.provider, model: x.s.model, n: x.P.enabled ? reemp.length : 0, texto, reemp, instr: partirSistema(x.system0)[0], puedeEnviar });
+}
+const ENVIO_GUARDADOS = 10;   // "Ver lo que se envió" se guarda (cifrado) en las 10 respuestas más recientes de cada conversación
+function verEnvio(m) {
+  const t = m.meta || {}, v = m.envio;
+  abrirEnvio({ antes: false, provider: t.provider, model: t.model, n: v ? v.reemp.length : null,
+    texto: v ? v.texto : 'El detalle del envío se guarda solo para las respuestas más recientes de cada conversación.', reemp: v ? v.reemp : [] });
+}
+async function sendChat(text, { revisado = false } = {}) {
+  text = text.trim(); if (!text || S.sending) return;
+  await Lib.load();
+  const x = prepararEnvio(text), { e, s, P, ctx, lib, usePlanner, plannerSystem, plannerUser, system0, messages } = x, leyoMemoria = S.ctx.memoria;
+  if (!revisado && s.review && !(await vistaPrevia(x))) return;
+  cerrarMenu();
   const chat = activeChat(e), push = m => { chat.mensajes.push(m); chat.updatedAt = new Date().toISOString(); };
   if (!chat.titulo) chat.titulo = autoTitle(text);
   push({ role: 'user', content: text, at: new Date().toISOString() });
@@ -2875,7 +3004,10 @@ async function sendChat(text) {
     let pending = null;
     const full = await llm({ cfg: s, system, messages, stream: true, maxTokens: 6000, signal: S.abort.signal, onDelta: t => { pending = t; requestAnimationFrame(() => { if (pending == null) return; const el = $('#streaming'); if (el) { el.innerHTML = md(P.restore(pending)); scrollHilo(); } pending = null; }); } });
     const content = P.restore(full).trim() || '(El modelo no devolvió texto.)';
-    push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count(), normas: arts.map(({ id, a }) => id + ' ' + a.n), frags: [...new Set(ctx.frags.map(f => f.name))], secciones: memSecciones(e) }, citas: checkCitations(content) });
+    const enviado = textoEnvio(x, lib ? arts.map(({ id, a }) => `Art. ${a.n} ${Lib.meta(id)?.corto || id}`).join(' · ') || '(ningún artículo)' : null, false);
+    push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count(), normas: arts.map(({ id, a }) => id + ' ' + a.n), frags: [...new Set(ctx.frags.map(f => f.name))], memoria: leyoMemoria, secciones: leyoMemoria ? memSecciones(e) : [] },
+      envio: { texto: enviado, reemp: reemplazosEn(P, enviado) }, citas: checkCitations(content) });
+    chat.mensajes.filter(m => m.envio).slice(0, -ENVIO_GUARDADOS).forEach(m => delete m.envio);
     await logSend('Consulta', chars, P);
   } catch (err) {
     if (err.name === 'AbortError') push({ role: 'error', content: 'Detuviste la respuesta.' });
@@ -3108,6 +3240,8 @@ function exportAudit() {
    ============================================================ */
 function setPath(obj, path, val) { const ks = path.split('.'); let o = obj; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
 document.addEventListener('click', async ev => {
+  if (ev.target.id === 'velo-envio') { cerrarEnvio(false); return; }
+  if (S.menu && !ev.target.closest('#menu-caja, #q')) cerrarMenu();
   const db = ev.target.closest('[data-dlg]'); if (db) { onDlgButton(db); return; }
   const a = ev.target.closest('[data-action]'); if (!a) return;
   const act = a.dataset.action, id = a.dataset.id;
@@ -3155,7 +3289,13 @@ document.addEventListener('click', async ev => {
       case 'borr-pedir': S.fichaModo = 'ficha'; renderFicha(); layout(); $('#q')?.focus(); break;
       case 'leyo': { const l = a.nextElementSibling; l.hidden = !l.hidden; a.lastChild.textContent = l.hidden ? ' ▸' : ' ▾'; a.setAttribute('aria-expanded', !l.hidden); break; }
       case 'chip': S.ctx[a.dataset.k] = !S.ctx[a.dataset.k]; a.classList.toggle('on', S.ctx[a.dataset.k]); a.setAttribute('aria-pressed', S.ctx[a.dataset.k]); break;
-      case 'destino': case 'ver-envio': showPrivacy(); break;
+      case 'destino': { const q = $('#q'), v = (q?.value || '').trim(); await Lib.load();
+        if (await vistaPrevia(prepararEnvio(v || '(tu consulta)'), { puedeEnviar: !!v })) { const f = q.closest('form'); if (f.dataset.donde === 'inicio') await irAChatNuevo(); await sendChat(v, { revisado: true }); }
+        break; }
+      case 'ver-envio': { const m = activeChat(S.exp).mensajes[+a.closest('[data-i]')?.dataset.i]; if (m) verEnvio(m); break; }
+      case 'envio-cerrar': cerrarEnvio(false); $('#q')?.focus(); break;
+      case 'envio-enviar': cerrarEnvio(true); break;
+      case 'menu-pick': await elegirMenu(+a.dataset.i); break;
       case 'new-exp': await expForm(null); break;
       case 'edit-exp': await expForm(S.exp); break;
       case 'del-exp': await deleteExp(); break;
@@ -3209,6 +3349,7 @@ document.addEventListener('change', async ev => {
   const t = ev.target;
   try {
     if (t.dataset.onbCheck !== undefined) { S.onb.checks[t.dataset.onbCheck] = t.checked; updateOnbNav(); }
+    else if (t.id === 'envio-revisar') { S.settings.review = t.checked; await saveSettings(); }
     else if (t.hasAttribute('data-reconsent-check')) { const b = $('[data-action="reconsent-accept"]'); if (b) b.disabled = !t.checked; }
     else if (t.hasAttribute('data-onb-pseudo')) S.onb.pseudo = t.checked;
     else if (t.hasAttribute('data-onb-normas')) S.onb.normas = t.checked;
@@ -3228,6 +3369,7 @@ document.addEventListener('change', async ev => {
 });
 document.addEventListener('input', ev => {
   const t = ev.target;
+  if (t.id === 'q' && S.exp) { actualizarMenu(t); return; }
   if (t.dataset.onbField) { S.onb[t.dataset.onbField] = t.value; updateOnbNav(); }
   else if (t.dataset.pf && t.type !== 'checkbox' && t.tagName !== 'SELECT') curCfg()[t.dataset.pf] = t.value;
   else if (t.hasAttribute('data-search')) { S.filter = t.value; const l = $('#exps'); if (l) l.innerHTML = expsHTML(); }
@@ -3243,10 +3385,12 @@ document.addEventListener('submit', async ev => {
 });
 document.addEventListener('keydown', ev => {
   const t = ev.target;
+  if (t.id === 'q' && !ev.isComposing && teclaMenu(ev)) { ev.preventDefault(); return; }
   if (t.id === 'q' && ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); t.closest('form')?.requestSubmit(); }
   if (t.classList?.contains('dropzone') && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); $('#file-docs').click(); }
   if (ev.key === 'Enter' && (t.id === 'npend' || t.id === 'nplazo-d' || t.id === 'nparte-n' || t.id === 'nparte-d')) { ev.preventDefault(); $(`[data-action="${t.id === 'npend' ? 'add-pend' : t.id === 'nplazo-d' ? 'add-plazo' : 'add-parte'}"]`)?.click(); }
   // Ctrl K: buscar expediente · Esc: cierra la barra o la hoja de la ficha en el celular
+  if (envioPend && ev.key === 'Escape') { ev.preventDefault(); cerrarEnvio(false); $('#q')?.focus(); return; }
   if (S.screen !== 'app' || $('#dlg').open) return;
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') {
     ev.preventDefault();

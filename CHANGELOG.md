@@ -1,6 +1,15 @@
 # Changelog — Folio
 
 ## [Sin publicar]
+### Cambiado (v0.6 · F3: caja de texto)
+- Los chips de la caja definen qué sale: sin "Memoria" no se envía la memoria del expediente; sin "Documentos" no se envían fragmentos; sin "Biblioteca" no hay búsqueda de normas ni artículos. "Leyó…" muestra lo que realmente se envió.
+- `@` cita un documento o un movimiento (`@«nombre»`): su texto va en la consulta aunque los documentos estén desactivados. Se elige con el mouse o con ↑ ↓ y Enter.
+- `/` abre acciones con nombre jurídico: /absolver-traslado, /resumir-documento, /pegar-cej y /preparar-audiencia. Cada una pide al agente recordarte verificar plazos y normas.
+- La píldora de destino abre la vista previa exacta del envío: el texto con marcadores (memoria, fragmentos, normas, conversación anterior, pregunta y la búsqueda de normas que sale antes), los reemplazos que solo ves tú, las instrucciones fijas de Folio y el modelo de terceros. "Revisar siempre antes de enviar" se cambia ahí y en Ajustes. La misma ventana reemplaza a la revisión previa anterior (también al actualizar la memoria y al pegar del CEJ).
+- "Ver lo que se envió" bajo cada respuesta muestra el texto que salió (se guarda cifrado en las 10 respuestas más recientes de cada conversación).
+### Pruebas
+- e2e: vista previa, reemplazos, "Ver lo que se envió", chips sin memoria ni biblioteca, cita con @ y acción con /.
+
 ### Cambiado (v0.6 · F2: tres zonas, tal cual el prototipo)
 - Nueva pantalla en tres zonas: a la izquierda los expedientes (buscador con Ctrl K, "Hoy" con contador y el expediente activo con sus conversaciones), al centro el agente en una columna de lectura de 700 px y a la derecha la Ficha del expediente, que se pliega.
 - "Hoy" reúne lo que pide atención en todos los expedientes: plazos propuestos por el agente por confirmar, fechas que registraste (vencidas y de los próximos 14 días) y cambios de memoria por revisar. Recuerda que Folio no calcula plazos.

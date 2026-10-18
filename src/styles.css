@@ -714,7 +714,7 @@ details.guide code{font-family:var(--type);font-size:.85em;background:var(--shee
 .v6 .menu{position:absolute;left:14px;bottom:calc(100% + 6px);width:330px;background:var(--sheet);border:1px solid var(--rule-strong);border-radius:12px;box-shadow:var(--shadow-caja);padding:6px;z-index:20}
 .v6 .menu .t{padding:6px 8px;font-size:12px;color:var(--faint)}
 .v6 .menu button{display:grid;width:100%;text-align:left;padding:7px 8px;border-radius:8px;font-size:14px}
-.v6 .menu button:hover{background:var(--hover)}
+.v6 .menu button:hover,.v6 .menu button.on{background:var(--hover)}   /* .on: elegido con el teclado */
 .v6 .menu button small{font-size:12px;color:var(--faint)}
 .v6 .menu .num{font-size:13px}
 

@@ -37,7 +37,8 @@ Base `folio-mvp` · versión 1 · object store `kv` (clave → valor). Todo regi
   },
   movimientos: [{ id, fecha, acto, sumilla }],
   chats: [{ id, titulo, createdAt, updatedAt, deChat?, resumen?,      // v0.6: varias conversaciones; título local (primeras palabras)
-             mensajes: [{ role:'user'|'assistant'|'error', content, at, meta?:{ provider, model, pseudo, replaced, normas }, citas? }] }],
+             mensajes: [{ role:'user'|'assistant'|'error', content, at, meta?:{ provider, model, pseudo, replaced, normas, frags, memoria, secciones }, citas?, envio?:{ texto, reemp:[[real, marcador]] }, guardado? }] }],
+             // envio: texto que salió (con marcadores) para "Ver lo que se envió"; solo en las 10 respuestas más recientes de cada conversación
   chatActivo,                    // id de la conversación abierta
   ultimaVisita,                  // ISO de la última vez que el abogado abrió el expediente (crearlo cuenta como visita)
   docs: [{ id, name, type:'pdf'|'docx'|'txt', pages, chars, addedAt, scanned? }],
