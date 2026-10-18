@@ -2,6 +2,7 @@
 
 Uso:
     pip install playwright && playwright install chromium
+    pip install axe-playwright-python   # opcional: auditoría de accesibilidad (F6)
     python build.py
     python tests/e2e_test.py
 
@@ -14,6 +15,10 @@ import subprocess
 import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+try:   # F6: auditoría de accesibilidad con axe-core (opcional: pip install axe-playwright-python)
+    from axe_playwright_python.sync_playwright import Axe
+except ImportError:
+    Axe = None
 
 ROOT = Path(__file__).resolve().parent.parent
 URL = (ROOT / "dist" / "folio.html").as_uri()
@@ -45,6 +50,12 @@ def check(cond, msg):
         failures.append(msg)
 
 
+def axe_ok(page, donde):
+    if Axe is None: return
+    v = Axe().run(page, options={"runOnly": ["wcag2a", "wcag2aa", "best-practice"]}).response["violations"]
+    check(not v, f"accesibilidad (axe, WCAG AA): {donde} {[(x['id'], x['nodes'][0]['target']) for x in v] if v else ''}")
+
+
 def handle(route, request):
     url = request.url
     if url.startswith(NORMAS_URL):
@@ -73,6 +84,11 @@ def handle(route, request):
                                       "pendientes_nuevos": ["MOCK-PEND-F4"], "plazos_nuevos": []})
             return route.fulfill(status=200, content_type="application/json",
                                  body=json.dumps({"choices": [{"message": {"content": content}}]}))
+        if "MOCK-AUTO" in body["messages"][-1]["content"]:
+            chunks = ["Anoto lo que me cuentas sobre [PERSONA_2].\n\n", "<memo", "ria>{\"estado\": null, \"hechos_agregar\": \"MOCK-AUTO-HECHO de [PERSONA_2]\",",
+                      " \"pendientes_nuevos\": [\"MOCK-AUTO-PEND\"], \"plazos_nuevos\": []}</memoria>"]
+            sse = "".join("data: " + json.dumps({"choices": [{"delta": {"content": c}}]}) + "\n\n" for c in chunks) + "data: [DONE]\n\n"
+            return route.fulfill(status=200, headers={"content-type": "text/event-stream"}, body=sse)
         if "borrador de escrito" in body["messages"][-1]["content"]:
             chunks = ["SUMILLA: Absuelvo traslado y ofrezco medios probatorios\n\n", "SEÑOR JUEZ DEL JUZGADO DE PAZ LETRADO:\n\n",
                       "[PERSONA_1], en el proceso seguido contra [PERSONA_2], digo:\n\n", "## I. Petitorio\n", "Solicito [precisar el monto de la pensión].\n"]
@@ -222,6 +238,7 @@ with sync_playwright() as p:
     check(pg.inner_text("#cambios [data-action=prop-aplicar]") == "Aplicar 2 cambios" and pg.locator("#cambios .cb.rechazado").count() == 1, "propuestas: ✕ rechaza y descuenta")
     pg.click("#cambios .cb:has-text('MOCK-PEND') [data-action=prop-si]")
     pg.screenshot(path=str(SHOTS / "22-cambios.png"))
+    axe_ok(pg, "conversación con la caja de cambios (escritorio)")
     pg.click("#cambios [data-action=prop-aplicar]"); pg.wait_for_selector("#aviso")
     pg.screenshot(path=str(SHOTS / "23-aplicado.png"))
     check(pg.inner_text("#aviso span") == "Memoria actualizada · 3 cambios" and pg.evaluate("S.exp.memoria.plazos.length") == n_plazos, "propuestas: «Aplicar» guarda los cambios pero no el plazo")
@@ -347,6 +364,18 @@ with sync_playwright() as p:
     pg.screenshot(path=str(SHOTS / "21-sigue.png"))
     pg.evaluate("async()=>{S.settings.contextoMax=60000;await saveSettings()}")
 
+    # F5 · propuestas al terminar una respuesta, dentro de la misma respuesta (sin consulta extra)
+    n_sent = len(sent)
+    pg.fill("#q", "MOCK-AUTO: el demandado cambió de trabajo"); pg.keyboard.press("Enter"); pg.wait_for_selector("#velo-envio")
+    pg.click("[data-action=envio-enviar]"); pg.wait_for_selector("#cambios .cb:has-text('MOCK-AUTO-PEND')", timeout=10000)
+    r = pg.locator("#hilo .resp").last.inner_text()
+    nuevas = [x for x in sent[n_sent:] if "buscador de normas" not in json.dumps(x, ensure_ascii=False)]
+    check(len(nuevas) == 1 and "<memoria>" in nuevas[0]["messages"][0]["content"], "propuestas automáticas: la instrucción va en la misma consulta, sin consulta extra")
+    check("Anoto lo que me cuentas" in r and "memoria>" not in r and "MOCK-AUTO" not in r, "propuestas automáticas: el bloque no se muestra en la respuesta")
+    check("Julio César Huamán Torres" in pg.inner_text("#cambios") and "El agente propone 2 cambios en la memoria" in pg.inner_text("#prop-linea"), "propuestas automáticas: van a la caja de la ficha con los datos reales")
+    check("memoria>" not in pg.evaluate("activeChat(S.exp).mensajes.at(-1).content"), "propuestas automáticas: la respuesta se guarda sin el bloque")
+    pg.click("#cambios [data-action=prop-aplicar]"); pg.wait_for_timeout(200)
+
     pg.click(".pie [data-action=open-settings]"); pg.wait_for_selector(".settings")
     check(v6("vista") == "ajustes" and pg.inner_text("#cab .titulo") == "Ajustes", "ajustes en la zona central")
     check(pg.locator("select[data-setting=contextoMax] option[selected]").get_attribute("value") == "60000", "ajustes: presupuesto de contexto (60 000 recomendado)")
@@ -370,7 +399,7 @@ with sync_playwright() as p:
     pg.fill("input[name=pass]", "clave-incorrecta"); pg.click("[data-form=unlock] button"); pg.wait_for_timeout(1500)
     check("no coincide" in pg.inner_text("#lock-err"), "contraseña incorrecta rechazada")
     pg.fill("input[name=pass]", PASS); pg.click("[data-form=unlock] button"); pg.wait_for_selector(".inicio", timeout=15000)
-    check(pg.locator(".lista-conv .lc").count() == 2, "datos persisten tras desbloquear")
+    check(pg.locator(".lista-conv .lc").count() == 3, "datos persisten tras desbloquear")
     pg.keyboard.press("Control+k"); check(pg.evaluate("document.activeElement.id") == "q-exp", "Ctrl K enfoca el buscador de expedientes")
     pg.keyboard.type("no-existe"); check("Ningún expediente coincide" in pg.inner_text(".barra .exps"), "buscador filtra la lista de expedientes")
     pg.fill("#q-exp", "")
@@ -445,11 +474,45 @@ with sync_playwright() as p:
     check(nowrap(), "móvil sin desborde en la memoria completa")
     m.close()
 
+    # v0.6 · F6: celular con proveedor (conversación, aviso de contexto, cambios en la hoja), teclado y accesibilidad
+    m = b.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2); mp = m.new_page()
+    mp.on("pageerror", lambda e: errors.append("móvil F6: " + str(e))); mp.route("**/*", handle)
+    onboarding(mp); mp.wait_for_function("Lib.installed()", timeout=15000)
+    mp.click("[data-action=load-sample]"); mp.wait_for_selector(".inicio"); mp.wait_for_timeout(300)
+    axe_ok(mp, "inicio en el celular")
+    mp.fill("#q", "¿Qué debo preparar?"); mp.keyboard.press("Enter"); mp.wait_for_selector("#velo-envio")
+    mp.focus("#velo-envio [data-action=envio-enviar]")
+    for _ in range(12): mp.keyboard.press("Tab")
+    check(mp.evaluate("!!document.activeElement.closest('#velo-envio')"), "teclado: el foco no sale de la vista previa (Tab)")
+    axe_ok(mp, "vista previa en el celular")
+    mp.click("[data-action=envio-enviar]"); mp.wait_for_selector("#hilo .resp .recibo", timeout=10000)
+    check(nowrap(), "móvil: la conversación no desborda")
+    mp.evaluate("S.settings.contextoMax=2000;renderCentro()"); mp.evaluate("S.settings.contextoMax=Math.round(usoContexto(S.exp)*S.settings.contextoMax/95);renderCentro()")
+    check(mp.locator(".larga.alta").count() == 1 and nowrap(), "móvil: aviso de conversación larga en ámbar, sin desborde")
+    mp.screenshot(path=str(SHOTS / "24-movil-larga.png"))
+    axe_ok(mp, "conversación con aviso de contexto en el celular")
+    mp.evaluate("S.settings.contextoMax=60000;renderCentro()")
+    mp.click("#prop-linea [data-action=propose-memory]"); mp.wait_for_selector("#velo-envio"); mp.click("[data-action=envio-enviar]")
+    mp.wait_for_selector("#cambios", timeout=10000); mp.wait_for_timeout(350)
+    check("ficha-movil" in mp.get_attribute("#v6", "class") and mp.locator("#cambios").is_visible(), "móvil: «Revisar en la ficha» abre la hoja en la caja de cambios")
+    mp.click("#cambios [data-action=prop-aplicar]"); mp.wait_for_selector("#aviso")
+    ab = mp.locator("#aviso").bounding_box()
+    check(ab["x"] >= 0 and ab["x"] + ab["width"] <= 390 and mp.evaluate("!!document.activeElement.closest('#cambios')"), "móvil: el aviso con «Deshacer» cabe y el foco sigue en la caja")
+    mp.screenshot(path=str(SHOTS / "25-movil-cambios.png"))
+    axe_ok(mp, "caja de cambios y aviso en el celular")
+    mp.click("#cambios [data-action=plazo-confirmar]"); mp.focus("#cambios [data-action=plazo-si]"); mp.keyboard.press("Escape")
+    check(mp.locator("#cambios .pregunta").count() == 0 and mp.evaluate("document.activeElement.dataset.action") == "plazo-confirmar", "teclado: Esc cancela la confirmación del plazo y devuelve el foco")
+    mp.click("#cambios [data-action=plazo-confirmar]"); mp.click("#cambios [data-action=plazo-si]"); mp.wait_for_timeout(200)
+    ab = mp.locator("#aviso").bounding_box()
+    check(ab["x"] >= 0 and ab["x"] + ab["width"] <= 390, "móvil: el aviso del plazo confirmado cabe en la pantalla")
+    m.close()
+
     d = b.new_context(viewport={"width": 1440, "height": 900}, color_scheme="dark"); dp = d.new_page(); dp.route("**/*", handle)
     dp.on("pageerror", lambda e: errors.append("oscuro: " + str(e)))
     onboarding(dp, with_provider=False); dp.screenshot(path=str(SHOTS / "03-oscuro.png"))
+    axe_ok(dp, "expedientes en oscuro")
     dp.click("[data-action=load-sample]"); dp.wait_for_selector(".inicio"); dp.wait_for_timeout(400)
-    dp.screenshot(path=str(SHOTS / "04-oscuro-expediente.png"))
+    dp.screenshot(path=str(SHOTS / "04-oscuro-expediente.png")); axe_ok(dp, "inicio en oscuro")
     dp.click(".barra .nav-hoy"); dp.wait_for_timeout(200); dp.screenshot(path=str(SHOTS / "19-oscuro-hoy.png"))
     dp.click(".secc [data-action=new-exp]"); dp.fill("#dlg [name=numero]", "01234-2026-0-1501-JR-CI-01"); dp.click("[data-dlg=yes]"); dp.wait_for_selector(".inicio")
     check("Todavía no conversas" in dp.inner_text(".inicio") and dp.locator(".barra .exp").count() == 2, "expediente nuevo: abre en su Inicio y aparece en la barra")
