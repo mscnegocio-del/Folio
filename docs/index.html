@@ -196,6 +196,15 @@ button.btn{cursor:pointer}
 .sheet-box .btn{width:100%}
 .sheet-box .sheet-ok{min-height:1.5em;margin:2px 0 0;font-size:14px;color:var(--ok);text-align:center;overflow-wrap:anywhere}
 .cerrar{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;background:var(--sec);color:var(--text);font-size:20px;line-height:1;cursor:pointer}
+/* pantallas táctiles: zonas de toque de al menos 44 px sin cambiar cómo se ven */
+@media (pointer:coarse){
+  .logo{min-height:44px}
+  .btn-xs{position:relative}
+  .btn-xs::after{content:"";position:absolute;inset:-6px -2px}
+  .code a{padding:14px 0;margin:-14px 0}
+  footer nav a{padding:11px 0;margin:-11px 0}
+  .cerrar{top:8px;right:8px;width:44px;height:44px}
+}
 .aviso{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;width:min(520px,calc(100% - 32px));background:var(--win);border:1px solid var(--win-bd);border-radius:14px;padding:16px 56px 16px 18px;box-shadow:0 30px 80px -20px rgba(0,0,0,.9);font-size:14.5px}
 .aviso p{margin:0}
 .aviso p + p{margin-top:6px;color:var(--desc)}
@@ -279,6 +288,8 @@ button.btn{cursor:pointer}
   .hero{padding-top:64px}
   .grid,.providers{grid-template-columns:1fr}
   .card{padding:28px 22px 0}.grid.steps .card{padding:28px 22px}
+  .preview{padding:16px 16px 20px}
+  .tabs{flex-wrap:wrap;gap:4px}.tabs span{padding:4px 8px}
   .chat{padding:18px}
   section{padding-top:96px}
   .final .cta{grid-template-columns:1fr}
