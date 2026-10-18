@@ -32,7 +32,7 @@ folio/
 │   ├── config.js          ← OWNER: datos del autor (editar antes de publicar)
 │   ├── core.js            ← utilidades, DB, Vault, proveedores, LLM, seudonimización, recuperación
 │   ├── legal.js           ← política, términos, autorización para clientes
-│   └── ui.js              ← estado S, render, bienvenida, app, agente, ajustes, eventos, boot
+│   └── ui.js              ← estado S, render, bienvenida, app de tres zonas (barra · centro · ficha), ajustes, eventos, boot
 ├── dist/folio.html        ← artefacto distribuible (se sube a GitHub Releases)
 ├── docs/guia-api-keys.md  ← guía para obtener keys (espejo de la guía dentro de la app)
 ├── process/               ← contexto profundo (este directorio)
@@ -74,12 +74,21 @@ folio/
 - **Arranque** (`boot`): sin crypto.subtle/IndexedDB → error; con bóveda → bloqueo; sin bóveda → bienvenida.
 - **Bienvenida** (5 pasos): Así funciona · Tus datos (3 checks) · Envío al extranjero (seudonimización + check) · Contraseña (≥10 car. + check) · Proveedor (opcional, con guía). `finishOnb` crea bóveda, guarda settings cifrados y `consent` en claro.
 - **Consulta** (`sendChat`): `buildContext` → `makePseudo.apply` (sistema + historial + pregunta) → `reviewPayload` (si está activo) → `llm` streaming → `restore` → guarda chat → `logSend` (registro de envíos).
-- **Actualizar memoria** (`proposeMemory`): conversación reciente → JSON de cambios → el abogado aprueba ítem por ítem (los plazos vienen desmarcados). Se ofrece bajo la última respuesta del agente y en la pestaña Memoria.
+- **Actualizar memoria** (`proposeMemory`): conversación reciente → JSON de cambios → el abogado aprueba ítem por ítem (los plazos vienen desmarcados). Se ofrece bajo la última respuesta del agente y en la memoria completa.
 - **Pegar CEJ** (`pasteCEJ`): texto copiado → JSON de movimientos → revisión → agregar.
 - **Diálogos**: un solo `<dialog>`; `askDialog` + `dlgPending/settleDlg/onDlgButton` (evita el bug de eventos `close` asíncronos que cancelaban el siguiente diálogo).
 - **Auto-bloqueo**: inactividad configurable (5/15/30/60 min); no bloquea mientras hay una respuesta en curso.
 
-## Diseño visual (v0.5, "el expediente primero" — spec: `process/specs/rediseno-ux-v0.5.md`)
+## Interfaz v0.6 "tres zonas, una protagonista" (E10 · F2 — spec: `process/specs/rediseno-chat-v0.6.md`, prototipo `process/prototipos/rediseno-chat-v0.6.html`, D-42)
+- Raíz `<div class="v6" id="v6" data-vista data-modo data-ficha data-side>` + `.velo-m` hermano. CSS en `src/styles.css`, sección "v0.6 · tres zonas", portado tal cual del prototipo bajo `.v6` (renombres: .side→.barra, .btn→.pb, .tabs→.ftabs, .chip→.cchip, .estado→.fest, .nav→.navi, .meta→.imeta).
+- Estado: `S.vista` (`hoy` · `inicio` · `chat` · `memoria` · `ajustes` · `vacio`), `S.ficha` (abierta/cerrada), `S.fichaTab` (ficha/docs/movs), `S.fichaModo` (ficha/fuente/borrador), `S.fuente`, `S.borrador`, `S.sideOpen`, `S.fichaMovil`, `S.ctx` (chips; su efecto llega en F3).
+- Render: `renderApp()` arma las tres zonas; `renderBarra()`, `renderCentro()` (conserva lo escrito en la caja), `renderFicha()` y `refreshExp()` actualizan por partes; `layout()` aplica los `data-*` y calcula el riel (ficha abierta y < 1280 px, o modo Borrador y < 1440 px). `MQ_MOVIL` = 1023 px.
+- Hoy usa el índice (`upsertIndex` guarda `estado` y `props`: propuestas pendientes con su conversación), sin abrir cada expediente.
+- Citas en línea: `checkCitations()` devuelve `raw` (texto normalizado con `citeText`); `citasEnLinea()` pone cada chip al final del párrafo o ítem que la contiene y deja el resto debajo (`.fichas`).
+- Cada respuesta guarda `meta.frags` (documentos leídos) y `meta.secciones` (partes de la memoria enviadas) para "Leyó…" y "el agente aún no lo leyó".
+- Movimientos nuevos guardan `addedAt` (para "Desde tu última visita").
+
+## Diseño visual (v0.5, "el expediente primero" — spec: `process/specs/rediseno-ux-v0.5.md`; la estructura la reemplaza la v0.6)
 - Paleta del logo: azul marino + teal. Claro: fondo `#F7F5F0`, hoja `#FFFFFF`, tinta `#0B1220`, acento `#0F766E`. Oscuro: fondo `#0B1220`, superficie `#111B2A`, tinta `#F4F1EA`, acento `#35C7B3`. El teal (`--accent`) es solo para acción principal, activo, foco, enlaces e identidad.
 - Estructura: barra lateral (agenda agrupada + expedientes) | expediente (carátula + pestañas Resumen · Memoria · Movimientos · Documentos) | agente.
 - Agente con tres estados (`S.agent` = abierto/amplio/cerrado; `setAgent`, `initialAgent`); la preferencia en pantallas anchas se guarda en `settings.agentPanel`. Cerrado → botón flotante; `Ctrl+.` abre o cierra; `Esc` reduce o cierra.

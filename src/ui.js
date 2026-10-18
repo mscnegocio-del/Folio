@@ -3,10 +3,13 @@
    ============================================================ */
 const S = {
   screen: 'boot', bootError: '', onb: null, settings: null, draftCfg: null, index: [], exp: null, docTexts: {},
-  tab: 'resumen', view: 'exp', sideOpen: false, sending: false, abort: null, audit: [], lastSend: null,
+  sending: false, abort: null, audit: [], lastSend: null,
   stampPress: false, lastActive: Date.now(), filter: '', consent: null, updateHidden: false,
-  agent: 'cerrado', quick: [], agendaAll: false, movsAll: false, docFilter: '',
-  visitaPrevia: null   // fecha de la visita anterior al expediente abierto (para "desde tu última visita", v0.6)
+  quick: [], movsAll: false,
+  visitaPrevia: null,   // fecha de la visita anterior al expediente abierto ("Desde tu última visita")
+  // v0.6 · tres zonas: vista central, ficha (abierta/cerrada, pestaña y modo), barra y hoja en el celular, chips de la caja
+  vista: 'inicio', vistaPrev: null, ficha: 'abierta', fichaTab: 'ficha', fichaModo: 'ficha', fuente: null, borrador: null,
+  sideOpen: false, fichaMovil: false, ctx: { memoria: true, docs: true, biblioteca: true }
 };
 const root = () => $('#root');
 // Logo de Folio (imagen incluida en el HTML por build.py, variante clara u oscura según el tema) + insignia Beta
@@ -256,7 +259,7 @@ async function doUnlock(pass) {
 }
 function lockNow(msg) {
   if (S.sending && S.abort) S.abort.abort();
-  Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, consent: null, updateHidden: false, screen: 'lock', view: 'exp' });
+  Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, consent: null, updateHidden: false, screen: 'lock', vista: 'inicio', sideOpen: false, fichaMovil: false });
   closeDialog(); render(); if (msg) toast(msg);
 }
 setInterval(() => {
@@ -300,10 +303,10 @@ async function acceptReconsent() {
    Aplicación
    ============================================================ */
 async function enterApp() {
-  S.screen = 'app'; S.stampPress = true; S.agent = initialAgent(); applyTheme();
+  S.screen = 'app'; S.stampPress = true; applyTheme();
   await Lib.load();
   const last = S.settings.lastExp && S.index.find(x => x.id === S.settings.lastExp);
-  if (last) await openExp(last.id, true); else { S.exp = null; render(); }
+  if (last) await openExp(last.id, true); else { S.exp = null; S.vista = S.index.length ? 'hoy' : 'vacio'; render(); }
   setTimeout(() => { S.stampPress = false; }, 50);
   maybeCheckUpdate().catch(() => {});
   maybeUpdateNormas().catch(() => {});
@@ -314,7 +317,8 @@ function caratulaTitle(e) {
   return cli || con ? `${cli || 'Cliente'} contra ${con || 'contraparte'}` : (e.materia || 'Expediente sin partes');
 }
 function upsertIndex(e) {
-  const s = { id: e.id, numero: e.numero, titulo: caratulaTitle(e), materia: e.materia, ejemplo: !!e.ejemplo, updatedAt: e.updatedAt, plazos: e.memoria.plazos.filter(p => !p.done).map(p => ({ fecha: p.fecha, desc: p.desc })) };
+  const props = e.memoria.propuestas.filter(p => p.estado === 'pendiente').map(p => ({ tipo: p.tipo, seccion: p.seccion, fecha: p.fecha || '', desc: p.despues, chatId: p.chatId, chat: e.chats.find(c => c.id === p.chatId)?.titulo || '' }));
+  const s = { id: e.id, numero: e.numero, titulo: caratulaTitle(e), materia: e.materia, estado: e.estado || '', ejemplo: !!e.ejemplo, updatedAt: e.updatedAt, plazos: e.memoria.plazos.filter(p => !p.done).map(p => ({ fecha: p.fecha, desc: p.desc })), props };
   const i = S.index.findIndex(x => x.id === e.id); if (i >= 0) S.index[i] = s; else S.index.unshift(s);
 }
 let saveT = null;
@@ -323,22 +327,22 @@ async function saveExp() {
   clearTimeout(saveT); const e = S.exp; if (!e || !Vault.key) return;
   e.updatedAt = new Date().toISOString();
   await store.put('exp:' + e.id, e); upsertIndex(e); await store.put('index', S.index);
-  renderSideParts();
+  renderBarra();
 }
 async function saveSettings() { await store.put('settings', S.settings); }
 async function addAudit(entry) { S.audit.unshift(entry); S.audit = S.audit.slice(0, 500); await store.put('audit', S.audit); }
 
 async function openExp(id, silent) {
   try {
+    if (S.exp?.id === id) { Object.assign(S, { vista: 'inicio', sideOpen: false }); resetFicha(); render(); return; }   // ya abierto: vuelve a su inicio
     const e = await store.get('exp:' + id); if (!e) throw new FolioError('No se encontró el expediente.');
     normalizeExp(e); S.visitaPrevia = e.ultimaVisita; e.ultimaVisita = new Date().toISOString();
     await store.put('exp:' + id, e);   // migración y visita: no cambian la fecha de modificación ni el orden de la lista
-    if (S.exp?.id !== id || !TABS.some(([k]) => k === S.tab)) Object.assign(S, { tab: 'resumen', movsAll: false, docFilter: '' });
-    S.exp = e; S.docTexts = {}; S.view = 'exp'; S.sideOpen = false;
+    Object.assign(S, { exp: e, docTexts: {}, vista: 'inicio', sideOpen: false, movsAll: false }); resetFicha();
     for (const d of e.docs) { const r = await store.get('doc:' + d.id); if (r) S.docTexts[d.id] = r.text; }
     if (S.settings.lastExp !== id) { S.settings.lastExp = id; saveSettings(); }
     render();
-  } catch (e) { if (!silent) fail(e); S.exp = null; render(); }
+  } catch (e) { if (!silent) fail(e); S.exp = null; S.vista = S.index.length ? 'hoy' : 'vacio'; render(); }
 }
 function blankExp(f) {
   const c = newChat(), ahora = new Date().toISOString();   // crear el expediente cuenta como la primera visita
@@ -373,18 +377,15 @@ const FIELD_SIZING = typeof CSS !== 'undefined' && CSS.supports?.('field-sizing'
 function autosize(t) { if (FIELD_SIZING || !t.offsetParent) return; t.style.height = 'auto'; t.style.height = t.scrollHeight + 2 + 'px'; }
 function autosizeAll() { if (!FIELD_SIZING) $$('textarea.docfield').forEach(autosize); }
 
-/* ---------- Privacidad: indicador compacto + ventana de detalle (spec v0.5 §4.2 y §4.4) ---------- */
+/* ---------- Privacidad: ventana de detalle (la abre el pie de la barra: "Cifrado en este equipo") ---------- */
 function lastSendText() {
   const s = S.settings;
   if (s && s.provider === 'custom') return 'IA en tu servidor propio';
   if (S.lastSend) return `Último envío a ${provLabel(S.lastSend.provider)}, ${rel(S.lastSend.at)}${S.lastSend.pseudo ? ', con datos reemplazados' : ''}`;
   return 'Nada enviado en esta sesión';
 }
-function privacyPillHTML() { return `<button class="privacy-pill" data-action="privacy" title="${esc(lastSendText())}">${ico('lock')}<span>Solo en este equipo · cifrado</span></button>`; }
-function updateStamp() { const p = $('.privacy-pill'); if (p) p.title = lastSendText(); }
-setInterval(() => { if (S.screen === 'app' && S.lastSend) updateStamp(); }, 60000);
 function showPrivacy() {
-  const s = S.settings, e = S.view === 'exp' ? S.exp : null, ready = isReady(s);
+  const s = S.settings, e = EXP_VISTAS.includes(S.vista) ? S.exp : null, ready = isReady(s);
   const ok = t => `<li>${ico('check')}<span>${t}</span></li>`, warn = t => `<li class="warn"><span class="bang" aria-hidden="true">!</span><span>${t}</span></li>`;
   const items = [
     ok(`${e ? 'Este expediente se guarda cifrado' : 'Tus expedientes se guardan cifrados'} en este navegador, con tu contraseña. Folio no tiene servidores y no ve tus datos.`),
@@ -398,7 +399,6 @@ function showPrivacy() {
     foot: `<button class="btn ghost" data-action="show-policy">Política de privacidad</button><button class="btn" data-action="privacy-settings">Ajustes de privacidad</button><button class="btn primary" data-action="dlg-close">Entendido</button>` });
 }
 
-/* ---------- Barra lateral: agenda y expedientes (spec v0.5 §4.3) ---------- */
 function deadlineChip(fecha, done) {
   if (done) return `<span class="chip ok">Cumplido</span>`;
   const d = daysUntil(fecha);
@@ -407,99 +407,329 @@ function deadlineChip(fecha, done) {
   if (d <= 3) return `<span class="chip soon">En ${d} día${d > 1 ? 's' : ''}</span>`;
   return `<span class="chip">En ${d} días</span>`;
 }
-function agendaHTML() {
-  const all = []; S.index.forEach(x => (x.plazos || []).forEach(p => all.push({ ...p, id: x.id, numero: x.numero })));
-  all.sort((a, b) => a.fecha.localeCompare(b.fecha));
-  const groups = [['Vencidos', p => daysUntil(p.fecha) < 0], ['Hoy', p => daysUntil(p.fecha) === 0], ['Próximos 7 días', p => { const d = daysUntil(p.fecha); return d > 0 && d <= 7; }]];
-  const item = p => `<li><button data-action="open-exp" data-id="${p.id}"><span class="d ${urgency(p.fecha)}">${esc(fmtDate(p.fecha).slice(0, 5))}</span><span class="w"><strong>${esc(p.desc)}</strong><span class="mono">${esc(p.numero || 's/n')}</span></span></button></li>`;
-  let html = '';
-  for (const [label, test] of groups) {
-    const list = all.filter(test); if (!list.length) continue;
-    const shown = S.agendaAll ? list : list.slice(0, 4);
-    html += `<div class="agenda-group"><h3>${label} <span class="n">${list.length}</span></h3><ul class="deadlines">${shown.map(item).join('')}</ul>${list.length > shown.length ? `<button class="linklike" data-action="agenda-more">Ver ${list.length - shown.length} más</button>` : ''}</div>`;
-  }
-  if (html) return html + (S.agendaAll ? '<button class="linklike" data-action="agenda-more">Ver menos</button>' : '');
-  const nxt = all.find(p => daysUntil(p.fecha) > 7);
-  return `<p class="agenda-empty">Sin plazos esta semana.${nxt ? ` Siguiente: <button class="linklike" data-action="open-exp" data-id="${nxt.id}">${esc(fmtDate(nxt.fecha).slice(0, 5))}, ${esc(trunc(nxt.desc, 40))}</button>` : ''}</p>`;
-}
-function listHTML() {
-  const f = norm(S.filter);
-  const items = S.index.filter(x => !f || norm(`${x.numero} ${x.titulo} ${x.materia}`).includes(f)).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
-  if (!S.index.length) return `<li class="explist-empty">Aún no tienes expedientes.</li>`;
-  if (!items.length) return `<li class="explist-empty">Ningún expediente coincide con “${esc(S.filter)}”.</li>`;
-  return items.map(x => { const next = (x.plazos || []).map(p => p.fecha).sort()[0];
-    return `<li><button data-action="open-exp" data-id="${x.id}" aria-current="${S.exp?.id === x.id && S.view === 'exp'}"><span class="num">${esc(x.numero || 'Sin número')}</span><span class="tit">${esc(x.titulo)}</span><span class="meta">${esc(x.materia || '')}${next ? ' ' + deadlineChip(next) : ''}${x.ejemplo ? ' <span class="chip">Ejemplo</span>' : ''}</span></button></li>`; }).join('');
-}
-function sidebarHTML() {
-  return `<aside class="side" aria-label="Expedientes y agenda">
-    <div class="side-top"><div class="brand">${BRAND}</div></div>
-    <div class="side-actions"><button class="btn sm block" data-action="new-exp">${ico('plus')}Nuevo expediente</button>
-      <label class="sr-only" for="q-exp">Buscar expediente</label><input id="q-exp" class="input" data-search placeholder="Buscar por número o parte" value="${esc(S.filter)}"></div>
-    <div class="side-scroll">
-      <section class="side-section" aria-labelledby="h-agenda"><h2 id="h-agenda">Agenda</h2><div id="deadlines">${agendaHTML()}</div></section>
-      <section class="side-section" aria-labelledby="h-exps"><h2 id="h-exps">Expedientes</h2><ul class="explist" id="explist">${listHTML()}</ul></section>
-    </div>
-    <div class="side-bottom"><button class="btn ghost sm" data-action="open-settings">Ajustes</button><button class="btn ghost sm" data-action="privacy">Privacidad</button><button class="btn ghost sm" data-action="lock-now">Bloquear</button></div>
-  </aside>`;
-}
-function renderSideParts() { const l = $('#explist'); if (l) l.innerHTML = listHTML(); const d = $('#deadlines'); if (d) d.innerHTML = agendaHTML(); }
 
-/* ---------- Panel del agente: abierto, amplio o cerrado (spec v0.5 §4.1) ---------- */
-const WIDE_MIN = 1180;   // por debajo, el agente se abre encima del expediente
-const isWide = () => window.innerWidth >= WIDE_MIN;
-function initialAgent() {
-  const s = S.settings;
-  if (!isWide() || !isReady(s)) return 'cerrado';
-  return s.agentPanel || (window.innerWidth >= 1280 ? 'abierto' : 'cerrado');
+/* ============================================================
+   v0.6 · tres zonas (E10): expedientes · el Agente · Ficha del expediente
+   El marcado sigue TAL CUAL el prototipo process/prototipos/rediseno-chat-v0.6.html (D-42).
+   ============================================================ */
+const EXP_VISTAS = ['inicio', 'chat', 'memoria'];
+const MQ_MOVIL = matchMedia('(max-width:1023px)');
+const HOY_DIAS = 14;   // "Hoy" muestra las fechas registradas vencidas y las de los próximos 14 días
+// Íconos del prototipo (trazo fino, decorativos)
+const IC = {
+  mas: '<path d="M12 5v14M5 12h14"/>', buscar: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  hoy: '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
+  carpeta: '<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
+  ficha: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M14.5 4.5v15"/>', cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
+  enviar: '<path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/>', candado: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+  ajustes: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+  volver: '<path d="M19 12H5M11 6l-6 6 6 6"/>', flecha: '<path d="M5 12h14M13 6l6 6-6 6"/>', menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  doc: '<path d="M6.5 3.5h7l4 4v12.5a.5.5 0 0 1-.5.5H6.5a.5.5 0 0 1-.5-.5v-16a.5.5 0 0 1 .5-.5z"/><path d="M13.5 3.5v4h4M9 12.5h6M9 16h4"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', aviso: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17h.01"/>',
+  puntos: '<circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/>'
+};
+const ic = (n, st = '') => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"${st ? ` style="${st}"` : ''}>${IC[n]}</svg>`;
+const numCorto = n => (n || '').split('-').slice(0, 2).join('-') || 'Sin número';
+const ddmm = iso => iso ? fmtDate(iso).slice(0, 5) : '—';
+const pad2 = n => String(n).padStart(2, '0');
+const diaLocal = iso => { const d = new Date(iso); return `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`; };
+const esHoy = iso => !!iso && new Date(iso).toDateString() === new Date().toDateString();
+const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+const lcFirst = s => s ? s[0].toLowerCase() + s.slice(1) : s;
+const listaY = a => a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} y ${a[a.length - 1]}`;
+const SECC = { estado: 'estado', resumen: 'resumen', hechos: 'hechos', estrategia: 'estrategia', pend: 'pendientes', plazo: 'plazos' };
+const memSecciones = e => [e.estado && 'estado', e.memoria.resumen.trim() && 'resumen', e.memoria.hechos.trim() && 'hechos', e.memoria.estrategia.trim() && 'estrategia',
+  e.memoria.pendientes.some(p => !p.done) && 'pendientes', e.memoria.plazos.some(p => !p.done) && 'plazos'].filter(Boolean);
+function chatsOrdenados(e) { return e.chats.filter(c => c.mensajes.length).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')); }
+function docsLeidos(e) { const s = new Set(); e.chats.forEach(c => c.mensajes.forEach(m => (m.meta?.frags || []).forEach(n => s.add(n)))); return s; }
+
+/* Ficha: abierta o cerrada en pantalla ancha; hoja (ficha-movil) en el celular */
+const fichaVisible = () => !!S.exp && (S.vista === 'inicio' || S.vista === 'chat');
+function fichaAbierta() { return MQ_MOVIL.matches ? S.fichaMovil : S.ficha === 'abierta'; }
+function abrirFicha() { if (MQ_MOVIL.matches) S.fichaMovil = true; else S.ficha = 'abierta'; }
+function resetFicha() { Object.assign(S, { fichaModo: 'ficha', fichaTab: 'ficha', fuente: null, borrador: null }); }
+function layout() {
+  const v = $('#v6'); if (!v) return;
+  const movil = MQ_MOVIL.matches, abierta = S.ficha === 'abierta' && fichaVisible();
+  Object.assign(v.dataset, { vista: S.vista, modo: S.fichaModo, ficha: S.ficha, side: S.sideOpen ? 'abierto' : 'cerrado' });
+  v.classList.toggle('ficha-movil', movil && S.fichaMovil);
+  // Riel: con la ficha abierta, bajo 1280 px (o bajo 1440 px en modo Borrador) la barra izquierda se reduce a íconos
+  v.classList.toggle('riel', !movil && abierta && (innerWidth < 1280 || (S.fichaModo === 'borrador' && innerWidth < 1440)));
+  const t = $('#cab [data-action="toggle-ficha"]'); if (t) t.classList.toggle('on', fichaAbierta());
 }
-function setAgent(st) {
-  if (!isWide() && st === 'amplio') st = 'abierto';
-  const wasInside = document.activeElement?.closest?.('#agent');
-  S.agent = st;
-  const w = $('#expwrap'); if (w) w.dataset.agent = st;
-  const wb = $('[data-action="agent-wide"]');
-  if (wb) { const big = st === 'amplio'; wb.innerHTML = ico(big ? 'shrink' : 'expand'); wb.setAttribute('aria-label', big ? 'Reducir el agente' : 'Ampliar el agente'); wb.title = big ? 'Reducir' : 'Ampliar'; }
-  if (isWide() && S.settings && S.settings.agentPanel !== st) { S.settings.agentPanel = st; saveSettings().catch(fail); }
-  if (st === 'cerrado') { autosizeAll(); if (wasInside) $('.agent-fab')?.focus(); }
-  else { scrollMsgs(); setTimeout(() => $('#q')?.focus(), 30); }
-}
-function fabHTML() { return `<button class="agent-fab ${S.sending ? 'busy' : ''}" data-action="agent-open" title="Abrir el agente (Ctrl+.)">${ico('chat')}<span>Agente</span></button>`; }
 
 /* ---------- Estructura principal ---------- */
 function renderApp() {
-  const main = S.view === 'settings' ? settingsHTML() : S.exp ? expHTML() : emptyHTML();
-  root().innerHTML = `<div class="app ${S.sideOpen ? 'side-open' : ''}">
-    <div class="scrim" data-action="close-side"></div>
-    ${sidebarHTML()}
-    <div class="main">
-      <div class="topbar"><button class="btn ghost sm" data-action="open-side">☰ Expedientes</button><div class="brand">${BRAND}</div></div>
-      ${updateBarHTML()}
-      ${main}
-    </div></div>`;
+  if (EXP_VISTAS.includes(S.vista) && !S.exp) S.vista = S.index.length ? 'hoy' : 'vacio';
+  root().innerHTML = `<div class="v6" id="v6">
+    <aside class="barra" id="barra" aria-label="Expedientes">${barraHTML()}</aside>
+    <main class="centro" id="centro" aria-label="Agente">${centroHTML()}</main>
+    <aside class="ficha" id="ficha" aria-label="Ficha del expediente">${fichaHTML()}</aside>
+  </div><div class="velo-m" data-action="cerrar-capas"></div>`;
   S.stampPress = false;
-  scrollMsgs(); autosizeAll();
+  layout(); scrollHilo(); autosizeAll();
+}
+function renderBarra() {
+  const b = $('#barra'); if (!b) return;
+  if (document.activeElement?.id === 'q-exp') { $('#exps').innerHTML = expsHTML(); return; }   // no quitar el foco del buscador
+  b.innerHTML = barraHTML();
+}
+function renderCentro() {
+  const c = $('#centro'); if (!c) return;
+  const borrador = $('#q')?.value || '';
+  c.innerHTML = centroHTML();
+  const q = $('#q'); if (q && borrador && !S.sending) q.value = borrador;
+  layout(); scrollHilo(); autosizeAll();
+}
+function renderFicha() {
+  const f = $('#ficha'); if (!f) return;
+  const y = $('#fcuerpo')?.scrollTop || 0; f.innerHTML = fichaHTML();
+  const c = $('#fcuerpo'); if (c) c.scrollTop = y;
+}
+// Tras cambiar datos del expediente: barra, ficha y la vista central (salvo el hilo, que no cambia)
+function refreshExp() { renderBarra(); renderFicha(); if (S.vista === 'chat') { const c = $('#cab'); if (c) c.innerHTML = cabHTML(); layout(); } else renderCentro(); }
+function scrollHilo() { if (S.vista !== 'chat') return; const s = $('#scroll'); if (s) s.scrollTop = s.scrollHeight; }
+
+/* ---------- Izquierda: expedientes ---------- */
+function barraHTML() {
+  const h = hoyItems().total;
+  return `<i class="logo" role="img" aria-label="Folio"></i>
+    <label class="buscar">${ic('buscar')}<input id="q-exp" data-search placeholder="Buscar" value="${esc(S.filter)}" aria-label="Buscar expediente" autocomplete="off" spellcheck="false"><kbd>Ctrl K</kbd></label>
+    <button class="navi nav-hoy${S.vista === 'hoy' ? ' on' : ''}" data-action="vista-hoy">${ic('hoy')}Hoy${h ? `<span class="cnt">${h}</span>` : ''}</button>
+    <div class="secc"><span class="lbl">Expedientes</span><button class="ib" data-action="new-exp" aria-label="Nuevo expediente" title="Nuevo expediente">${ic('mas')}</button></div>
+    <div class="exps" id="exps">${expsHTML()}</div>
+    <div class="pie">
+      <button class="seg" data-action="privacy" title="Ver cómo se protegen tus datos">${ic('candado')}Cifrado en este equipo</button>
+      <button class="ib" data-action="lock-now" aria-label="Bloquear" title="Bloquear">${ic('candado')}</button>
+      <button class="ib" data-action="open-settings" aria-label="Ajustes" title="Ajustes">${ic('ajustes')}</button>
+    </div>
+    <div class="riel-ico">
+      <i class="marca" role="img" aria-label="Folio"></i>
+      <button class="ib" data-action="riel-buscar" aria-label="Buscar">${ic('buscar')}</button>
+      <button class="ib${h ? ' dot' : ''}" data-action="vista-hoy" aria-label="Hoy">${ic('hoy')}</button>
+      <button class="ib on" data-action="riel-abrir" aria-label="Expedientes" title="Expedientes">${ic('carpeta')}</button>
+      <button class="ib abajo" data-action="lock-now" aria-label="Cifrado en este equipo · Bloquear" title="Cifrado en este equipo · Bloquear">${ic('candado')}</button>
+    </div>`;
+}
+function expsHTML() {
+  if (!S.index.length) return `<div class="exps-vacio">Aún no tienes expedientes.</div>`;
+  const f = norm(S.filter);
+  const items = S.index.filter(x => !f || norm(`${x.numero} ${x.titulo} ${x.materia}`).includes(f)).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  if (!items.length) return `<div class="exps-vacio">Ningún expediente coincide con “${esc(S.filter)}”.</div>`;
+  return items.map(x => {
+    const act = S.exp?.id === x.id, on = act && EXP_VISTAS.includes(S.vista);
+    const next = !act && (x.plazos || []).map(p => p.fecha).sort()[0];   // el activo muestra su plazo en la ficha
+    const t = [x.materia || x.titulo, x.estado].filter(Boolean).join(' · ') || 'Expediente sin datos';
+    return `<button class="exp${on ? ' on' : ''}" data-action="open-exp" data-id="${x.id}"${on ? ' aria-current="true"' : ''}><div class="n">${esc(act ? (x.numero || 'Sin número') : numCorto(x.numero))}${next ? `<em>${ddmm(next)}</em>` : ''}</div><div class="t">${esc(t)}</div></button>${act ? convsHTML() : ''}`;
+  }).join('');
+}
+function convsHTML() {
+  const e = S.exp, c = activeChat(e), enChat = S.vista === 'chat', todas = chatsOrdenados(e);
+  let lista = todas.slice(0, 3);
+  if (enChat && c.mensajes.length && !lista.includes(c)) lista = [c, ...lista.slice(0, 2)];
+  return `<div class="convs">${enChat && !c.mensajes.length ? '<button class="conv on" data-action="new-chat">Nueva conversación</button>' : ''}${lista.map(x => `<button class="conv${enChat && x.id === c.id ? ' on' : ''}" data-action="open-chat" data-id="${x.id}" title="${esc(x.titulo)}">${esc(x.titulo || 'Conversación sin título')}</button>`).join('')}<button class="conv nueva" data-action="new-chat">+ Nueva conversación</button>${todas.length > 3 ? `<button class="conv todas" data-action="vista-inicio">Ver todas (${todas.length})</button>` : ''}</div>`;
+}
+
+/* ---------- Centro: encabezado y vistas ---------- */
+function centroHTML() {
+  const v = S.vista;
+  const body = v === 'hoy' ? hoyHTML() : v === 'inicio' ? inicioHTML() : v === 'chat' ? chatHTML() : v === 'memoria' ? memoriaHTML() : v === 'ajustes' ? settingsHTML() : emptyHTML();
+  return `<header class="cab" id="cab">${cabHTML()}</header>${updateBarHTML()}<div class="scroll" id="scroll">${body}</div>${v === 'chat' ? `<div class="pie-chat">${cajaHTML('chat')}</div>` : ''}`;
+}
+function cabHTML() {
+  const e = S.exp, v = S.vista;
+  const corto = e ? `<span class="num">${esc(numCorto(e.numero))}</span>${e.materia ? ' · ' + esc(e.materia) : ''}` : '';
+  const [miga, titulo] = v === 'hoy' ? ['', 'Hoy'] : v === 'inicio' ? [`<span class="num">${esc(e.numero || 'Sin número')}</span>`, 'Inicio del expediente']
+    : v === 'chat' ? [corto, activeChat(e).titulo || 'Nueva conversación'] : v === 'memoria' ? [corto, 'Memoria del expediente'] : v === 'ajustes' ? ['', 'Ajustes'] : ['', 'Expedientes'];
+  return `<button class="ib solo-movil" data-action="toggle-side" aria-label="Expedientes">${ic('menu')}</button>
+    <div class="tit">${miga ? `<span class="miga">${miga}</span>` : ''}<span class="titulo">${esc(titulo)}</span></div>
+    ${v === 'chat' ? `<button class="pb solo-pc" data-action="new-chat">${ic('mas')}Nueva conversación</button><button class="ib" data-action="chat-menu" aria-label="Más opciones de la conversación">${ic('puntos')}</button>` : ''}
+    ${fichaVisible() ? `<button class="ib${fichaAbierta() ? ' on' : ''}" data-action="toggle-ficha" aria-label="Ficha del expediente" title="Ficha del expediente">${ic('ficha')}</button>` : ''}`;
+}
+
+/* Hoy: lo que pide atención en todos los expedientes (calculado con el índice, sin abrir cada expediente) */
+function hoyItems() {
+  const props = [], fechas = [], cambios = [];
+  for (const x of S.index) {
+    const pend = x.props || [], porChat = {};
+    pend.filter(p => p.tipo === 'plazo').forEach(p => props.push({ ...p, id: x.id, numero: x.numero }));
+    pend.filter(p => p.tipo !== 'plazo').forEach(p => {
+      const g = porChat[p.chatId] || (porChat[p.chatId] = { id: x.id, numero: x.numero, chatId: p.chatId, chat: p.chat, n: 0, secs: [] });
+      g.n++; const s = SECC[p.seccion] || p.seccion; if (!g.secs.includes(s)) g.secs.push(s);
+    });
+    cambios.push(...Object.values(porChat));
+    (x.plazos || []).filter(p => daysUntil(p.fecha) <= HOY_DIAS).forEach(p => fechas.push({ ...p, id: x.id, numero: x.numero }));
+  }
+  const porFecha = (a, b) => (a.fecha || '').localeCompare(b.fecha || '');
+  props.sort(porFecha); fechas.sort(porFecha);
+  return { props, fechas, cambios, total: props.length + fechas.length + cambios.length };
+}
+function hoyHTML() {
+  const h = hoyItems(), d = new Date();
+  const sub = `${cap(d.toLocaleDateString('es-PE', { weekday: 'long' }))} ${d.getDate()} de ${MESES[d.getMonth()]} · lo que pide tu atención en todos tus expedientes`;
+  const fila = (f, cls, txt, small, ir, attrs) => `<button class="fila-hoy" ${attrs}><span class="f${cls ? ' ' + cls : ''}">${f}</span><span>${txt}<small>${small}</small></span><span class="ir">${ir}</span></button>`;
+  const grupo = (lbl, rows) => rows.length ? `<div class="grupo"><span class="lbl">${lbl}</span>${rows.join('')}</div>` : '';
+  const num = x => `<span class="num">${esc(numCorto(x.numero))}</span>`;
+  const html = grupo('Plazos por confirmar', h.props.map(p => fila(ddmm(p.fecha), 'w', esc(p.desc), `${num(p)} · propuesto por el agente, por verificar`, 'Revisar', `data-action="hoy-ir" data-id="${p.id}" data-chat="${esc(p.chatId)}"`)))
+    + grupo('Fechas que registraste', h.fechas.map(p => { const paso = daysUntil(p.fecha) < 0;
+      return fila(ddmm(p.fecha), paso ? 'd' : '', esc(p.desc), `${num(p)}${paso ? ' · la fecha ya pasó: ¿lo marcas como hecho?' : ''}`, 'Abrir', `data-action="open-exp" data-id="${p.id}"`); }))
+    + grupo('Cambios de memoria por revisar', h.cambios.map(g => fila(String(g.n), '', `Cambios propuestos en «${esc(g.chat || 'Conversación sin título')}»`, `${num(g)} · ${esc(listaY(g.secs))}`, 'Revisar', `data-action="hoy-ir" data-id="${g.id}" data-chat="${esc(g.chatId)}"`)));
+  return `<div class="col hoy">
+    <h1>Hoy</h1>
+    <div class="sub">${esc(sub)}</div>
+    ${html || '<div class="grupo"><span class="sin">Nada pide tu atención por ahora.</span></div>'}
+    <p class="nota">Folio no calcula plazos: aquí ves las fechas que registraste y las que propuso el agente. Verifícalas en la resolución y en tu casilla.</p>
+  </div>`;
+}
+
+/* Inicio del expediente: carátula en una línea, novedades, caja de texto, atajos y conversaciones */
+function inicioHTML() {
+  const e = S.exp, ready = isReady(S.settings);
+  const cli = e.partes.filter(p => p.esCliente).map(p => p.nombre);
+  const meta = [cli.length ? `${cli.join(', ')} (tu cliente)` : '', e.organo, e.estado, e.ejemplo ? 'ejemplo con datos ficticios' : ''].filter(Boolean).join(' · ');
+  S.quick = ready ? quickActions(e).slice(0, 2) : [];
+  const chats = chatsOrdenados(e);
+  return `<div class="col inicio">
+    <h1>${esc(e.materia || caratulaTitle(e))}</h1>
+    ${meta ? `<div class="imeta">${esc(meta)}</div>` : ''}
+    ${novedadesHTML(e)}
+    ${cajaHTML('inicio')}
+    ${ready ? `<div class="atajos">${S.quick.map(([l], i) => `<button class="atajo" data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}<button class="atajo" data-action="paste-cej">/pegar-cej</button></div>` : ''}
+    <div class="bloque"><span class="lbl">Conversaciones</span>
+      <div class="lista-conv">${chats.length ? chats.map(lcHTML).join('') : '<div class="vacio-conv">Todavía no conversas con el agente sobre este expediente.</div>'}</div>
+    </div>
+  </div>`;
+}
+function novedadesHTML(e) {
+  const prev = S.visitaPrevia; if (!prev) return '';
+  const rows = [], r = (f, t, cls = '') => `<div class="r"><span class="num">${f}</span><span${cls ? ` class="${cls}"` : ''}>${t}</span></div>`;
+  sortedMovs(e).filter(v => v.addedAt && v.addedAt > prev).slice(0, 3).forEach(v => rows.push(r(ddmm(v.fecha), `Nuevo movimiento: ${esc(lcFirst(v.acto))}${v.sumilla ? ` · ${esc(v.sumilla)}` : ''}`)));
+  e.memoria.propuestas.filter(p => p.estado === 'pendiente' && p.tipo === 'plazo').forEach(p => rows.push(r(ddmm(p.fecha), `Plazo propuesto por el agente: ${esc(lcFirst(p.despues))} (por verificar)`, 'w')));
+  const pend = e.memoria.pendientes.filter(p => !p.done).length, leidos = docsLeidos(e), sinLeer = e.docs.filter(d => !leidos.has(d.name)).length;
+  const resumen = [pend ? plural(pend, 'pendiente abierto', 'pendientes abiertos') : '', sinLeer ? `${plural(sinLeer, 'documento', 'documentos')} que el agente aún no leyó` : ''].filter(Boolean);
+  if (resumen.length) rows.push(r('—', resumen.join(' · ')));
+  if (!rows.length) rows.push(r('—', 'Sin novedades en este expediente'));
+  return `<div class="nov"><span class="lbl">Desde tu última visita · <span class="num">${diaLocal(prev)}</span></span>${rows.join('')}</div>`;
+}
+function lcHTML(c) {
+  const props = S.exp.memoria.propuestas.filter(p => p.chatId === c.id), pend = props.filter(p => p.estado === 'pendiente');
+  const cambios = pend.filter(p => p.tipo !== 'plazo').length, plazos = pend.length - cambios;
+  const est = cambios ? [`${plural(cambios, 'cambio', 'cambios')} por revisar`, 'w'] : plazos ? [`${plural(plazos, 'plazo', 'plazos')} por confirmar`, 'w'] : props.some(p => p.estado === 'aplicada') ? ['✓ en la memoria', ''] : null;
+  const ult = [...c.mensajes].reverse().find(m => m.role === 'user'), linea = c.resumen || ult?.content || '';
+  return `<button class="lc" data-action="open-chat" data-id="${c.id}"><span><b>${esc(c.titulo || 'Conversación sin título')}</b>${linea ? `<small>${esc(trunc(linea.replace(/\s+/g, ' '), 90))}</small>` : ''}</span><span class="e"><span class="num">${esHoy(c.updatedAt) ? 'hoy' : diaLocal(c.updatedAt)}</span>${est ? `<i${est[1] ? ' class="w"' : ''}>${est[0]}</i>` : ''}</span></button>`;
+}
+
+/* Caja de texto: chips de lo que lee el agente, píldora de destino y enviar (el efecto de chips, @ y / llega en F3) */
+function cajaHTML(donde) {
+  const s = S.settings, e = S.exp;
+  if (!isReady(s)) return `<div class="sin-prov"><span>Conecta tu proveedor de IA para conversar con el agente.</span><button class="pb" data-action="open-settings">Conectar proveedor</button></div>`;
+  const chip = (k, txt) => `<button type="button" class="cchip${S.ctx[k] ? ' on' : ''}" data-action="chip" data-k="${k}" aria-pressed="${S.ctx[k]}">${ic('check')}${txt}</button>`;
+  const chips = [chip('memoria', 'Memoria'), e.docs.length ? chip('docs', plural(e.docs.length, 'documento', 'documentos')) : '', Lib.installed() ? chip('biblioteca', 'Biblioteca') : ''].join('');
+  const ph = donde === 'inicio' ? '¿Qué necesitas hoy en este expediente?' : 'Escribe al agente · @ para citar un documento · / para acciones';
+  return `<form class="caja" data-form="chat" data-donde="${donde}">
+    <textarea id="q" rows="1" placeholder="${ph}" aria-label="Escribe al agente"${S.sending ? ' disabled' : ''}></textarea>
+    <div class="fila">
+      <div class="chips">${chips}</div>
+      <button type="button" class="destino" data-action="destino" title="Ver lo que se enviará">${ic('candado')}${esc(s.provider === 'custom' ? 'Servidor propio' : provLabel(s.provider))}<span class="modelo">· <span class="num">${esc(s.model.split('/').pop())}</span></span></button>
+      ${S.sending ? `<button type="button" class="enviar" data-action="stop" aria-label="Detener la respuesta" title="Detener">${ic('cerrar')}</button>` : `<button type="submit" class="enviar" aria-label="Enviar">${ic('enviar')}</button>`}
+    </div>
+  </form>`;
+}
+
+/* Memoria completa: lo que el abogado escribió o aprobó, con sus movimientos (la ficha muestra lo esencial) */
+function memoriaHTML() {
+  const e = S.exp;
+  return `<div class="col mem-completa">
+    <div class="mc-cab"><div><h1>Memoria del expediente</h1><div class="imeta"><span class="num">${esc(e.numero || 'Sin número')}</span> · ${esc(caratulaTitle(e))}</div></div>
+      <div class="row" style="flex-wrap:nowrap"><button class="pb" data-action="edit-exp">Editar datos</button><button class="pb" data-action="vista-volver">${ic('volver')}Volver</button></div></div>
+    ${memHTML()}
+    <section class="mem-sec" style="margin-top:1.5rem">${movsHTML()}</section>
+  </div>`;
+}
+
+/* ---------- Derecha: Ficha del expediente (modos Ficha · Fuente · Borrador) ---------- */
+function fichaHTML() {
+  const e = S.exp; if (!e) return '';
+  const tabs = [['ficha', 'Ficha', null], ['docs', 'Documentos', e.docs.length], ['movs', 'Movimientos', e.movimientos.length]];
+  const head = S.fichaModo === 'ficha'
+    ? `<div class="ftabs" role="tablist" aria-label="Ficha del expediente">${tabs.map(([k, l, n]) => `<button class="tab${S.fichaTab === k ? ' on' : ''}" role="tab" aria-selected="${S.fichaTab === k}" data-action="ftab" data-tab="${k}">${l}${n != null ? ` <span class="num">${n}</span>` : ''}</button>`).join('')}</div>`
+    : `<button class="volver" data-action="ficha-volver">${ic('volver')}Volver a la ficha</button>`;
+  const body = S.fichaModo === 'fuente' ? fuenteHTML() : S.fichaModo === 'borrador' ? borradorHTML() : S.fichaTab === 'docs' ? fdocsHTML() : S.fichaTab === 'movs' ? fmovsHTML() : fichaPanelHTML();
+  return `<div class="fcab">${head}<button class="ib" data-action="toggle-ficha" aria-label="Cerrar la ficha" title="Cerrar la ficha">${ic('cerrar')}</button></div><div class="fcuerpo" id="fcuerpo">${body}</div>`;
+}
+function fichaPanelHTML() {
+  const e = S.exp, m = e.memoria, next = nextPlazos(e)[0], pend = m.pendientes.filter(p => !p.done);
+  const propPlazos = m.propuestas.filter(p => p.estado === 'pendiente' && p.tipo === 'plazo').length;
+  const sin = t => `<div class="sin">${t}</div>`;
+  return `<div class="panel">
+    <div class="bloque"><span class="lbl">Estado</span>${e.estado ? `<div class="fest">${esc(e.estado)}</div>` : sin('Sin registrar')}</div>
+    <div class="bloque"><span class="lbl">Próximo plazo</span>${next
+      ? `<div class="plazo"><span class="num">${ddmm(next.fecha)}</span><div><b>${esc(next.desc)}</b><small>${esc(cap(whenLabel(next.fecha)))} · verifícalo con la resolución</small></div></div>`
+      : sin(`Ningún plazo confirmado${propPlazos ? ` · ${propPlazos === 1 ? 'hay 1 propuesto' : `hay ${propPlazos} propuestos`} por confirmar` : ''}`)}</div>
+    <div class="bloque"><span class="lbl">Pendientes</span>${pend.length ? pend.map(p => `<label class="pend"><input type="checkbox" data-action="toggle-pend" data-id="${p.id}">${esc(p.text)}</label>`).join('') : sin('Nada pendiente')}</div>
+    <div class="bloque"><span class="lbl">Hechos clave</span>${m.hechos.trim() ? `<div class="doct">${esc(m.hechos.trim())}</div>` : sin('Sin registrar')}</div>
+    <div class="bloque"><span class="lbl">Partes</span>${e.partes.length ? e.partes.map(p => `<div class="parte"><span>${esc(p.nombre)} · ${esc(lcFirst(p.rol))}${p.esCliente ? ', tu cliente' : ''}</span>${S.settings.pseudo ? `<span class="num">[${esc(p.tok)}]</span>` : ''}</div>`).join('') : sin('Ninguna registrada')}</div>
+    <a class="mas" href="#" data-action="vista-memoria">Ver la memoria completa →</a>
+  </div>`;
+}
+function fdocsHTML() {
+  const e = S.exp, leidos = docsLeidos(e);
+  const docs = [...e.docs].sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || ''));
+  const tipo = d => d.type === 'pdf' ? 'PDF' : d.type === 'docx' ? 'DOC' : 'TXT';
+  const det = d => d.borrador ? `<small>guardado desde la conversación · ${d.addedAt === todayISO() ? 'hoy' : ddmm(d.addedAt)}</small>`
+    : !leidos.has(d.name) ? '<small class="w">el agente aún no lo leyó</small>'
+    : `<small>${d.type === 'pdf' ? `${plural(d.pages || 0, 'página', 'páginas')} · ` : ''}${ddmm(d.addedAt)}</small>`;
+  return `<div class="panel" data-drop>
+    ${docs.length ? `<div>${docs.map(d => `<button class="li" data-action="view-doc" data-id="${d.id}"><span class="doc-ic">${tipo(d)}</span><span>${esc(d.name)}${det(d)}</span></button>`).join('')}</div>`
+      : '<div class="sin">Sin documentos. Agrega la demanda, resoluciones o escritos clave para que el agente pueda citarlos. El texto se extrae en tu equipo y se guarda cifrado.</div>'}
+    <button class="pb" data-action="pick-file">${ic('mas')}Agregar documento</button>
+  </div>`;
+}
+function fmovsHTML() {
+  const all = sortedMovs(S.exp), movs = S.movsAll ? all : all.slice(0, MOVS_LIMIT);
+  return `<div class="panel">
+    ${all.length ? `<div>${movs.map(v => `<div class="li"><span class="num">${esc(fmtDate(v.fecha))}</span><span>${esc(v.acto)}${v.sumilla ? `<small>${esc(v.sumilla)}</small>` : ''}</span></div>`).join('')}</div>${all.length > movs.length ? `<button class="pb" data-action="movs-all">Ver anteriores (${all.length - movs.length})</button>` : ''}`
+      : '<div class="sin">Sin movimientos. Copia el seguimiento desde la consulta del CEJ y pégalo: el agente lo ordena. Folio no se conecta al CEJ por ti.</div>'}
+    <button class="pb" data-action="paste-cej">Pegar desde el CEJ</button>
+  </div>`;
+}
+function fuenteHTML() {
+  const { norma, n } = S.fuente || {}, a = norma && Lib.article(norma, n), m = a && Lib.meta(norma);
+  if (!a) return '<div class="panel fuente"><div class="sin">Ese artículo no está en tu biblioteca.</div></div>';
+  const last = (a.historial || []).slice(-1)[0];
+  const [cls, icono, txt] = a.derogado ? ['bad', 'cerrar', 'Derogado'] : a.reubicadoEn ? ['warn', 'aviso', `Reubicado y renumerado: hoy es el art. ${a.reubicadoEn}`]
+    : a.proximo ? ['warn', 'aviso', `Tiene un cambio que rige desde el ${fmtDate(a.proximo.vigenteDesde)}`]
+    : ['', 'check', last ? `Vigente desde el ${fmtDate(last.vigenteDesde || last.publicada)} (${last.norma})` : 'Vigente'];
+  const corte = m?.actualizadoAl || Lib.manifest.actualizadoAl;
+  return `<div class="panel fuente">
+    <div class="bloque">
+      <span class="lbl">Fuente citada</span>
+      <h3>Art. ${esc(a.n)} · ${esc(m?.titulo || norma)}</h3>
+      ${a.titulo || a.ubicacion ? `<span class="ubi">${esc([a.titulo, a.ubicacion].filter(Boolean).join(' · '))}</span>` : ''}
+      <span class="vig${cls ? ' ' + cls : ''}">${ic(icono, 'width:13px;height:13px')}${esc(txt)}</span>
+    </div>
+    ${a.reubicadoEn ? `<a href="#" data-action="ver-articulo" data-norma="${esc(norma)}" data-n="${esc(a.reubicadoEn)}">Ver el artículo ${esc(a.reubicadoEn)} →</a>` : ''}
+    <div class="texto-ley">${esc(a.texto)}</div>
+    ${a.proximo ? `<div class="bloque"><span class="lbl">Cambio que aún no rige · ${esc(a.proximo.norma)}</span><div class="texto-ley">${esc(a.proximo.texto)}</div></div>` : ''}
+    <p class="nota">Texto tomado del SPIJ, actualizado al <span class="num">${esc(fmtDate(corte))}</span>. La biblioteca de Folio no es una edición oficial: verifica en la fuente antes de usar el artículo en un escrito.${m?.fuenteOficial ? ` <a href="${esc(m.fuenteOficial)}" target="_blank" rel="noopener noreferrer">Verificar en la fuente oficial</a>.` : ''}</p>
+  </div>`;
+}
+function borradorHTML() {
+  const m = activeChat(S.exp).mensajes[S.borrador];
+  if (!m || m.role !== 'assistant') return '<div class="panel"><div class="sin">No se encontró el borrador en esta conversación.</div></div>';
+  const html = md(m.content).replace(/<p>(\s*(?:<strong>)?sumilla\s*:)/i, '<p class="sum">$1').replace(/\[([^\]\n<>]{2,160})\]/g, '<span class="hueco">[$1]</span>');
+  return `<div class="panel">
+    <div class="bloque"><span class="lbl">Borrador del agente · revísalo antes de usarlo</span><h3 style="margin:0;font-size:17px;font-weight:500">${esc(borrTitulo(m))}</h3></div>
+    <div class="escrito">${html}</div>
+    <div class="borr-acc"><button class="pb prim" data-action="borr-guardar"${m.guardado ? ' disabled' : ''}>${m.guardado ? 'Guardado en Documentos' : 'Guardar como documento'}</button><button class="pb" data-action="borr-copiar">Copiar</button><button class="pb" data-action="borr-pedir">Pedir cambios en la conversación</button></div>
+    <p class="nota">Borrador de apoyo: la redacción final, la verificación de normas y plazos, y la firma son tuyas.</p>
+  </div>`;
 }
 /* ---------- Biblioteca legal peruana (E8) ---------- */
 function libStatusHTML() {
   if (!Lib.installed()) return `<button class="libstat off" data-action="open-settings" title="Descarga la biblioteca legal para que el agente cite normas peruanas vigentes">Sin biblioteca legal</button>`;
   const age = Lib.ageDays(); const cls = age >= NORMAS_STALE_WARN ? 'warn' : '';
   return `<span class="libstat ${cls}" title="${age >= NORMAS_STALE_WARN ? `La biblioteca tiene ${age} días sin actualizarse: puede no incluir cambios recientes.` : 'Textos de normas peruanas en tu equipo'}">Normas al ${esc(fmtDate(Lib.manifest.actualizadoAl))}</span>`;
-}
-const CITA = { vigente: ['ok', '✓', 'Vigente en tu biblioteca'], porRegir: ['warn', '⚠', 'Tiene un cambio que aún no rige'], textoDistinto: ['warn', '⚠', 'La cita textual no coincide con el texto vigente'],
-  derogado: ['bad', '✗', 'Derogado'], reubicado: ['warn', '⚠', 'Artículo reubicado y renumerado: cita el número actual'], noEncontrado: ['bad', '✗', 'No existe en tu biblioteca'], fuera: ['info', '○', 'No está en tu biblioteca: verifícala en el SPIJ'], extranjera: ['bad', '🌐', 'Norma de otro país'] };
-function citasHTML(m) {
-  const c = m.citas; if (!c) return '';
-  const chips = c.items.map(it => {
-    const [cls, ico, tip] = CITA[it.estado] || CITA.fuera;
-    const extra = it.estado === 'vigente' && it.modificado ? ` · modificado ${fmtDate(it.modificado)}` : '';
-    const title = esc(tip + (it.modificado ? `. Última modificación: ${fmtDate(it.modificado)}` : ''));
-    return it.norma && !it.norma.startsWith('fuera:') && it.estado !== 'noEncontrado'
-      ? `<button class="cite ${cls}" data-action="ver-articulo" data-norma="${esc(it.norma)}" data-n="${esc(it.n)}" title="${title}">${ico} ${esc(it.label)}${esc(extra)}</button>`
-      : `<span class="cite ${cls}" title="${title}">${ico} ${esc(it.label)}</span>`;
-  }).join('');
-  const used = m.meta?.normas?.length ? `Consultó ${m.meta.normas.length} artículo${m.meta.normas.length === 1 ? '' : 's'} de tu biblioteca (textos al ${esc(fmtDate(c.corte))}).` : `Biblioteca legal al ${esc(fmtDate(c.corte))}.`;
-  const stale = c.age >= NORMAS_STALE_ALERT ? `<p class="cites-warn">⚠ Tu biblioteca legal tiene ${c.age} días sin actualizarse: puede no incluir cambios recientes.</p>` : '';
-  return `<div class="cites">${chips ? `<div class="cites-row">${chips}</div>` : ''}<p class="cites-note">${used} Verifica cada artículo en la fuente oficial antes de usarlo.</p>${stale}</div>`;
 }
 function showArticle(id, n) {
   const a = Lib.article(id, n), m = Lib.meta(id); if (!a) return toast('Ese artículo no está en tu biblioteca.', true);
@@ -529,7 +759,7 @@ function normasSettingsHTML() {
     <label class="switch" style="margin-bottom:1rem"><input type="checkbox" data-setting="normasAuto" ${s.normasAuto !== false ? 'checked' : ''}><span><strong>Actualizar la biblioteca automáticamente</strong><br><span class="small muted">Revisa si hay textos nuevos al abrir Folio, como máximo dos veces al día.</span></span></label>
     <div class="row"><button class="btn sm" data-action="normas-install">Buscar actualización</button><button class="btn ghost sm" data-action="normas-changes">Ver cambios recientes</button><button class="btn ghost sm danger" data-action="normas-remove">Eliminar biblioteca</button><span id="normas-status" class="small muted"></span></div>`;
 }
-function refreshNormasUI() { const sec = $('#normas-section'); if (sec) sec.innerHTML = normasSettingsHTML(); if (S.exp && S.view !== 'settings') renderAgent(); }
+function refreshNormasUI() { const sec = $('#normas-section'); if (sec) sec.innerHTML = normasSettingsHTML(); if (S.vista === 'chat' || S.vista === 'inicio') { renderCentro(); renderFicha(); } }
 async function installNormas(quiet = false) {
   const st = () => $('#normas-status');
   try {
@@ -598,88 +828,6 @@ function emptyHTML() {
     <div class="row"><button class="btn primary" data-action="new-exp">Crear expediente</button><button class="btn" data-action="load-sample">Probar con un expediente de ejemplo</button></div>
     <p class="tiny muted" style="margin-top:1rem">El ejemplo usa datos ficticios.</p></div>`;
 }
-/* ---------- Expediente: carátula + pestañas + agente (spec v0.5 §4.2 y §5) ---------- */
-const TABS = [['resumen', 'Resumen'], ['memoria', 'Memoria'], ['movimientos', 'Movimientos'], ['documentos', 'Documentos']];
-function tabCount(k) { const e = S.exp; return !e ? null : k === 'movimientos' ? e.movimientos.length : k === 'documentos' ? e.docs.length : null; }
-function tabsHTML() {
-  return `<nav class="tabs" role="tablist" aria-label="Secciones del expediente">${TABS.map(([k, l]) => { const n = tabCount(k);
-    return `<button role="tab" id="tab-${k}" aria-selected="${S.tab === k}" aria-controls="pane" data-action="tab" data-tab="${k}">${l}${n != null ? ` <span class="count">${n}</span>` : ''}</button>`; }).join('')}</nav>`;
-}
-function estadoChipHTML(e) {
-  if (!e.estado) return `<span class="estado unset"><i aria-hidden="true"></i><span>Estado procesal sin registrar</span></span>`;
-  const hot = nextPlazos(e).some(p => daysUntil(p.fecha) <= 7);
-  return `<span class="estado ${hot ? 'hot' : ''}" title="${esc(e.estado)}${hot ? '. Tiene un plazo en los próximos 7 días' : ''}"><i aria-hidden="true"></i><span>${esc(e.estado)}</span></span>`;
-}
-function expHTML() {
-  const e = S.exp; const cli = e.partes.filter(p => p.esCliente), con = e.partes.filter(p => !p.esCliente);
-  const nm = arr => arr.map(p => esc(p.nombre)).join(', ');
-  return `<div class="expwrap" id="expwrap" data-agent="${S.agent}">
-    <div class="expcol">
-      <header class="caratula">
-        <div class="car-top"><span class="expnum">${esc(e.numero || 'Sin número')}</span>${e.ejemplo ? '<span class="chip">Ejemplo ficticio</span>' : ''}<span class="car-actions">${privacyPillHTML()}<button class="btn ghost sm" data-action="edit-exp">Editar datos</button></span></div>
-        <h1 class="partes">${nm(cli) || 'Tu cliente'}<span class="vs">contra</span>${nm(con) || 'Contraparte'}</h1>
-        <div class="car-meta"><span id="estado-slot">${estadoChipHTML(e)}</span><span class="org">${esc([e.materia, e.organo, e.distrito].filter(Boolean).join(' · ') || 'Completa materia y órgano jurisdiccional en Editar datos')}</span></div>
-        ${tabsHTML()}
-      </header>
-      <section class="pane" id="pane" role="tabpanel" aria-labelledby="tab-${S.tab}">${paneHTML()}</section>
-    </div>
-    <aside class="agent" id="agent" aria-label="Agente del expediente">${agentHTML()}</aside>
-    ${fabHTML()}
-  </div>`;
-}
-function refreshCaratula() { const s = $('#estado-slot'); if (s && S.exp) s.innerHTML = estadoChipHTML(S.exp); updateTabs(); }
-function renderPane() { const p = $('#pane'); if (!p) return; p.innerHTML = paneHTML(); p.setAttribute('aria-labelledby', 'tab-' + S.tab); refreshCaratula(); autosizeAll(); }
-function paneHTML() { return S.tab === 'movimientos' ? movsHTML() : S.tab === 'documentos' ? docsHTML() : S.tab === 'memoria' ? memHTML() : resumenHTML(); }
-
-/* ---------- Resumen: "¿qué está pasando?" calculado en el equipo, sin IA (spec v0.5 §5.1) ---------- */
-function recallItems(e) {
-  const m = e.memoria, have = [], missing = [];
-  if (e.partes.length) have.push(plural(e.partes.length, 'parte protegida', 'partes protegidas'));
-  (m.hechos.trim() ? have : missing).push('hechos clave');
-  (m.estrategia.trim() ? have : missing).push('tu estrategia');
-  const pl = nextPlazos(e).length; if (pl) have.push(plural(pl, 'plazo', 'plazos'));
-  if (e.movimientos.length) have.push(plural(e.movimientos.length, 'movimiento', 'movimientos'));
-  if (e.docs.length) have.push(plural(e.docs.length, 'documento', 'documentos'));
-  return { have, missing };
-}
-function resumenHTML() {
-  const e = S.exp, m = e.memoria;
-  const plz = nextPlazos(e), next = plz[0];
-  const movs = sortedMovs(e).slice(0, 3);
-  const pend = m.pendientes.filter(p => !p.done);
-  const docs = [...e.docs].sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || '')).slice(0, 3);
-  const steps = [
-    [e.partes.length > 0, 'Agrega las partes', 'Sus nombres se reemplazan antes de consultar a la IA.', 'data-action="goto" data-tab="memoria" data-focus="#nparte-n"'],
-    [!!(e.estado || m.resumen), 'Escribe el estado y el resumen del caso', 'Es lo primero que lee el agente.', 'data-action="goto" data-tab="memoria" data-focus="[data-bind=estado]"'],
-    [e.movimientos.length > 0, 'Pega el seguimiento del CEJ', 'El agente lo ordena y tú lo revisas antes de guardar.', 'data-action="paste-cej"'],
-    [e.docs.length > 0, 'Sube la demanda u otros escritos', 'PDF, Word o texto; se leen en tu equipo.', 'data-action="pick-file"']];
-  const done = steps.filter(s => s[0]).length;
-  const start = done <= 2 ? `<section class="getstarted" aria-labelledby="h-start"><h2 id="h-start" class="eyebrow">Empieza por aquí · ${done} de 4</h2>
-    <ol>${steps.map(([ok, t, sub, act]) => `<li class="${ok ? 'done' : ''}"><button ${act}><span class="mark">${ok ? ico('check') : ''}</span><span><strong>${t}</strong><span class="sub">${sub}</span></span></button></li>`).join('')}</ol></section>` : '';
-  const { have, missing } = recallItems(e);
-  return `${start}<div class="rs-grid">
-    <div class="rs-main">
-      <section class="rs-block"><h2 class="eyebrow">Estado actual</h2>${e.estado ? `<p class="rs-estado">${esc(e.estado)}</p>` : `<p class="muted">Sin registrar. <button class="linklike" data-action="goto" data-tab="memoria" data-focus="[data-bind=estado]">Escríbelo en Memoria</button></p>`}</section>
-      <section class="rs-block"><h2 class="eyebrow">Resumen del caso</h2>${m.resumen ? `<p class="rs-text">${esc(m.resumen)}</p>` : `<p class="muted">Sin resumen. <button class="linklike" data-action="goto" data-tab="memoria" data-focus="[data-bind='memoria.resumen']">Escríbelo en Memoria</button></p>`}</section>
-      <section class="rs-block"><div class="rs-head"><h2 class="eyebrow">Últimos movimientos</h2>${e.movimientos.length > 3 ? `<button class="linklike" data-action="goto" data-tab="movimientos">Ver los ${e.movimientos.length}</button>` : ''}</div>
-        ${movs.length ? `<ol class="timeline mini">${movs.map((v, i) => movItemHTML(v, i === 0, false)).join('')}</ol>` : `<p class="muted">Sin movimientos. <button class="linklike" data-action="paste-cej">Pegar desde el CEJ</button></p>`}</section>
-      <section class="rs-block rs-recall"><h2 class="eyebrow">Folio recuerda de este caso</h2>
-        <p>${have.length ? esc(have.join(' · ')) : 'Todavía nada: completa la memoria del caso.'}</p>${missing.length ? `<p class="small muted">Aún no registras: ${esc(missing.join(' ni '))}.</p>` : ''}
-        <div class="row"><button class="btn sm" data-action="goto" data-tab="memoria">Ver memoria</button><button class="btn sm" data-action="ask-agent">${ico('chat')}Preguntar al agente</button></div></section>
-    </div>
-    <div class="rs-side">
-      <section class="rs-next"><h2 class="eyebrow">Próximo plazo</h2>
-        ${next ? `<div class="np"><div class="np-row"><span class="np-date ${urgency(next.fecha)}">${esc(fmtDayMon(next.fecha))}</span><span class="np-when ${urgency(next.fecha)}">${esc(whenLabel(next.fecha))}</span></div><p>${esc(next.desc)}</p></div>
-          ${plz.length > 1 ? `<button class="linklike" data-action="goto" data-tab="memoria" data-focus="#nplazo-f">${plz.length === 2 ? 'Un plazo más' : `${plz.length - 1} plazos más`}</button>` : ''}`
-        : `<p class="muted">Sin plazos pendientes.</p><button class="btn sm" data-action="goto" data-tab="memoria" data-focus="#nplazo-f">Registrar plazo</button>`}</section>
-      <section class="rs-block"><div class="rs-head"><h2 class="eyebrow">Pendientes</h2>${m.pendientes.length ? `<span class="tiny muted">${pend.length} de ${m.pendientes.length} por hacer</span>` : ''}</div>
-        ${pend.length ? `<ul class="list compact">${pend.slice(0, 5).map(p => `<li><input type="checkbox" aria-label="Marcar como hecho" data-action="toggle-pend" data-id="${p.id}"><span>${esc(p.text)}</span></li>`).join('')}</ul>${pend.length > 5 ? `<button class="linklike" data-action="goto" data-tab="memoria">Ver los ${pend.length}</button>` : ''}` : `<p class="muted">Nada pendiente.</p>`}</section>
-      <section class="rs-block"><div class="rs-head"><h2 class="eyebrow">Documentos</h2>${e.docs.length > 3 ? `<button class="linklike" data-action="goto" data-tab="documentos">Ver los ${e.docs.length}</button>` : ''}</div>
-        ${docs.length ? `<ul class="doclist mini">${docs.map(d => docRowHTML(d, true)).join('')}</ul>` : `<p class="muted">Sin documentos. <button class="linklike" data-action="pick-file">Agregar</button></p>`}</section>
-    </div>
-  </div>`;
-}
-
 /* ---------- Memoria: lo que el abogado escribió o aprobó (spec v0.5 §5.2) ---------- */
 function memHTML() {
   const e = S.exp, m = e.memoria, pseudo = S.settings.pseudo;
@@ -731,30 +879,6 @@ function movsHTML() {
       : '<p class="muted">Sin movimientos. Agrega el primero o pega el seguimiento del CEJ.</p>'}`;
 }
 
-/* ---------- Documentos: lista con buscador (spec v0.5 §5.4) ---------- */
-const DOC_TYPE = { pdf: 'PDF', docx: 'DOCX', txt: 'TXT' };
-function docRowHTML(d, mini = false) {
-  const meta = [d.type === 'pdf' ? `<span class="mono">Fs. ${d.pages || '?'}</span>` : '', mini ? '' : `${(d.chars || 0).toLocaleString('es-PE')} caracteres`, `agregado el ${esc(fmtDate(d.addedAt))}`].filter(Boolean).join(' · ');
-  if (mini) return `<li class="docrow"><span class="dtype">${DOC_TYPE[d.type] || 'TXT'}</span><span class="dmain"><button class="linkname" data-action="view-doc" data-id="${d.id}" title="Ver el texto extraído">${esc(d.name)}</button><span class="dmeta">${meta}</span></span></li>`;
-  return `<li class="docrow"><span class="dtype">${DOC_TYPE[d.type] || 'TXT'}</span><span class="dmain"><span class="name">${esc(d.name)}</span><span class="dmeta">${meta}${d.scanned ? ' <span class="chip soon">Parece escaneado</span>' : ''}</span></span>
-    <span class="dact"><button class="btn ghost sm" data-action="view-doc" data-id="${d.id}">Ver texto</button><button class="iconbtn" aria-label="Eliminar ${esc(d.name)}" data-action="del-doc" data-id="${d.id}">✕</button></span></li>`;
-}
-function docListHTML() {
-  const f = norm(S.docFilter);
-  const docs = [...S.exp.docs].sort((a, b) => (b.addedAt || '').localeCompare(a.addedAt || '')).filter(d => !f || norm(d.name).includes(f));
-  if (!S.exp.docs.length) return '<p class="muted">Sin documentos. Agrega la demanda, resoluciones o escritos clave para que el agente pueda citarlos.</p>';
-  return docs.length ? `<ul class="doclist">${docs.map(d => docRowHTML(d)).join('')}</ul>` : `<p class="muted">Ningún documento coincide con “${esc(S.docFilter)}”.</p>`;
-}
-function docsHTML() {
-  const e = S.exp;
-  const drop = e.docs.length
-    ? `<div class="dropzone slim" data-action="pick-file" tabindex="0" role="button" aria-label="Agregar documentos">${ico('plus')}<span><strong>Agregar documentos</strong> <span class="small">PDF, Word (.docx) o texto. Arrástralos aquí o haz clic.</span></span></div>`
-    : `<div class="dropzone" data-action="pick-file" tabindex="0" role="button" aria-label="Agregar documentos"><strong>Arrastra aquí PDF, Word (.docx) o texto (.txt), o haz clic para elegir.</strong><br><span class="small">El texto se extrae en tu equipo y se guarda cifrado. El archivo original no se copia.</span></div>`;
-  return `<div class="pane-head"><div><h2 class="eyebrow">Documentos</h2><p class="sec-sub">El texto se extrae en tu equipo y se guarda cifrado; el archivo original no se copia. Los PDF escaneados como imagen no tienen texto que leer (esta versión no hace OCR).</p></div></div>
-    ${drop}
-    ${e.docs.length >= 6 ? `<input class="input docsearch" data-docsearch placeholder="Buscar documento por nombre" value="${esc(S.docFilter)}" aria-label="Buscar documento por nombre">` : ''}
-    <div id="doclist">${docListHTML()}</div>`;
-}
 async function addFiles(files) {
   const e = S.exp; if (!e) return;
   for (const f of files) {
@@ -765,13 +889,11 @@ async function addFiles(files) {
       await store.put('doc:' + id, { id, expId: e.id, name: f.name, text });
       S.docTexts[id] = text;
       e.docs.push({ id, name: f.name, type: r.type, pages: r.pages, chars: text.length, addedAt: todayISO(), scanned: !!r.scanned });
-      await saveExp(); if (S.tab !== 'memoria') renderPane(); else updateTabs();
+      await saveExp(); refreshExp();
       toast(r.scanned ? `${f.name}: casi no tiene texto. Puede ser un escaneo.` : `${f.name} agregado.`, !!r.scanned);
     } catch (err) { fail(err); }
   }
 }
-function updateTabs() { $$('.tabs [data-tab]').forEach(b => { const n = tabCount(b.dataset.tab), c = b.querySelector('.count'); if (c && n != null) c.textContent = n; b.setAttribute('aria-selected', b.dataset.tab === S.tab); }); }
-
 /* ============================================================
    Agente
    ============================================================ */
@@ -785,46 +907,127 @@ function quickActions(e) {
   acts.push(['Preparar borrador', 'Prepara un borrador de escrito para: ', true]);
   return acts;
 }
+/* ---------- Conversación: hilo en la columna de lectura (prototipo v0.6) ---------- */
+function chatHTML() {
+  const e = S.exp, c = activeChat(e), msgs = c.mensajes;
+  if (!msgs.length) return `<div class="col hilo" id="hilo">${parteDeHTML(e, c)}</div>`;
+  const last = msgs[msgs.length - 1];
+  const prop = isReady(S.settings) && last.role === 'assistant' && !S.sending
+    ? `<div class="prop"><span>¿Algo de esto debe quedar en la memoria del caso?</span><button data-action="propose-memory" title="El agente propone cambios a la memoria; tú decides cuáles guardar">Actualizar memoria</button></div>` : '';
+  return `<div class="col hilo" id="hilo">${msgs.map(msgHTML).join('')}${prop}</div>`;
+}
+/* Conversación nueva: lo que el agente ya sabe, calculado en el equipo (no gasta consultas) */
+function parteDeHTML(e, c) {
+  const next = nextPlazos(e)[0], prev = c.deChat && e.chats.find(x => x.id === c.deChat);
+  const una = s => trunc(String(s || '').replace(/\s+/g, ' ').trim(), 160);
+  const rows = [['Estado', e.estado || 'sin registrar'], ['Estrategia', una(e.memoria.estrategia) || 'sin registrar'],
+    prev?.resumen ? ['Resumen anterior', una(prev.resumen)] : ['Próximo plazo', next ? `${fmtDate(next.fecha)}, ${next.desc}` : 'ninguno registrado']];
+  S.quick = isReady(S.settings) ? quickActions(e).slice(0, 3) : [];
+  return `${prev ? `<div class="continua">${ic('flecha')}<span>Continúa de <a href="#" data-action="open-chat" data-id="${prev.id}">«${esc(prev.titulo || 'Conversación anterior')}»</a> · Folio guardó un resumen y la memoria está al día</span></div>` : ''}
+    <div class="ya"><span class="lbl">El agente parte de</span>${rows.map(([k, v]) => `<div class="r"><span>${k}</span><span>${esc(v)}</span></div>`).join('')}</div>
+    ${S.quick.length ? `<div class="atajos">${S.quick.map(([l], i) => `<button class="atajo" data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}</div>` : ''}`;
+}
+const PLAZO_RE = /\bplazos?\b|d[ií]as\s+h[aá]biles|\bvence\b|\bvencimiento/i;
+const ESCRITO_RE = /^\s*(?:\*\*)?sumilla\s*:|señor(?:a)?\s+juez|\bpetitorio\b/im;
 function msgHTML(m, i) {
-  if (m.role === 'user') return `<div class="msg user">${esc(m.content)}</div>`;
-  if (m.role === 'error') return `<div class="msg error" role="alert">${esc(m.content)}</div>`;
-  const meta = m.meta ? `Enviado a ${esc(provLabel(m.meta.provider))} (${esc(m.meta.model)})${m.meta.pseudo ? `, ${m.meta.replaced} dato${m.meta.replaced === 1 ? '' : 's'} reemplazado${m.meta.replaced === 1 ? '' : 's'}` : ', sin reemplazo de datos'}` : '';
-  return `<div class="msg assistant">${md(m.content)}${citasHTML(m)}<div class="foot"><span>${meta}</span><button class="btn ghost sm" data-action="copy-msg" data-i="${i}">Copiar</button></div></div>`;
+  if (m.role === 'user') return `<div class="yo">${esc(m.content)}</div>`;
+  if (m.role === 'error') return `<div class="err-msg" role="alert">${esc(m.content)}</div>`;
+  const { html, resto } = citasEnLinea(md(m.content), m.citas);
+  const viejo = m.citas?.age >= NORMAS_STALE_ALERT ? `<div class="verif">${ic('aviso')}<span>Tu biblioteca legal tiene ${m.citas.age} días sin actualizarse: puede no incluir cambios recientes.</span></div>` : '';
+  const plazo = PLAZO_RE.test(m.content) ? `<div class="verif">${ic('aviso')}<span>Folio no calcula plazos: verifica la fecha en la resolución y en tu casilla antes de anotarlo.</span></div>` : '';
+  return `<div class="resp">${leyoHTML(m)}${html}${resto ? `<div class="fichas">${resto}</div>` : ''}${plazo}${viejo}${ESCRITO_RE.test(m.content) ? borrHTML(m, i) : ''}${reciboHTML(m)}</div>`;
 }
-/* Antes de la primera consulta: lo que el agente ya sabe, calculado en el equipo (no gasta consultas) */
-function recallHTML(e) {
-  const next = nextPlazos(e)[0], s = S.settings;
-  const partes = !e.partes.length ? 'ninguna todavía' : s.pseudo ? `${e.partes.length}; se envían como ${e.partes.slice(0, 3).map(p => `[${p.tok}]`).join(', ')}${e.partes.length > 3 ? '…' : ''}` : `${e.partes.length}; reemplazo desactivado en Ajustes`;
-  const rows = [['Estado', e.estado || 'sin registrar'], ['Próximo plazo', next ? `${fmtDate(next.fecha)}, ${next.desc}` : 'ninguno registrado'], ['Partes protegidas', partes],
-    ['Fuentes', `${plural(e.movimientos.length, 'movimiento', 'movimientos')} · ${plural(e.docs.length, 'documento', 'documentos')}`]];
-  return `<div class="recall"><h3 class="eyebrow">Folio recuerda de este caso</h3><dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl><p>No tienes que repetir el contexto: el agente lo lee antes de responder.</p></div>`;
+/* "Leyó la memoria, 2 documentos y 3 artículos ▸": se despliega con cada fuente */
+function leyoHTML(m) {
+  const t = m.meta; if (!t) return '';
+  const docs = [...new Set(t.frags || [])], arts = t.normas || [];
+  const partes = ['<u>la memoria</u>'];
+  if (docs.length) partes.push(`<u>${plural(docs.length, 'documento', 'documentos')}</u>`);
+  if (arts.length) partes.push(`<u>${plural(arts.length, 'artículo', 'artículos')}</u>`);
+  const lista = [`<span><b>Memoria:</b> ${t.secciones?.length ? esc(listaY(t.secciones)) : 'la del expediente'}</span>`];
+  if (docs.length) lista.push(`<span><b>Documentos:</b> ${docs.map(esc).join(' · ')}</span>`);
+  if (arts.length) {
+    const por = {}; arts.forEach(s => { const [id, n] = s.split(' '); (por[id] = por[id] || []).push(n); });
+    const txt = Object.entries(por).map(([id, ns]) => `${ns.length > 1 ? 'arts.' : 'art.'} ${listaY(ns)} del ${Lib.meta(id)?.titulo || id}`).join('; ');
+    const corte = m.citas?.corte || Lib.manifest?.actualizadoAl;
+    lista.push(`<span><b>Biblioteca:</b> ${esc(txt)}${corte ? ` (textos al <span class="num">${esc(fmtDate(corte))}</span>)` : ''}</span>`);
+  }
+  return `<button class="leyo" data-action="leyo" aria-expanded="false">Leyó ${listaY(partes)}<span> ▸</span></button><div class="leyo-lista" hidden>${lista.join('')}</div>`;
 }
-function agentHTML() {
-  const e = S.exp, s = S.settings, ready = isReady(s);
-  const abroad = PROVIDERS[s.provider]?.abroad;
-  const line = !ready ? '' : abroad
-    ? `<span class="dot ${s.pseudo ? '' : 'off'}"></span>${s.pseudo ? 'Se envía a ' + esc(provLabel(s.provider)) + ' con datos reemplazados' : 'Se envía a ' + esc(provLabel(s.provider)) + ' sin reemplazar datos'}`
-    : `<span class="dot"></span>Se envía a tu servidor propio`;
-  const msgs = activeChat(e).mensajes, big = S.agent === 'amplio', last = msgs[msgs.length - 1];
-  S.quick = ready ? quickActions(e) : [];
-  const who = !ready ? 'Sin proveedor conectado' : s.provider === 'custom' ? `En tu servidor propio · <span class="mono">${esc(s.model)}</span>` : `Con tu cuenta de ${esc(provLabel(s.provider))} · <span class="mono">${esc(s.model.split('/').pop())}</span>`;
-  const suggest = ready && last?.role === 'assistant' && !S.sending ? `<div class="mem-suggest"><span>¿Algo de esto debe quedar en la memoria del caso?</span><button class="btn sm" data-action="propose-memory" title="El agente propone cambios a la memoria; tú decides cuáles guardar">Actualizar memoria</button></div>` : '';
-  return `<div class="agent-head">
-      <button class="iconbtn agent-back" data-action="agent-close" aria-label="Volver al expediente">${ico('back')}</button>
-      <div class="agent-title"><h2>Agente</h2><p>Conoce la memoria de este expediente</p></div>
-      <div class="agent-ctrl"><button class="iconbtn" data-action="agent-wide" aria-label="${big ? 'Reducir el agente' : 'Ampliar el agente'}" title="${big ? 'Reducir' : 'Ampliar'}">${ico(big ? 'shrink' : 'expand')}</button><button class="iconbtn" data-action="agent-close" aria-label="Cerrar el agente" title="Cerrar (Ctrl+.)">${ico('close')}</button></div>
-    </div>
-    <details class="agent-info"><summary>${who}</summary>
-      <div class="agent-info-body">${ready ? `<p>Proveedor: ${esc(provLabel(s.provider))}<br>Modelo: <span class="mono">${esc(s.model)}</span></p>` : ''}${libStatusHTML()}
-        <div class="row">${msgs.length ? '<button class="btn ghost sm" data-action="clear-chat">Limpiar conversación</button>' : ''}<button class="btn ghost sm" data-action="open-settings">${ready ? 'Cambiar proveedor' : 'Conectar proveedor'}</button></div></div></details>
-    <div class="msgs" id="msgs">${msgs.length ? msgs.map(msgHTML).join('') + suggest : recallHTML(e)}</div>
-    ${ready ? `<div class="quick" role="group" aria-label="Acciones rápidas">${S.quick.map(([l], i) => `<button data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}</div>
-    <form class="composer" data-form="chat"><label class="sr-only" for="q">Tu consulta</label><textarea id="q" class="textarea" rows="2" placeholder="Escribe tu consulta. Enter envía, Mayús+Enter salta de línea." ${S.sending ? 'disabled' : ''}></textarea>
-      <div class="row"><span class="privacy-line">${line}</span>${S.sending ? '<button class="btn" type="button" data-action="stop">Detener</button>' : '<button class="btn primary" type="submit">Enviar</button>'}</div></form>`
-    : `<div class="composer"><div class="note warn"><p>Conecta tu proveedor de IA para conversar con el agente.</p><button class="btn sm" data-action="open-settings">Conectar proveedor</button></div></div>`}`;
+/* Citas en línea: cada chip va al final del párrafo o ítem que la menciona; las que no se ubican van debajo */
+const CITA = { vigente: ['ok', '✓', 'Vigente en tu biblioteca'], porRegir: ['warn', '⚠', 'Tiene un cambio que aún no rige'], textoDistinto: ['warn', '⚠', 'La cita textual no coincide con el texto vigente'],
+  derogado: ['bad', '✗', 'Derogado'], reubicado: ['warn', '⚠', 'Artículo reubicado y renumerado: cita el número actual'], noEncontrado: ['bad', '✗', 'No existe en tu biblioteca'], fuera: ['info', '○', 'No está en tu biblioteca: verifícala en el SPIJ'], extranjera: ['bad', '🌐', 'Norma de otro país'] };
+const CITA_TXT = { vigente: 'vigente', porRegir: 'por regir', textoDistinto: 'texto distinto', derogado: 'derogado', reubicado: 'reubicado', noEncontrado: 'no existe', fuera: 'fuera de tu biblioteca', extranjera: 'de otro país' };
+function citaChip(it, vistos) {
+  const [cls, sym, tip] = CITA[it.estado] || CITA.fuera;
+  const marca = vistos.has(it.estado) ? sym : `${sym} ${CITA_TXT[it.estado] || ''}`; vistos.add(it.estado);
+  const title = esc(tip + (it.modificado ? `. Última modificación: ${fmtDate(it.modificado)}` : '')), c = `cita${cls === 'ok' ? '' : ' ' + cls}`;
+  return it.norma && !it.norma.startsWith('fuera:') && it.estado !== 'noEncontrado'
+    ? `<button class="${c}" data-action="ver-articulo" data-norma="${esc(it.norma)}" data-n="${esc(it.n)}" title="${title}">${esc(it.label)} <i>${esc(marca)}</i></button>`
+    : `<span class="${c}" title="${title}">${esc(it.label)} <i>${esc(marca)}</i></span>`;
 }
-function renderAgent() { const a = $('#agent'); if (a) { a.innerHTML = agentHTML(); scrollMsgs(); } }
-function scrollMsgs() { const m = $('#msgs'); if (m) m.scrollTop = m.scrollHeight; }
+function citasEnLinea(html, citas) {
+  if (!citas?.items?.length) return { html, resto: '' };
+  const tpl = document.createElement('template'); tpl.innerHTML = html;
+  const bloques = [...tpl.content.querySelectorAll('p, li, h4')].map(el => [el, citeText(el.textContent)]);
+  const vistos = new Set(), resto = [];
+  for (const it of citas.items) {
+    const chip = citaChip(it, vistos), b = it.raw && bloques.find(([, t]) => t.includes(it.raw));
+    if (b) b[0].insertAdjacentHTML('beforeend', ' ' + chip); else resto.push(chip);
+  }
+  return { html: tpl.innerHTML, resto: resto.join('') };
+}
+/* Recibo: a quién se envió, con qué modelo de terceros y cuántos datos se reemplazaron */
+function reciboHTML(m) {
+  const t = m.meta; if (!t) return '';
+  const modelo = OR_RECOMMENDED.find(r => r.id === t.model)?.name || String(t.model || '').split('/').pop();
+  const donde = t.provider === 'custom' ? 'Procesado en tu servidor propio' : `Enviado a ${esc(provLabel(t.provider))} con tu cuenta`;
+  return `<div class="recibo">${donde} · ${esc(modelo)} · ${t.pseudo ? plural(t.replaced, 'dato reemplazado', 'datos reemplazados') : 'sin reemplazo de datos'} · <button data-action="ver-envio">Ver lo que se envió</button></div>`;
+}
+/* Borrador listo: tarjeta "Abrir al lado" → Ficha en modo Borrador */
+function borrTitulo(m) {
+  const s = m.content.match(/^\s*(?:\*\*)?sumilla\s*:\s*(?:\*\*)?\s*(.+)$/im), h = m.content.match(/^#{1,6}\s+(.+)$/m);
+  const t = (s ? s[1] : h ? h[1] : '').replace(/\*+/g, '').trim();
+  return t ? cap(trunc(t, 80)) : (activeChat(S.exp).titulo || 'Borrador del agente');
+}
+function borrHTML(m, i) {
+  return `<div class="borr"><span class="ic">${ic('doc')}</span><div><b>${esc(borrTitulo(m))}</b><span>Borrador del agente · ${m.guardado ? 'guardado en Documentos' : 'aún no está guardado'}</span></div><button class="pb" data-action="abrir-borrador" data-i="${i}">Abrir al lado</button></div>`;
+}
+async function guardarBorrador() {
+  const e = S.exp, m = activeChat(e).mensajes[S.borrador]; if (!m || m.guardado) return;
+  const id = uid(), text = m.content, name = `${borrTitulo(m).replace(/[\\/:*?"<>|]/g, '').slice(0, 70)}.txt`;
+  await store.put('doc:' + id, { id, expId: e.id, name, text }); S.docTexts[id] = text;
+  e.docs.push({ id, name, type: 'txt', pages: 1, chars: text.length, addedAt: todayISO(), borrador: true });
+  m.guardado = id; await saveExp(); refreshExp(); toast('Guardado en Documentos del expediente');
+}
+/* Conversaciones: abrir, nueva (reutiliza una vacía), renombrar y borrar */
+async function irAChatNuevo() {
+  const e = S.exp; let c = e.chats.find(x => !x.mensajes.length);
+  if (!c) { c = newChat(); e.chats.push(c); }
+  e.chatActivo = c.id; Object.assign(S, { vista: 'chat', sideOpen: false }); resetFicha(); render();
+}
+function abrirChat(id) {
+  const e = S.exp; if (!e.chats.some(c => c.id === id)) return;
+  e.chatActivo = id; Object.assign(S, { vista: 'chat', sideOpen: false }); resetFicha(); render();
+}
+async function chatMenu() {
+  const c = activeChat(S.exp), n = c.mensajes.filter(m => m.role !== 'error').length;
+  const r = await askDialog({ title: 'Conversación', ok: 'Guardar', collect: d => ({ titulo: $('#cv-t', d).value.trim() }),
+    body: `<label class="field"><span>Título</span><input class="input" id="cv-t" value="${esc(c.titulo)}" placeholder="Nueva conversación" maxlength="120"></label>
+      <p class="small muted">${plural(n, 'mensaje', 'mensajes')}. Si borras la conversación, la memoria del caso se mantiene.</p>
+      ${c.mensajes.length ? '<button type="button" class="btn danger sm" data-action="del-chat">Borrar conversación</button>' : ''}` });
+  if (!r) return;
+  c.titulo = r.titulo; await saveExp(); renderCentro(); renderBarra();
+}
+async function deleteChat() {
+  const e = S.exp, c = activeChat(e); closeDialog();
+  const ok = await askDialog({ title: 'Borrar conversación', ok: 'Borrar', danger: true, body: `<p>Se borrará «${esc(c.titulo || 'Conversación sin título')}» de este equipo. La memoria del caso se mantiene. No se puede deshacer.</p>` });
+  if (!ok) return;
+  e.chats = e.chats.filter(x => x.id !== c.id);
+  if (!e.chats.length) e.chats.push(newChat());
+  e.chatActivo = (chatsOrdenados(e)[0] || e.chats[0]).id; S.vista = 'inicio'; resetFicha();
+  await saveExp(); render(); toast('Conversación borrada.');
+}
 
 function highlightTokens(s) { return esc(s).replace(/\[(?:PERSONA|DOC|CORREO|RUC|TELEFONO|DNI|DIRECCION)_\d+\]/g, t => `<mark>${t}</mark>`); }
 async function reviewPayload(system, messages, P, kind, plannerText = null, withNormas = false) {
@@ -869,8 +1072,8 @@ async function sendChat(text) {
   const chat = activeChat(e), push = m => { chat.mensajes.push(m); chat.updatedAt = new Date().toISOString(); };
   if (!chat.titulo) chat.titulo = autoTitle(text);
   push({ role: 'user', content: text, at: new Date().toISOString() });
-  S.sending = true; S.abort = new AbortController(); renderAgent(); $('.agent-fab')?.classList.add('busy');
-  const box = $('#msgs'); box.insertAdjacentHTML('beforeend', `<div class="msg assistant" id="streaming"><span class="typing" aria-label="El agente está escribiendo"><i></i><i></i><i></i></span></div>`); scrollMsgs();
+  S.sending = true; S.abort = new AbortController(); renderCentro(); renderBarra();
+  $('#hilo')?.insertAdjacentHTML('beforeend', `<div class="resp" id="streaming"><span class="typing" aria-label="El agente está escribiendo"><i></i><i></i><i></i></span></div>`); scrollHilo();
   let system = system0, arts = [];
   try {
     let plan = null;
@@ -882,14 +1085,14 @@ async function sendChat(text) {
     if (lib) { arts = gatherArticles(e, text, plan); system = system0 + normasBlock(arts); }
     const chars = system.length + messages.reduce((a, m) => a + m.content.length, 0);
     let pending = null;
-    const full = await llm({ cfg: s, system, messages, stream: true, maxTokens: 6000, signal: S.abort.signal, onDelta: t => { pending = t; requestAnimationFrame(() => { if (pending == null) return; const el = $('#streaming'); if (el) { el.innerHTML = md(P.restore(pending)); scrollMsgs(); } pending = null; }); } });
+    const full = await llm({ cfg: s, system, messages, stream: true, maxTokens: 6000, signal: S.abort.signal, onDelta: t => { pending = t; requestAnimationFrame(() => { if (pending == null) return; const el = $('#streaming'); if (el) { el.innerHTML = md(P.restore(pending)); scrollHilo(); } pending = null; }); } });
     const content = P.restore(full).trim() || '(El modelo no devolvió texto.)';
-    push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count(), normas: arts.map(({ id, a }) => id + ' ' + a.n) }, citas: checkCitations(content) });
+    push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count(), normas: arts.map(({ id, a }) => id + ' ' + a.n), frags: [...new Set(ctx.frags.map(f => f.name))], secciones: memSecciones(e) }, citas: checkCitations(content) });
     await logSend('Consulta', chars, P);
   } catch (err) {
     if (err.name === 'AbortError') push({ role: 'error', content: 'Detuviste la respuesta.' });
     else push({ role: 'error', content: err instanceof FolioError ? err.message : 'Error inesperado: ' + err.message });
-  } finally { S.sending = false; S.abort = null; $('.agent-fab')?.classList.remove('busy'); await saveExp().catch(fail); renderAgent(); updateStamp(); if (S.agent !== 'cerrado') $('#q')?.focus(); }
+  } finally { S.sending = false; S.abort = null; await saveExp().catch(fail); renderCentro(); if (S.vista === 'chat') $('#q')?.focus(); }
 }
 async function logSend(kind, chars, P) {
   const s = S.settings; S.lastSend = { at: Date.now(), provider: s.provider, pseudo: P.enabled };
@@ -925,8 +1128,8 @@ Incluye solo información nueva que aparezca de forma explícita en la conversac
     if (!sel) { await saveExp(); return; }   // si cierras sin decidir, las propuestas quedan pendientes
     props.forEach((pr, i) => { if (sel.includes(i)) Object.assign(pr, { estado: 'aplicada', histId: applyMemoryChange(e, items[i], chatId).id }); else pr.estado = 'descartada'; });
     if (!sel.length) { await saveExp(); return; }
-    await saveExp(); renderPane(); toast(`Memoria actualizada: ${sel.length} cambio${sel.length > 1 ? 's' : ''}.`);
-  } catch (err) { fail(err); } finally { renderAgent(); updateStamp(); if (S.tab === 'memoria') renderPane(); }
+    await saveExp(); toast(`Memoria actualizada: ${sel.length} cambio${sel.length > 1 ? 's' : ''}.`);
+  } catch (err) { fail(err); } finally { renderCentro(); renderFicha(); }
 }
 
 /* ---------- Movimientos pegados del CEJ ---------- */
@@ -944,15 +1147,15 @@ async function pasteCEJ() {
   toast('El agente está ordenando los movimientos…');
   try {
     const out = await llm({ cfg: s, system, messages: [{ role: 'user', content: user }], maxTokens: 8000 });
-    await logSend('Ordenar movimientos', system.length + user.length, P); updateStamp();
+    await logSend('Ordenar movimientos', system.length + user.length, P);
     const list = (parseJSONLoose(out).movimientos || []).map(v => ({ fecha: /^\d{4}-\d{2}-\d{2}$/.test(v.fecha || '') ? v.fecha : '', acto: P.restore(String(v.acto || '')).trim(), sumilla: P.restore(String(v.sumilla || '')).trim() })).filter(v => v.acto);
     if (!list.length) { toast('No se encontraron movimientos en el texto.', true); return; }
     const sel = await askDialog({ title: `${list.length} movimientos encontrados`, ok: 'Agregar seleccionados', wide: true,
       collect: d => $$('[data-mv]', d).filter(c => c.checked).map(c => +c.dataset.mv),
       body: `<p>Revisa cada movimiento contra el CEJ antes de agregarlo.</p><ul class="proposal">${list.map((v, i) => `<li><label class="check"><input type="checkbox" data-mv="${i}" checked><span><span class="mono"><strong>${esc(fmtDate(v.fecha))}</strong></span> ${esc(v.acto)}<br><span class="small muted">${esc(v.sumilla)}</span></span></label></li>`).join('')}</ul>` });
     if (!sel || !sel.length) return;
-    sel.forEach(i => e.movimientos.push({ id: uid(), ...list[i] }));
-    await saveExp(); renderPane(); updateTabs(); toast(`${sel.length} movimientos agregados.`);
+    const ahora = new Date().toISOString(); sel.forEach(i => e.movimientos.push({ id: uid(), ...list[i], addedAt: ahora }));
+    await saveExp(); refreshExp(); toast(`${sel.length} movimientos agregados.`);
   } catch (err) { fail(err); }
 }
 
@@ -982,7 +1185,7 @@ async function expForm(e) {
     const ne = blankExp(r);
     if (r.cliente) addParte(ne, r.cliente, r.rolCliente, '', true);
     if (r.contraparte) addParte(ne, r.contraparte, r.rolContra, '', false);
-    S.exp = ne; S.docTexts = {}; S.tab = 'resumen'; S.movsAll = false; S.docFilter = ''; S.view = 'exp'; S.sideOpen = false;
+    Object.assign(S, { exp: ne, docTexts: {}, movsAll: false, vista: 'inicio', sideOpen: false, visitaPrevia: null }); resetFicha();
     await saveExp(); S.settings.lastExp = ne.id; await saveSettings(); render(); toast('Expediente creado.');
   } else {
     Object.assign(S.exp, { numero: r.numero, materia: r.materia, especialidad: r.especialidad, organo: r.organo, distrito: r.distrito, estado: r.estado });
@@ -995,7 +1198,7 @@ async function deleteExp() {
   if (!ok) return;
   for (const d of e.docs) await store.del('doc:' + d.id);
   await store.del('exp:' + e.id); S.index = S.index.filter(x => x.id !== e.id); await store.put('index', S.index);
-  S.exp = null; S.settings.lastExp = null; await saveSettings(); render(); toast('Expediente eliminado.');
+  S.exp = null; S.vista = S.index.length ? 'hoy' : 'vacio'; S.settings.lastExp = null; await saveSettings(); render(); toast('Expediente eliminado.');
 }
 async function movForm() {
   const r = await askDialog({ title: 'Agregar movimiento', ok: 'Agregar',
@@ -1003,7 +1206,7 @@ async function movForm() {
     body: `<div class="grid2"><label class="field"><span>Fecha</span><input class="input mono" type="date" id="mv-f" value="${todayISO()}"></label><label class="field"><span>Acto</span><input class="input" id="mv-a" placeholder="Ej.: Resolución 2, Escrito, Audiencia"></label></div>
       <label class="field"><span>Sumilla</span><textarea class="textarea" id="mv-s" rows="3" placeholder="Qué se resolvió o presentó"></textarea></label><p id="mv-err" class="small" style="color:var(--danger)" role="alert"></p>` });
   if (!r) return;
-  S.exp.movimientos.push({ id: uid(), ...r }); await saveExp(); renderPane(); updateTabs(); toast('Movimiento agregado.');
+  S.exp.movimientos.push({ id: uid(), ...r, addedAt: new Date().toISOString() }); await saveExp(); refreshExp(); toast('Movimiento agregado.');
 }
 
 /* ---------- Expediente de ejemplo (datos ficticios) ---------- */
@@ -1025,14 +1228,15 @@ async function loadSample() {
   S.exp = e; S.docTexts = { [id]: docText };
   await store.put('doc:' + id, { id, expId: e.id, name: 'Demanda de alimentos (ejemplo).txt', text: docText });
   e.docs.push({ id, name: 'Demanda de alimentos (ejemplo).txt', type: 'txt', pages: 1, chars: docText.length, addedAt: todayISO() });
-  S.tab = 'resumen'; S.view = 'exp'; S.movsAll = false; S.docFilter = '';
+  Object.assign(S, { vista: 'inicio', movsAll: false, sideOpen: false, visitaPrevia: null }); resetFicha();
   await saveExp(); S.settings.lastExp = e.id; await saveSettings(); render(); toast('Expediente de ejemplo cargado. Todos sus datos son ficticios.');
 }
 
 /* ============================================================
    Ajustes
    ============================================================ */
-async function settingsView() { S.view = 'settings'; S.draftCfg = { ...pickCfg(S.settings) }; S.sideOpen = false; render(); }
+async function settingsView() { if (S.vista !== 'ajustes') S.vistaPrev = S.vista; S.vista = 'ajustes'; S.draftCfg = { ...pickCfg(S.settings) }; S.sideOpen = false; render(); }
+function closeSettings() { const p = S.vistaPrev; S.vista = p && p !== 'ajustes' ? p : S.exp ? 'inicio' : S.index.length ? 'hoy' : 'vacio'; render(); }
 function settingsHTML() {
   const s = S.settings;
   return `<div class="settings"><div class="wrap">
@@ -1137,48 +1341,60 @@ document.addEventListener('click', async ev => {
       case 'pick-model': { const cfg = curCfg(); cfg.model = a.dataset.model; const inp = $('#pf-model'); if (inp) inp.value = cfg.model; $$('.preset').forEach(b => b.classList.toggle('on', b.dataset.model === cfg.model)); break; }
       case 'test-conn': await testConn(); break;
       case 'wipe-from-lock': await wipeAll(); break;
-      case 'open-side': S.sideOpen = true; $('.app')?.classList.add('side-open'); break;
-      case 'close-side': S.sideOpen = false; $('.app')?.classList.remove('side-open'); break;
+      case 'toggle-side': S.sideOpen = !S.sideOpen; layout(); break;
+      case 'cerrar-capas': S.sideOpen = false; S.fichaMovil = false; layout(); break;
       case 'open-exp': await openExp(id); break;
+      case 'vista-hoy': Object.assign(S, { vista: 'hoy', sideOpen: false }); render(); break;
+      case 'vista-inicio': Object.assign(S, { vista: 'inicio', sideOpen: false }); resetFicha(); render(); break;
+      case 'vista-memoria': S.vistaPrev = S.vista; Object.assign(S, { vista: 'memoria', sideOpen: false, fichaMovil: false }); render(); $('#scroll').scrollTop = 0; break;
+      case 'vista-volver': S.vista = S.vistaPrev === 'chat' ? 'chat' : 'inicio'; render(); break;
+      case 'hoy-ir': {
+        await openExp(id); const e = S.exp; if (!e || e.id !== id) break;
+        if (a.dataset.chat && e.chats.some(c => c.id === a.dataset.chat)) { e.chatActivo = a.dataset.chat; S.vista = 'chat'; }
+        abrirFicha(); resetFicha(); render(); break; }
+      case 'open-chat': abrirChat(id); break;
+      case 'new-chat': await irAChatNuevo(); $('#q')?.focus(); break;
+      case 'chat-menu': await chatMenu(); break;
+      case 'del-chat': await deleteChat(); break;
+      case 'toggle-ficha': if (MQ_MOVIL.matches) S.fichaMovil = !S.fichaMovil; else S.ficha = S.ficha === 'abierta' ? 'cerrada' : 'abierta'; layout(); break;
+      case 'riel-abrir': S.ficha = 'cerrada'; layout(); break;
+      case 'riel-buscar': S.ficha = 'cerrada'; layout(); $('#q-exp')?.focus(); break;
+      case 'ftab': S.fichaTab = a.dataset.tab; renderFicha(); break;
+      case 'ficha-volver': S.fichaModo = 'ficha'; renderFicha(); layout(); break;
+      case 'abrir-borrador': S.borrador = +a.dataset.i; S.fichaModo = 'borrador'; abrirFicha(); renderFicha(); layout(); $('#fcuerpo').scrollTop = 0; break;
+      case 'borr-guardar': await guardarBorrador(); break;
+      case 'borr-copiar': { const m = activeChat(S.exp).mensajes[S.borrador]; if (m) { await navigator.clipboard.writeText(m.content); toast('Borrador copiado.'); } break; }
+      case 'borr-pedir': S.fichaModo = 'ficha'; renderFicha(); layout(); $('#q')?.focus(); break;
+      case 'leyo': { const l = a.nextElementSibling; l.hidden = !l.hidden; a.lastChild.textContent = l.hidden ? ' ▸' : ' ▾'; a.setAttribute('aria-expanded', !l.hidden); break; }
+      case 'chip': S.ctx[a.dataset.k] = !S.ctx[a.dataset.k]; a.classList.toggle('on', S.ctx[a.dataset.k]); a.setAttribute('aria-pressed', S.ctx[a.dataset.k]); break;
+      case 'destino': case 'ver-envio': showPrivacy(); break;
       case 'new-exp': await expForm(null); break;
       case 'edit-exp': await expForm(S.exp); break;
       case 'del-exp': await deleteExp(); break;
       case 'load-sample': await loadSample(); break;
-      case 'tab': S.tab = a.dataset.tab; renderPane(); $('#pane').scrollTop = 0; break;
-      case 'goto': {
-        S.tab = a.dataset.tab; renderPane(); $('#pane').scrollTop = 0;
-        const f = a.dataset.focus; if (f) setTimeout(() => { const el = $(f); if (el) { el.scrollIntoView({ block: 'center' }); el.focus(); } }, 30);
-        break; }
-      case 'agent-open': setAgent('abierto'); break;
-      case 'agent-close': setAgent('cerrado'); break;
-      case 'agent-wide': setAgent(S.agent === 'amplio' ? 'abierto' : 'amplio'); break;
-      case 'ask-agent': if (S.agent === 'cerrado') setAgent('abierto'); else $('#q')?.focus(); break;
       case 'privacy': showPrivacy(); break;
       case 'privacy-settings': closeDialog(); await settingsView(); fillConsentLine(); break;
-      case 'agenda-more': S.agendaAll = !S.agendaAll; $('#deadlines').innerHTML = agendaHTML(); break;
-      case 'movs-all': S.movsAll = true; renderPane(); break;
-      case 'add-plazo': { const f = $('#nplazo-f').value, d = $('#nplazo-d').value.trim(); if (!f || !d) { toast('Indica la fecha y qué vence.', true); break; } S.exp.memoria.plazos.push({ id: uid(), fecha: f, desc: d, done: false }); await saveExp(); renderPane(); break; }
-      case 'toggle-plazo': { const p = S.exp.memoria.plazos.find(x => x.id === id); p.done = !p.done; await saveExp(); renderPane(); break; }
-      case 'del-plazo': S.exp.memoria.plazos = S.exp.memoria.plazos.filter(x => x.id !== id); await saveExp(); renderPane(); break;
-      case 'add-pend': { const v = $('#npend').value.trim(); if (!v) break; S.exp.memoria.pendientes.push({ id: uid(), text: v, done: false }); await saveExp(); renderPane(); $('#npend')?.focus(); break; }
-      case 'toggle-pend': { const p = S.exp.memoria.pendientes.find(x => x.id === id); p.done = !p.done; await saveExp(); renderPane(); break; }
-      case 'del-pend': S.exp.memoria.pendientes = S.exp.memoria.pendientes.filter(x => x.id !== id); await saveExp(); renderPane(); break;
+      case 'movs-all': S.movsAll = true; refreshExp(); break;
+      case 'add-plazo': { const f = $('#nplazo-f').value, d = $('#nplazo-d').value.trim(); if (!f || !d) { toast('Indica la fecha y qué vence.', true); break; } S.exp.memoria.plazos.push({ id: uid(), fecha: f, desc: d, done: false }); await saveExp(); refreshExp(); break; }
+      case 'toggle-plazo': { const p = S.exp.memoria.plazos.find(x => x.id === id); p.done = !p.done; await saveExp(); refreshExp(); break; }
+      case 'del-plazo': S.exp.memoria.plazos = S.exp.memoria.plazos.filter(x => x.id !== id); await saveExp(); refreshExp(); break;
+      case 'add-pend': { const v = $('#npend').value.trim(); if (!v) break; S.exp.memoria.pendientes.push({ id: uid(), text: v, done: false }); await saveExp(); refreshExp(); $('#npend')?.focus(); break; }
+      case 'toggle-pend': { const p = S.exp.memoria.pendientes.find(x => x.id === id); p.done = !p.done; await saveExp(); refreshExp(); break; }
+      case 'del-pend': S.exp.memoria.pendientes = S.exp.memoria.pendientes.filter(x => x.id !== id); await saveExp(); refreshExp(); break;
       case 'add-parte': { const n = $('#nparte-n').value.trim(); if (n.split(/\s+/).length < 2) { toast('Escribe nombres y apellidos completos para reemplazarlos bien.', true); break; } addParte(S.exp, n, $('#nparte-r').value, $('#nparte-d').value, $('#nparte-c').checked); await saveExp(); render(); break; }
       case 'toggle-cliente': { const p = S.exp.partes.find(x => x.id === id); p.esCliente = !p.esCliente; await saveExp(); render(); break; }
       case 'del-parte': { const ok = await askDialog({ title: 'Quitar parte', ok: 'Quitar', danger: true, body: '<p>Si la quitas, su nombre ya no se reemplazará antes de enviar al proveedor.</p>' }); if (!ok) break; S.exp.partes = S.exp.partes.filter(x => x.id !== id); await saveExp(); render(); break; }
       case 'add-mov': await movForm(); break;
       case 'paste-cej': await pasteCEJ(); break;
-      case 'del-mov': S.exp.movimientos = S.exp.movimientos.filter(x => x.id !== id); await saveExp(); renderPane(); updateTabs(); break;
+      case 'del-mov': S.exp.movimientos = S.exp.movimientos.filter(x => x.id !== id); await saveExp(); refreshExp(); break;
       case 'pick-file': $('#file-docs').click(); break;
-      case 'view-doc': { const d = S.exp.docs.find(x => x.id === id); const t = S.docTexts[id] || ''; openDialog({ title: d.name, wide: true, body: `<p class="small muted">Texto extraído en tu equipo${t.length > 40000 ? ', primeros 40 000 caracteres' : ''}.</p><div class="payload">${esc(t.slice(0, 40000)) || 'Sin texto.'}</div>`, foot: '<button class="btn primary" data-action="dlg-close">Cerrar</button>' }); break; }
-      case 'del-doc': { const d = S.exp.docs.find(x => x.id === id); const ok = await askDialog({ title: 'Eliminar documento', ok: 'Eliminar', danger: true, body: `<p>Se eliminará el texto de <strong>${esc(d.name)}</strong> de este equipo.</p>` }); if (!ok) break; await store.del('doc:' + id); delete S.docTexts[id]; S.exp.docs = S.exp.docs.filter(x => x.id !== id); await saveExp(); renderPane(); updateTabs(); break; }
-      case 'quick': { const [, q, fill] = S.quick[+a.dataset.i] || []; if (!q) break; if (fill) { const t = $('#q'); t.value = q; t.focus(); t.setSelectionRange(q.length, q.length); } else await sendChat(q); break; }
+      case 'view-doc': { const d = S.exp.docs.find(x => x.id === id); const t = S.docTexts[id] || ''; openDialog({ title: d.name, wide: true, body: `<p class="small muted">Texto extraído en tu equipo${t.length > 40000 ? ', primeros 40 000 caracteres' : ''}.</p><div class="payload">${esc(t.slice(0, 40000)) || 'Sin texto.'}</div>`, foot: `<button class="btn ghost danger" data-action="del-doc" data-id="${d.id}">Eliminar documento</button><button class="btn primary" data-action="dlg-close">Cerrar</button>` }); break; }
+      case 'del-doc': { const d = S.exp.docs.find(x => x.id === id); const ok = await askDialog({ title: 'Eliminar documento', ok: 'Eliminar', danger: true, body: `<p>Se eliminará el texto de <strong>${esc(d.name)}</strong> de este equipo.</p>` }); if (!ok) break; await store.del('doc:' + id); delete S.docTexts[id]; S.exp.docs = S.exp.docs.filter(x => x.id !== id); await saveExp(); refreshExp(); break; }
+      case 'quick': { const [, q, fill] = S.quick[+a.dataset.i] || []; if (!q) break; if (S.vista === 'inicio') await irAChatNuevo(); if (fill) { const t = $('#q'); t.value = q; t.focus(); t.setSelectionRange(q.length, q.length); } else await sendChat(q); break; }
       case 'stop': S.abort?.abort(); break;
-      case 'copy-msg': await navigator.clipboard.writeText(activeChat(S.exp).mensajes[+a.dataset.i].content); toast('Respuesta copiada.'); break;
-      case 'clear-chat': { const ok = await askDialog({ title: 'Limpiar conversación', ok: 'Limpiar', body: '<p>Se borra la conversación de este expediente. La memoria del caso se mantiene.</p>' }); if (!ok) break; Object.assign(activeChat(S.exp), { mensajes: [], titulo: '' }); await saveExp(); renderAgent(); break; }
       case 'propose-memory': await proposeMemory(a); break;
       case 'open-settings': await settingsView(); fillConsentLine(); break;
-      case 'close-settings': S.view = 'exp'; render(); break;
+      case 'close-settings': closeSettings(); break;
       case 'save-provider': Object.assign(S.settings, pickCfg(S.draftCfg)); await saveSettings(); toast(isReady(S.settings) ? 'Proveedor guardado.' : 'Guardado. Falta la key o el modelo para usar el agente.', !isReady(S.settings)); break;
       case 'lock-now': lockNow(); break;
       case 'reconsent-accept': await acceptReconsent(); break;
@@ -1186,7 +1402,10 @@ document.addEventListener('click', async ev => {
       case 'normas-install': await installNormas(); break;
       case 'normas-remove': await confirmRemoveNormas(); break;
       case 'normas-changes': await showNormasChanges(); break;
-      case 'ver-articulo': showArticle(a.dataset.norma, a.dataset.n); break;
+      case 'ver-articulo':   // en la conversación o el inicio, la cita abre la Ficha en modo Fuente; en Ajustes, una ventana
+        if (fichaVisible() && !a.closest('#dlg')) { S.fuente = { norma: a.dataset.norma, n: a.dataset.n }; S.fichaModo = 'fuente'; abrirFicha(); renderFicha(); layout(); $('#fcuerpo').scrollTop = 0; }
+        else showArticle(a.dataset.norma, a.dataset.n);
+        break;
       case 'update-later': S.updateHidden = true; $('.update-bar')?.remove(); toast('Te lo recordaremos la próxima vez que abras Folio.'); break;
       case 'check-update': await checkUpdateNow(); break;
       case 'reconsent-decline': lockNow('Folio quedó bloqueado. Para usarlo debes aceptar los avisos vigentes.'); break;
@@ -1223,37 +1442,34 @@ document.addEventListener('input', ev => {
   const t = ev.target;
   if (t.dataset.onbField) { S.onb[t.dataset.onbField] = t.value; updateOnbNav(); }
   else if (t.dataset.pf && t.type !== 'checkbox' && t.tagName !== 'SELECT') curCfg()[t.dataset.pf] = t.value;
-  else if (t.hasAttribute('data-search')) { S.filter = t.value; const l = $('#explist'); if (l) l.innerHTML = listHTML(); }
-  else if (t.hasAttribute('data-docsearch')) { S.docFilter = t.value; const l = $('#doclist'); if (l) l.innerHTML = docListHTML(); }
+  else if (t.hasAttribute('data-search')) { S.filter = t.value; const l = $('#exps'); if (l) l.innerHTML = expsHTML(); }
   else if (t.dataset.bind && S.exp) {
     setPath(S.exp, t.dataset.bind, t.value); saveSoon();
     if (t.tagName === 'TEXTAREA') autosize(t);
-    if (t.dataset.bind === 'estado') refreshCaratula();
   }
 });
 document.addEventListener('submit', async ev => {
   const f = ev.target.closest('[data-form]'); if (!f) return; ev.preventDefault();
   if (f.dataset.form === 'unlock') await doUnlock(f.pass.value);
-  if (f.dataset.form === 'chat') { const v = $('#q').value; if (!v.trim()) return; await sendChat(v); }
+  if (f.dataset.form === 'chat') { const v = $('#q').value; if (!v.trim() || S.sending) return; if (f.dataset.donde === 'inicio') await irAChatNuevo(); await sendChat(v); }
 });
 document.addEventListener('keydown', ev => {
   const t = ev.target;
   if (t.id === 'q' && ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); t.closest('form')?.requestSubmit(); }
   if (t.classList?.contains('dropzone') && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); $('#file-docs').click(); }
   if (ev.key === 'Enter' && (t.id === 'npend' || t.id === 'nplazo-d' || t.id === 'nparte-n' || t.id === 'nparte-d')) { ev.preventDefault(); $(`[data-action="${t.id === 'npend' ? 'add-pend' : t.id === 'nplazo-d' ? 'add-plazo' : 'add-parte'}"]`)?.click(); }
-  // Panel del agente: Ctrl+. lo abre o cierra; Esc reduce el modo amplio o cierra el panel superpuesto
-  if (S.screen !== 'app' || S.view !== 'exp' || !S.exp || $('#dlg').open) return;
-  if ((ev.ctrlKey || ev.metaKey) && ev.key === '.') { ev.preventDefault(); setAgent(S.agent === 'cerrado' ? 'abierto' : 'cerrado'); }
-  else if (ev.key === 'Escape' && (S.agent === 'amplio' || (S.agent === 'abierto' && !isWide()))) { ev.preventDefault(); setAgent(S.agent === 'amplio' ? 'abierto' : 'cerrado'); }
+  // Ctrl K: buscar expediente · Esc: cierra la barra o la hoja de la ficha en el celular
+  if (S.screen !== 'app' || $('#dlg').open) return;
+  if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') {
+    ev.preventDefault();
+    if (MQ_MOVIL.matches) S.sideOpen = true; else if ($('#v6')?.classList.contains('riel')) S.ficha = 'cerrada';
+    layout(); $('#q-exp')?.focus(); $('#q-exp')?.select();
+  } else if (ev.key === 'Escape' && (S.sideOpen || S.fichaMovil)) { ev.preventDefault(); S.sideOpen = false; S.fichaMovil = false; layout(); }
 });
-let wasWide = isWide();
-window.addEventListener('resize', () => {
-  const w = isWide(); if (w === wasWide) return; wasWide = w;
-  if (S.screen === 'app' && S.settings && S.exp && S.view === 'exp') setAgent(w ? initialAgent() : 'cerrado');
-});
-document.addEventListener('dragover', ev => { const z = ev.target.closest?.('.dropzone'); if (z) { ev.preventDefault(); z.classList.add('over'); } });
-document.addEventListener('dragleave', ev => { const z = ev.target.closest?.('.dropzone'); if (z) z.classList.remove('over'); });
-document.addEventListener('drop', ev => { const z = ev.target.closest?.('.dropzone'); if (!z) return; ev.preventDefault(); z.classList.remove('over'); addFiles([...ev.dataTransfer.files]).catch(fail); });
+window.addEventListener('resize', () => { if (S.screen === 'app') layout(); });
+document.addEventListener('dragover', ev => { const z = ev.target.closest?.('.dropzone, [data-drop]'); if (z) { ev.preventDefault(); z.classList.add('over'); } });
+document.addEventListener('dragleave', ev => { const z = ev.target.closest?.('.dropzone, [data-drop]'); if (z) z.classList.remove('over'); });
+document.addEventListener('drop', ev => { const z = ev.target.closest?.('.dropzone, [data-drop]'); if (!z) return; ev.preventDefault(); z.classList.remove('over'); addFiles([...ev.dataTransfer.files]).catch(fail); });
 window.addEventListener('beforeunload', () => { if (S.exp && Vault.key) saveExp(); });
 
 /* ============================================================

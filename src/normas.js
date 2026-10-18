@@ -184,28 +184,28 @@ function findForeign(text) {
 function quotesIn(text) { return [...String(text).matchAll(/["“«]([^"”»]{40,600})["”»]/g)].map(m => m[1]); }
 function overlap(a, b) { const A = ntokens(a), Bs = new Set(ntokens(b)); return A.length ? A.filter(x => Bs.has(x)).length / A.length : 0; }
 
-/* Verificador local de citas sobre una respuesta del agente. */
+/* Verificador local de citas sobre una respuesta del agente. raw: el texto citado (normalizado con citeText) para ubicar el chip en su párrafo. */
 function checkCitations(answer) {
   if (!Lib.installed()) return null;
   const items = [];
   const quotes = quotesIn(answer);
   for (const c of findCitations(answer)) {
-    if (c.norma.startsWith('fuera:')) { items.push({ estado: 'fuera', label: c.norma.slice(6).replace(/^\w/, x => x.toUpperCase()) }); continue; }
+    if (c.norma.startsWith('fuera:')) { items.push({ estado: 'fuera', label: c.norma.slice(6).replace(/^\w/, x => x.toUpperCase()), raw: c.raw }); continue; }
     const meta = Lib.meta(c.norma); const corto = meta?.corto || c.norma;
     if (!c.n) continue;
     const a = Lib.article(c.norma, c.n);
-    if (!a && meta?.parcial) { items.push({ estado: 'fuera', label: `Art. ${c.n} ${corto} (${meta.parcial})` }); continue; }
-    if (!a) { items.push({ estado: 'noEncontrado', norma: c.norma, n: c.n, label: `Art. ${c.n} ${corto}` }); continue; }
-    if (a.reubicadoEn) { items.push({ estado: 'reubicado', norma: c.norma, n: a.reubicadoEn, label: `Art. ${a.n} ${corto} → hoy art. ${a.reubicadoEn}` }); continue; }
+    if (!a && meta?.parcial) { items.push({ estado: 'fuera', label: `Art. ${c.n} ${corto} (${meta.parcial})`, raw: c.raw }); continue; }
+    if (!a) { items.push({ estado: 'noEncontrado', norma: c.norma, n: c.n, label: `Art. ${c.n} ${corto}`, raw: c.raw }); continue; }
+    if (a.reubicadoEn) { items.push({ estado: 'reubicado', norma: c.norma, n: a.reubicadoEn, label: `Art. ${a.n} ${corto} → hoy art. ${a.reubicadoEn}`, raw: c.raw }); continue; }
     let estado = a.derogado ? 'derogado' : a.proximo ? 'porRegir' : 'vigente';
     if (estado === 'vigente' && quotes.length) {
       const best = Math.max(...quotes.map(q => norm(a.texto).replace(/\s+/g, ' ').includes(norm(q).replace(/\s+/g, ' ')) ? 1 : overlap(q, a.texto)));
       if (best > 0.35 && best < 0.97) estado = 'textoDistinto';
     }
     const last = (a.historial || []).slice(-1)[0];
-    items.push({ estado, norma: c.norma, n: a.n, label: `Art. ${a.n} ${corto}`, modificado: last?.vigenteDesde || last?.publicada || '' });
+    items.push({ estado, norma: c.norma, n: a.n, label: `Art. ${a.n} ${corto}`, modificado: last?.vigenteDesde || last?.publicada || '', raw: c.raw });
   }
-  for (const f of findForeign(answer)) items.push({ estado: 'extranjera', label: f.replace(/^\w/, x => x.toUpperCase()) });
+  for (const f of findForeign(answer)) items.push({ estado: 'extranjera', label: f.replace(/^\w/, x => x.toUpperCase()), raw: citeText(f) });
   return { items, corte: Lib.manifest.actualizadoAl, age: Lib.ageDays() };
 }
 

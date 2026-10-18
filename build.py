@@ -14,7 +14,7 @@ def data_uri(name, mime):
 # Logo dentro del HTML (funciona sin internet): variante clara y oscura según el tema (ver process/specs/rediseno-ux-v0.5.md §3.4)
 logo_css = (
     "/* Logo de Folio: generado por build.py desde src/img */\n"
-    f":root{{--logo-claro:url({data_uri('logo-claro.webp', 'image/webp')});--logo-oscuro:url({data_uri('logo-oscuro.webp', 'image/webp')});--logo:var(--logo-claro)}}\n"
+    f":root{{--logo-claro:url({data_uri('logo-claro.webp', 'image/webp')});--logo-oscuro:url({data_uri('logo-oscuro.webp', 'image/webp')});--logo:var(--logo-claro);--icono:url({data_uri('icono.png', 'image/png')})}}\n"
     "@media (prefers-color-scheme:dark){:root:not([data-theme=\"light\"]){--logo:var(--logo-oscuro)}}\n"
     ":root[data-theme=\"dark\"]{--logo:var(--logo-oscuro)}\n"
 )

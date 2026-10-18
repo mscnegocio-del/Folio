@@ -84,7 +84,7 @@ settings.contextoMax = 60000
 |---|---|
 | F0 | ✅ Investigación, segunda opinión, prototipo HTML y aprobación de la dirección |
 | F1 | ✅ Datos: `chats`, migración (`normalizeExp`), propuestas e historial de memoria con deshacer, `ultimaVisita` (2026-10-18; sin cambios visibles en la v0.5) |
-| F2 | Tres zonas: barra con conversaciones anidadas, vista Hoy, Inicio del expediente, Ficha con modos |
+| F2 | ✅ Tres zonas: barra con conversaciones anidadas, vista Hoy, Inicio del expediente, Ficha con modos Ficha · Fuente · Borrador, riel y celular (2026-10-18). La caja de cambios propuestos en la Ficha llega en F5; chips, @, / y vista previa en F3 |
 | F3 | Caja de texto: chips de contexto, @, /, píldora de destino y vista previa |
 | F4 | Contexto: estimación, línea de aviso, "Seguir en una nueva" con resumen |
 | F5 | Propuestas de memoria en la Ficha, aplicar y confirmar plazos, deshacer |
