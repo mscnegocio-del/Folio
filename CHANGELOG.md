@@ -1,6 +1,13 @@
 # Changelog — Folio
 
-## [Sin publicar] — 2026-10-03
+## [Sin publicar]
+### Cambiado (v0.6 · F1, sin cambios visibles todavía)
+- Cada expediente guarda varias conversaciones (`chats`) en lugar de un solo chat; los expedientes y copias de seguridad anteriores se migran solos al abrirse ("Conversación anterior"). Cada conversación recibe un título local con las primeras palabras de la primera pregunta.
+- "Actualizar memoria" guarda lo que propuso el agente y un historial de lo que aplicaste, con lo que había antes, para poder deshacerlo sin pisar lo que edites después.
+- Folio recuerda la última vez que abriste cada expediente (para "desde tu última visita") sin cambiar el orden de la lista.
+### Pruebas
+- e2e: migración de un expediente antiguo, conversación activa con título, historial y propuestas de la memoria, deshacer seguro y visita sin cambiar la fecha de modificación.
+
 ### Sitio
 - Los botones "Descargar" bajan `folio.html` directo (`releases/latest/download/folio.html`), sin pasar por la página de Releases; al hacer clic aparece un aviso ("ábrelo con doble clic") con enlace a GitHub por si la descarga no empieza.
 - En celular y tableta, "Descargar" pasa a "Envíatelo a tu computadora": WhatsApp, correo, copiar enlace o compartir, con el enlace `?ref=celular` para medir en GoatCounter cuántos llegan después a la computadora. Eventos nuevos: `enviar-*` y `descargar-github`.

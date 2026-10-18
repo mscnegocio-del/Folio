@@ -62,13 +62,13 @@ Trabajar un expediente con el Agente como en ChatGPT o Claude, pero **con memori
 
 ## 10. Datos (IndexedDB, todo cifrado)
 ```js
-exp.chats = [{ id, titulo, resumenCorto?, createdAt, updatedAt, deChat?, resumen?, mensajes:[ ...igual que exp.chat ], tokensAprox, enMemoria? }]
+exp.chats = [{ id, titulo, createdAt, updatedAt, deChat?, resumen?, mensajes:[ ...igual que el antiguo exp.chat ] }]
 exp.chatActivo = id
-exp.memoria.propuestas = [{ id, at, chatId, seccion, tipo:'nuevo'|'cambia'|'plazo', antes?, despues, estado:'pendiente'|'aplicada'|'descartada' }]
-exp.memoria.historial = [{ id, at, seccion, antes, despues, chatId, deshecho? }]   // máx. 300
-exp.ultimaVisita = ISO
+exp.memoria.propuestas = [{ id, at, chatId, seccion, tipo:'nuevo'|'cambia'|'plazo', antes, despues, fecha?, estado:'pendiente'|'aplicada'|'descartada', histId? }]   // máx. 200
+exp.memoria.historial = [{ id, at, seccion, antes, despues, chatId, itemId?, deshecho? }]   // máx. 300
+exp.ultimaVisita = ISO   // crear el expediente cuenta como visita
 settings.contextoMax = 60000
-settings.revisarSiempre = true
+// "Revisar siempre antes de enviar" reutiliza settings.review (ya existe); los tokens se estiman al vuelo en F4, no se guardan
 ```
 - **Migración:** `exp.chat` (si tiene mensajes) pasa a `exp.chats[0]` con título "Conversación anterior". Se documenta en `process/db-schema.md`.
 - **Sin nuevas salidas de red.** El resumen y las propuestas usan el mismo proveedor, con seudonimización y revisión previa → no cambia la política.
@@ -82,7 +82,7 @@ settings.revisarSiempre = true
 | Fase | Contenido |
 |---|---|
 | F0 | ✅ Investigación, segunda opinión, prototipo HTML y aprobación de la dirección |
-| F1 | Datos: `chats`, migración, propuestas e historial de memoria, `ultimaVisita` |
+| F1 | ✅ Datos: `chats`, migración (`normalizeExp`), propuestas e historial de memoria con deshacer, `ultimaVisita` (2026-10-18; sin cambios visibles en la v0.5) |
 | F2 | Tres zonas: barra con conversaciones anidadas, vista Hoy, Inicio del expediente, Ficha con modos |
 | F3 | Caja de texto: chips de contexto, @, /, píldora de destino y vista previa |
 | F4 | Contexto: estimación, línea de aviso, "Seguir en una nueva" con resumen |

@@ -17,7 +17,8 @@ Base `folio-mvp` · versión 1 · object store `kv` (clave → valor). Todo regi
 ```js
 { provider: 'openrouter'|'openai'|'anthropic'|'custom', baseUrl, apiKey, model,
   zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto'|'light'|'dark', lastExp,
-  agentPanel?: 'abierto'|'amplio'|'cerrado' }   // v0.5: panel del agente en pantallas anchas; si falta, abierto desde 1280 px
+  agentPanel?: 'abierto'|'amplio'|'cerrado',    // v0.5: panel del agente en pantallas anchas; si falta, abierto desde 1280 px
+  contextoMax: 60000 }                           // v0.6: presupuesto útil de tokens por conversación (lo usa F4)
 ```
 
 ## Expediente (`exp:<uuid>`)
@@ -29,15 +30,22 @@ Base `folio-mvp` · versión 1 · object store `kv` (clave → valor). Todo regi
   memoria: {
     resumen, hechos, estrategia,
     pendientes: [{ id, text, done }],
-    plazos:     [{ id, fecha:'AAAA-MM-DD', desc, done }]
+    plazos:     [{ id, fecha:'AAAA-MM-DD', desc, done }],
+    // v0.6: lo que propone el agente (seccion: estado|resumen|hechos|estrategia|pend|plazo) y lo que el abogado aplicó
+    propuestas: [{ id, at, chatId, seccion, tipo:'nuevo'|'cambia'|'plazo', antes, despues, fecha?, estado:'pendiente'|'aplicada'|'descartada', histId? }],  // máx. 200
+    historial:  [{ id, at, seccion, antes, despues, chatId, itemId?, deshecho? }]   // máx. 300, el más reciente primero; `antes` solo en estado; en textos `despues` = lo agregado; itemId en pendientes y plazos
   },
   movimientos: [{ id, fecha, acto, sumilla }],
-  chat: [{ role:'user'|'assistant'|'error', content, at, meta?:{ provider, model, pseudo, replaced } }],
+  chats: [{ id, titulo, createdAt, updatedAt, deChat?, resumen?,      // v0.6: varias conversaciones; título local (primeras palabras)
+             mensajes: [{ role:'user'|'assistant'|'error', content, at, meta?:{ provider, model, pseudo, replaced, normas }, citas? }] }],
+  chatActivo,                    // id de la conversación abierta
+  ultimaVisita,                  // ISO de la última vez que el abogado abrió el expediente (crearlo cuenta como visita)
   docs: [{ id, name, type:'pdf'|'docx'|'txt', pages, chars, addedAt, scanned? }],
   createdAt, updatedAt
 }
 ```
-El chat guarda el texto **real** (restaurado); la seudonimización se aplica de nuevo en cada envío.
+Las conversaciones guardan el texto **real** (restaurado); la seudonimización se aplica de nuevo en cada envío.
+Abrir un expediente registra `ultimaVisita` sin cambiar `updatedAt` (la lista sigue ordenada por última modificación); la visita anterior queda en `S.visitaPrevia` para "desde tu última visita".
 
 ## Índice (`index`)
 ```js
@@ -57,4 +65,5 @@ Se exporta cifrada (no se descifra nada). Restaurar reemplaza todo y pide la con
 
 ## Migraciones
 - Proveedor `ollama` guardado de versiones previas → se migra a `openrouter` al desbloquear (`doUnlock`).
+- v0.6 (`normalizeExp`, al abrir cada expediente): `exp.chat` → `exp.chats[0]` con título "Conversación anterior" (o una conversación vacía si no había mensajes); se agregan `chatActivo`, `memoria.propuestas`, `memoria.historial` y `ultimaVisita`. Funciona también con copias de seguridad antiguas: se migran al abrir.
 - Si se cambia el esquema: subir la versión de `indexedDB.open` y documentarlo aquí.

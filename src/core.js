@@ -120,7 +120,7 @@ const OR_RECOMMENDED = [
   { id: 'google/gemini-3.8-flash', name: 'Gemini 3.8 Flash', tag: 'Rápido' },
   { id: 'deepseek/deepseek-v4.1-flash', name: 'DeepSeek V4.1 Flash', tag: 'Económico' }
 ];
-const DEFAULT_SETTINGS = { provider: 'openrouter', baseUrl: '', apiKey: '', model: '', zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto', lastExp: null, updateCheck: true, updateLastCheck: 0, updateKnown: null, legalPlanner: true, normasAuto: true, normasLastCheck: 0 };
+const DEFAULT_SETTINGS = { provider: 'openrouter', baseUrl: '', apiKey: '', model: '', zdr: true, pseudo: true, review: true, autoLockMin: 15, theme: 'auto', lastExp: null, updateCheck: true, updateLastCheck: 0, updateKnown: null, legalPlanner: true, normasAuto: true, normasLastCheck: 0, contextoMax: 60000 };
 /* ---------- Aviso de nuevas versiones ----------
    Una consulta GET pública a GitHub (sin datos del abogado ni de expedientes). Declarada en la política, sección 9.
    Se desactiva en Ajustes → Actualizaciones. */
@@ -312,6 +312,68 @@ function retrieve(exp, docTexts, q, k = 4) {
   let top = cands.filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, k);
   if (!top.length) top = cands.filter(c => c.i === 0).slice(0, 2);
   return top;
+}
+
+/* ---------- Conversaciones y cambios de la memoria (v0.6 · F1; spec rediseno-chat-v0.6.md §7 y §10) ---------- */
+const HISTORIAL_MAX = 300, PROPUESTAS_MAX = 200;
+function newChat(deChat) { const t = new Date().toISOString(); return { id: uid(), titulo: '', createdAt: t, updatedAt: t, mensajes: [], ...(deChat ? { deChat } : {}) }; }
+// Migra un expediente de versiones anteriores (un solo `chat`) al formato con varias conversaciones. Devuelve true si cambió algo.
+function normalizeExp(e) {
+  let cambio = false;
+  if (!Array.isArray(e.chats)) {
+    const viejo = Array.isArray(e.chat) ? e.chat : [], c = newChat();
+    if (viejo.length) Object.assign(c, { titulo: 'Conversación anterior', createdAt: viejo[0].at || e.createdAt || c.createdAt, updatedAt: viejo[viejo.length - 1].at || e.updatedAt || c.updatedAt, mensajes: viejo });
+    e.chats = [c]; cambio = true;
+  }
+  if ('chat' in e) { delete e.chat; cambio = true; }
+  if (!e.chats.length) { e.chats.push(newChat()); cambio = true; }
+  if (!e.chats.some(c => c.id === e.chatActivo)) { e.chatActivo = e.chats[0].id; cambio = true; }
+  const m = e.memoria;
+  if (!Array.isArray(m.propuestas)) { m.propuestas = []; cambio = true; }
+  if (!Array.isArray(m.historial)) { m.historial = []; cambio = true; }
+  if (!('ultimaVisita' in e)) { e.ultimaVisita = null; cambio = true; }
+  return cambio;
+}
+function activeChat(e) { return e.chats.find(c => c.id === e.chatActivo) || e.chats[0]; }
+// Título local con las primeras palabras de la primera pregunta: nada sale del equipo para titular
+function autoTitle(text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim(); if (t.length <= 60) return t;
+  const cut = t.slice(0, 60), sp = cut.lastIndexOf(' ');
+  return (sp > 30 ? cut.slice(0, sp) : cut) + '…';
+}
+// Propuestas del agente para la memoria. `seccion`: estado, resumen, hechos, estrategia, pend o plazo
+function addProposals(e, items, chatId) {
+  const at = new Date().toISOString(), m = e.memoria;
+  const props = items.map(it => ({ id: uid(), at, chatId: chatId || null, seccion: it.k, tipo: it.k === 'plazo' ? 'plazo' : it.k === 'estado' ? 'cambia' : 'nuevo',
+    antes: it.k === 'estado' ? (e.estado || '') : null, despues: it.v, ...(it.fecha ? { fecha: it.fecha } : {}), estado: 'pendiente' }));
+  m.propuestas.push(...props);
+  if (m.propuestas.length > PROPUESTAS_MAX) m.propuestas = m.propuestas.slice(-PROPUESTAS_MAX);
+  return props;
+}
+// Aplica un cambio aprobado por el abogado y lo anota en el historial para poder deshacerlo.
+// En hechos, resumen y estrategia el agente solo agrega texto: se guarda lo agregado, no la sección entera (el expediente no crece)
+function applyMemoryChange(e, it, chatId) {
+  const m = e.memoria, h = { id: uid(), at: new Date().toISOString(), seccion: it.k, chatId: chatId || null };
+  if (it.k === 'estado') { h.antes = e.estado || ''; e.estado = it.v; h.despues = it.v; }
+  else if (it.k === 'pend' || it.k === 'plazo') {
+    const p = it.k === 'pend' ? { id: uid(), text: it.v, done: false } : { id: uid(), fecha: it.fecha, desc: it.v, done: false };
+    (it.k === 'pend' ? m.pendientes : m.plazos).push(p);
+    Object.assign(h, { itemId: p.id, antes: null, despues: it.k === 'pend' ? it.v : `${it.fecha} · ${it.v}` });
+  } else { m[it.k] = (m[it.k] ? m[it.k].trimEnd() + '\n' : '') + it.v; Object.assign(h, { antes: null, despues: it.v }); }
+  m.historial.unshift(h);
+  if (m.historial.length > HISTORIAL_MAX) m.historial.length = HISTORIAL_MAX;
+  return h;
+}
+// Deshace un cambio del historial. Si el abogado lo editó después, no pisa su texto y devuelve false
+function undoMemoryChange(e, histId) {
+  const m = e.memoria, h = m.historial.find(x => x.id === histId);
+  if (!h || h.deshecho) return false;
+  if (h.seccion === 'pend' || h.seccion === 'plazo') {
+    const k = h.seccion === 'pend' ? 'pendientes' : 'plazos', n = m[k].length;
+    m[k] = m[k].filter(x => x.id !== h.itemId); if (m[k].length === n) return false;
+  } else if (h.seccion === 'estado') { if ((e.estado || '') !== h.despues) return false; e.estado = h.antes; }
+  else { const t = m[h.seccion] || ''; if (!t.endsWith(h.despues)) return false; m[h.seccion] = t.slice(0, t.length - h.despues.length).replace(/\n$/, ''); }
+  h.deshecho = true; return true;
 }
 
 /* ---------- Contexto del expediente (la "memoria") ---------- */
