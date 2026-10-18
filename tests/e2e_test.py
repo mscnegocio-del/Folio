@@ -73,6 +73,11 @@ def handle(route, request):
                                       "pendientes_nuevos": ["MOCK-PEND-F4"], "plazos_nuevos": []})
             return route.fulfill(status=200, content_type="application/json",
                                  body=json.dumps({"choices": [{"message": {"content": content}}]}))
+        if "MOCK-AUTO" in body["messages"][-1]["content"]:
+            chunks = ["Anoto lo que me cuentas sobre [PERSONA_2].\n\n", "<memo", "ria>{\"estado\": null, \"hechos_agregar\": \"MOCK-AUTO-HECHO de [PERSONA_2]\",",
+                      " \"pendientes_nuevos\": [\"MOCK-AUTO-PEND\"], \"plazos_nuevos\": []}</memoria>"]
+            sse = "".join("data: " + json.dumps({"choices": [{"delta": {"content": c}}]}) + "\n\n" for c in chunks) + "data: [DONE]\n\n"
+            return route.fulfill(status=200, headers={"content-type": "text/event-stream"}, body=sse)
         if "borrador de escrito" in body["messages"][-1]["content"]:
             chunks = ["SUMILLA: Absuelvo traslado y ofrezco medios probatorios\n\n", "SEÑOR JUEZ DEL JUZGADO DE PAZ LETRADO:\n\n",
                       "[PERSONA_1], en el proceso seguido contra [PERSONA_2], digo:\n\n", "## I. Petitorio\n", "Solicito [precisar el monto de la pensión].\n"]
@@ -347,6 +352,18 @@ with sync_playwright() as p:
     pg.screenshot(path=str(SHOTS / "21-sigue.png"))
     pg.evaluate("async()=>{S.settings.contextoMax=60000;await saveSettings()}")
 
+    # F5 · propuestas al terminar una respuesta, dentro de la misma respuesta (sin consulta extra)
+    n_sent = len(sent)
+    pg.fill("#q", "MOCK-AUTO: el demandado cambió de trabajo"); pg.keyboard.press("Enter"); pg.wait_for_selector("#velo-envio")
+    pg.click("[data-action=envio-enviar]"); pg.wait_for_selector("#cambios .cb:has-text('MOCK-AUTO-PEND')", timeout=10000)
+    r = pg.locator("#hilo .resp").last.inner_text()
+    nuevas = [x for x in sent[n_sent:] if "buscador de normas" not in json.dumps(x, ensure_ascii=False)]
+    check(len(nuevas) == 1 and "<memoria>" in nuevas[0]["messages"][0]["content"], "propuestas automáticas: la instrucción va en la misma consulta, sin consulta extra")
+    check("Anoto lo que me cuentas" in r and "memoria>" not in r and "MOCK-AUTO" not in r, "propuestas automáticas: el bloque no se muestra en la respuesta")
+    check("Julio César Huamán Torres" in pg.inner_text("#cambios") and "El agente propone 2 cambios en la memoria" in pg.inner_text("#prop-linea"), "propuestas automáticas: van a la caja de la ficha con los datos reales")
+    check("memoria>" not in pg.evaluate("activeChat(S.exp).mensajes.at(-1).content"), "propuestas automáticas: la respuesta se guarda sin el bloque")
+    pg.click("#cambios [data-action=prop-aplicar]"); pg.wait_for_timeout(200)
+
     pg.click(".pie [data-action=open-settings]"); pg.wait_for_selector(".settings")
     check(v6("vista") == "ajustes" and pg.inner_text("#cab .titulo") == "Ajustes", "ajustes en la zona central")
     check(pg.locator("select[data-setting=contextoMax] option[selected]").get_attribute("value") == "60000", "ajustes: presupuesto de contexto (60 000 recomendado)")
@@ -370,7 +387,7 @@ with sync_playwright() as p:
     pg.fill("input[name=pass]", "clave-incorrecta"); pg.click("[data-form=unlock] button"); pg.wait_for_timeout(1500)
     check("no coincide" in pg.inner_text("#lock-err"), "contraseña incorrecta rechazada")
     pg.fill("input[name=pass]", PASS); pg.click("[data-form=unlock] button"); pg.wait_for_selector(".inicio", timeout=15000)
-    check(pg.locator(".lista-conv .lc").count() == 2, "datos persisten tras desbloquear")
+    check(pg.locator(".lista-conv .lc").count() == 3, "datos persisten tras desbloquear")
     pg.keyboard.press("Control+k"); check(pg.evaluate("document.activeElement.id") == "q-exp", "Ctrl K enfoca el buscador de expedientes")
     pg.keyboard.type("no-existe"); check("Ningún expediente coincide" in pg.inner_text(".barra .exps"), "buscador filtra la lista de expedientes")
     pg.fill("#q-exp", "")

@@ -3054,7 +3054,7 @@ function chatPrevio(e, c) { const p = c.deChat && e.chats.find(x => x.id === c.d
 function contextoBase(e, text) {
   const c = S.ctx, lib = Lib.installed() && c.biblioteca, chat = activeChat(e);
   const ctx = buildContext(e, S.docTexts, text, { memoria: c.memoria, docs: c.docs && e.docs.length > 0, citados: citadosEn(e, text), previo: chatPrevio(e, chat) });
-  return { ctx, lib, chars: SYSTEM_PROMPT.length + (lib ? LEGAL_RULES.length + NORMAS_RESERVA : 0) + ctx.text.length + text.length };
+  return { ctx, lib, chars: SYSTEM_PROMPT.length + (lib ? LEGAL_RULES.length + NORMAS_RESERVA : 0) + (c.memoria ? MEMORIA_AUTO.length : 0) + ctx.text.length + text.length };
 }
 // Porcentaje del presupuesto que ocupa la conversación activa con su historial completo (se recalcula solo si algo cambió)
 let usoMemo = { k: '', v: 0 };
@@ -3080,7 +3080,7 @@ function prepararEnvio(text) {
   const lib = Lib.installed() && c.biblioteca, usePlanner = lib && s.legalPlanner !== false;
   const plannerSystem = PLANNER_PROMPT + normasCatalogText();
   const plannerUser = usePlanner ? P.apply(`Especialidad: ${e.especialidad || 'sin indicar'}\nMateria: ${e.materia || 'sin indicar'}\nEstado procesal: ${c.memoria ? e.estado || 'sin indicar' : 'sin indicar'}\n\nConsulta del abogado:\n${text}`) : '';
-  const system0 = P.apply(SYSTEM_PROMPT + (lib ? LEGAL_RULES : '') + '\n\n' + ctx.text);
+  const system0 = P.apply(SYSTEM_PROMPT + (lib ? LEGAL_RULES : '') + (c.memoria ? MEMORIA_AUTO : '') + '\n\n' + ctx.text);
   const { msgs, fuera } = historyFor(e, presupuesto() - tokensDe(chars)), hist = msgs.map(m => ({ role: m.role, content: P.apply(m.content) }));
   const messages = [...hist, { role: 'user', content: P.apply(text) }];
   if (messages.length >= 2 && messages[messages.length - 2].role === 'user') { const last = messages.pop(); messages[messages.length - 1].content += '\n\n' + last.content; }
@@ -3131,8 +3131,9 @@ async function sendChat(text, { revisado = false } = {}) {
     if (lib) { arts = gatherArticles(e, text, plan); system = system0 + normasBlock(arts); }
     const chars = system.length + messages.reduce((a, m) => a + m.content.length, 0);
     let pending = null;
-    const full = await llm({ cfg: s, system, messages, stream: true, maxTokens: 6000, signal: S.abort.signal, onDelta: t => { pending = t; requestAnimationFrame(() => { if (pending == null) return; const el = $('#streaming'); if (el) { el.innerHTML = md(P.restore(pending)); scrollHilo(); } pending = null; }); } });
-    const content = P.restore(full).trim() || '(El modelo no devolvió texto.)';
+    const full = await llm({ cfg: s, system, messages, stream: true, maxTokens: 6000, signal: S.abort.signal, onDelta: t => { pending = t; requestAnimationFrame(() => { if (pending == null) return; const el = $('#streaming'); if (el) { el.innerHTML = md(P.restore(separarMemoria(pending).texto)); scrollHilo(); } pending = null; }); } });
+    const sep = separarMemoria(full), content = P.restore(sep.texto).trim() || '(El modelo no devolvió texto.)';
+    proponerDesdeRespuesta(e, chat.id, sep.json, P);
     const enviado = textoEnvio(x, lib ? arts.map(({ id, a }) => `Art. ${a.n} ${Lib.meta(id)?.corto || id}`).join(' · ') || '(ningún artículo)' : null, false);
     push({ role: 'assistant', content, at: new Date().toISOString(), meta: { provider: s.provider, model: s.model, pseudo: P.enabled, replaced: P.count(), normas: arts.map(({ id, a }) => id + ' ' + a.n), frags: [...new Set(ctx.frags.map(f => f.name))], memoria: leyoMemoria, secciones: leyoMemoria ? memSecciones(e) : [] },
       envio: { texto: enviado, reemp: reemplazosEn(P, enviado) }, citas: checkCitations(content) });
@@ -3141,7 +3142,7 @@ async function sendChat(text, { revisado = false } = {}) {
   } catch (err) {
     if (err.name === 'AbortError') push({ role: 'error', content: 'Detuviste la respuesta.' });
     else push({ role: 'error', content: err instanceof FolioError ? err.message : 'Error inesperado: ' + err.message });
-  } finally { S.sending = false; S.abort = null; await saveExp().catch(fail); renderCentro(); if (S.vista === 'chat') $('#q')?.focus(); }
+  } finally { S.sending = false; S.abort = null; await saveExp().catch(fail); renderCentro(); renderFicha(); renderBarra(); if (S.vista === 'chat') $('#q')?.focus(); }
 }
 async function logSend(kind, chars, P) {
   const s = S.settings; S.lastSend = { at: Date.now(), provider: s.provider, pseudo: P.enabled };
@@ -3179,6 +3180,28 @@ ${MEMORIA_REGLAS}`;
     if (!items.length) { toast('El agente no encontró información nueva para la memoria.'); renderCentro(); return; }
     addProposals(e, items, activeChat(e).id); await saveExp(); renderBarra(); renderCentro(); revisarCambios();
   } catch (err) { fail(err); renderCentro(); }
+}
+
+/* ---------- Propuestas al terminar cada respuesta (F5, spec §7; opción aprobada: dentro de la misma respuesta, sin consulta extra) ---------- */
+const MEMORIA_AUTO = `
+Memoria del expediente: si en esta respuesta o en la pregunta del abogado aparece información nueva y explícita que no está en la memoria (estado procesal, hechos, estrategia, pendientes o plazos con una fecha concreta), termina tu respuesta con un bloque en líneas propias, exactamente así:
+<memoria>${MEMORIA_JSON}</memoria>
+El bloque no se muestra al abogado: Folio lo convierte en cambios propuestos que él revisa. No lo menciones en tu respuesta. Si no hay nada nuevo, no agregues el bloque. No inventes fechas. Conserva los marcadores como [PERSONA_1] tal cual.`;
+// Quita el bloque <memoria> del texto (también a medio llegar en el streaming) y devuelve su contenido
+function separarMemoria(t) {
+  t = String(t || ''); const i = t.indexOf('<memoria>');
+  if (i >= 0) { const f = t.indexOf('</memoria>', i); return { texto: (t.slice(0, i) + (f >= 0 ? t.slice(f + 10) : '')).trimEnd(), json: t.slice(i + 9, f >= 0 ? f : undefined) }; }
+  for (let k = Math.min(8, t.length); k > 0; k--) if ('<memoria>'.startsWith(t.slice(-k))) return { texto: t.slice(0, -k), json: '' };
+  return { texto: t, json: '' };
+}
+// Si el modelo no respeta el formato no pasa nada: no hay propuestas y queda "Actualizar memoria"
+function proponerDesdeRespuesta(e, chatId, json, P) {
+  if (!json.trim()) return 0;
+  let j; try { j = parseJSONLoose(json); } catch { return 0; }
+  const R = v => typeof v === 'string' ? P.restore(v).trim() : '', ya = new Set(propPend(e).map(p => p.seccion + '|' + p.despues));
+  const items = itemsMemoria(j, R).filter(it => !ya.has(it.k + '|' + it.v) && !(it.k === 'estado' && it.v === e.estado));
+  if (items.length) addProposals(e, items, chatId);
+  return items.length;
 }
 
 /* ---------- Seguir en una nueva (F4, spec §6): el agente resume, propone cambios de memoria y se abre una conversación que continúa ---------- */
