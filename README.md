@@ -118,7 +118,7 @@ Puedes consultar y editar tus expedientes sin conexión; el agente de IA necesit
 El abogado es el responsable del tratamiento de los datos. Folio te da herramientas (seudonimización, registro de envíos y un modelo de autorización), pero revisa tus obligaciones bajo la Ley N.° 29733 y su reglamento (D.S. N.° 016-2024-JUS).
 
 **¿Quién está detrás de Folio?**
-Es un proyecto personal y de código abierto de Milton Salcedo Cruz (Huancayo, Perú). Contacto: mscnegocio@gmail.com.
+Es un proyecto personal y de código abierto de Milton Salcedo Cruz (Perú). Contacto: mscnegocio@gmail.com.
 
 ## Para desarrolladores
 
