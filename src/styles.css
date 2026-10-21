@@ -937,6 +937,78 @@ details.guide code{font-family:var(--type);font-size:.85em;background:var(--shee
   .v6 .ne .mp .nota{display:none}
 }
 
+/* ---------- E12 · tabla de revisión (prototipo tabla-revision-v0.8.html) ---------- */
+.v6 .tabla-v{flex:1;min-height:0;display:flex;flex-direction:column}
+.v6 .cab .acc-t{display:flex;gap:6px;align-items:center}
+.v6 .conv svg{width:14px;height:14px;vertical-align:-2px;margin-right:6px}
+.v6 .estado-t{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--graphite);background:var(--paper);flex-wrap:wrap}
+.v6 .estado-t .res{display:flex;gap:12px;flex-wrap:wrap;align-items:center;flex:1}
+.v6 .estado-t .res b{font-weight:500;color:var(--ink)}
+.v6 .estado-t .ok{color:var(--ok)}
+.v6 .estado-t .w{color:var(--warn)}
+.v6 .estado-t .acc{display:flex;gap:6px;flex-wrap:wrap}
+.v6 .prog{flex:1;display:grid;gap:5px;max-width:420px}
+.v6 .prog .barra-p i{animation:none;transition:width .3s}
+.v6 .tabla-w{flex:1;overflow:auto;background:var(--sheet)}
+.v6 table.rev{border-collapse:separate;border-spacing:0;width:100%;min-width:980px;font-size:13px}
+.v6 .rev th{position:sticky;top:0;z-index:2;background:var(--sheet);text-align:left;font-weight:500;font-size:12px;color:var(--graphite);padding:9px 12px;border-bottom:1px solid var(--rule-strong);white-space:nowrap}
+.v6 .rev th small{display:block;font-weight:400;color:var(--faint);font-size:11px}
+.v6 .rev td{vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--rule);line-height:1.45}
+.v6 .rev td:first-child,.v6 .rev th:first-child{position:sticky;left:0;background:var(--sheet);z-index:1;border-right:1px solid var(--rule)}
+.v6 .rev th:first-child{z-index:3}
+.v6 .rev .docn{display:flex;gap:8px;align-items:flex-start;min-width:180px;max-width:220px}
+.v6 .rev .docn .doc-ic{font:10px var(--type);border:1px solid var(--rule-strong);border-radius:5px;padding:1px 4px;color:var(--graphite);margin-top:2px;flex:none}
+.v6 .rev .docn b{font-weight:500;display:block;overflow-wrap:anywhere}
+.v6 .rev .docn small{color:var(--faint);font-size:12px}
+.v6 .celda{display:grid;gap:3px;text-align:left;border-radius:8px;padding:4px 6px;margin:-4px -6px;width:calc(100% + 12px);color:inherit}
+.v6 button.celda:hover{background:var(--hover)}
+.v6 button.celda.sel{box-shadow:0 0 0 2px var(--accent);background:var(--accent-soft)}
+.v6 .marca{font-size:11px;display:inline-flex;align-items:center;gap:4px;color:var(--faint)}
+.v6 .marca.ok{color:var(--ok)}
+.v6 .marca.w{color:var(--warn)}
+.v6 .marca.loc{color:var(--accent)}
+.v6 .celda.nf{background:var(--warn-soft)}
+.v6 .celda.pz .v{color:var(--warn)}
+.v6 .vacia{color:var(--faint)}
+.v6 .skel{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--rule) 0%,var(--sheet-2) 50%,var(--rule) 100%);background-size:200% 100%;animation:sk 1.2s linear infinite;margin:4px 0}
+@keyframes sk{from{background-position:200% 0}to{background-position:-200% 0}}
+.v6 .cola{color:var(--faint);font-size:12px}
+.v6 .cola.err{color:var(--danger)}
+.v6 .nota-t{padding:10px 18px;font-size:12px;color:var(--faint);border-top:1px solid var(--rule);background:var(--sheet)}
+.v6 .pasaje{border:1px solid var(--rule);border-radius:12px;background:var(--sheet);padding:12px 14px;font-size:13px;line-height:1.65;color:var(--graphite);white-space:pre-wrap}
+.v6 .pasaje mark{background:var(--accent-soft);color:var(--ink);border-radius:3px;padding:0 2px}
+.v6 .fuente .acc{display:flex;gap:6px;flex-wrap:wrap}
+.v6 .ne .campo{display:grid;gap:6px}
+.v6 .ne .lbl2{font-size:13px;font-weight:500}
+.v6 .ne textarea.input{resize:vertical;font:inherit}
+.v6 .plantillas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.v6 .pl{display:grid;gap:4px;text-align:left;border:1px solid var(--rule-strong);border-radius:12px;padding:12px 14px}
+.v6 .pl b{font-weight:500;font-size:14px}
+.v6 .pl small{color:var(--graphite);font-size:12px}
+.v6 .pl.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent-soft) 45%,var(--sheet))}
+.v6 .docs-l{display:grid;border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.v6 .dl{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--rule);font-size:13px}
+.v6 .dl:last-child{border-bottom:0}
+.v6 .dl input{accent-color:var(--accent)}
+.v6 .dl .doc-ic{font:10px var(--type);border:1px solid var(--rule-strong);border-radius:5px;padding:1px 4px;color:var(--graphite)}
+.v6 .dl small{color:var(--faint);font-size:12px;white-space:nowrap}
+.v6 .dl.off{color:var(--faint)}
+.v6 .estim{border-radius:12px;padding:12px 14px;background:var(--accent-soft);display:grid;gap:6px;font-size:13px}
+.v6 .estim .l{display:flex;gap:8px;align-items:flex-start}
+.v6 .estim svg{width:16px;height:16px;color:var(--accent);margin-top:2px;flex:none}
+.v6 .estim a{color:var(--accent)}
+.v6 .seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:100px;overflow:hidden;justify-self:start}
+.v6 .seg button{padding:6px 12px;font-size:13px;border-right:1px solid var(--rule)}
+.v6 .seg button:last-child{border-right:0}
+.v6 .seg button.on{background:var(--ink);color:var(--paper)}
+.v6 .modal.ne.chica{width:min(560px,100%)}
+@media (max-width:760px){
+  .v6 .plantillas{grid-template-columns:minmax(0,1fr)}
+  .v6 .cab .acc-t .pb .t{display:none}
+  .v6 .dl{grid-template-columns:auto auto minmax(0,1fr)}
+  .v6 .dl small{grid-column:3}
+}
+
 /* ---------- celular y tableta angosta ---------- */
 .velo-m{display:none}
 @media (max-width:1023px){

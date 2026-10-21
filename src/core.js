@@ -2,7 +2,7 @@
    Folio MVP · núcleo
    Todo corre en el navegador. No hay servidor de Folio.
    ============================================================ */
-const APP = { name: 'Folio', version: '0.7.0', policyVersion: '2026-10-18 (borrador)' };
+const APP = { name: 'Folio', version: '0.8.0', policyVersion: '2026-10-21 (borrador)' };
 const ITER = 310000;
 const te = new TextEncoder(), td = new TextDecoder();
 const $ = (s, el = document) => el.querySelector(s);
@@ -479,6 +479,81 @@ function leerEncabezado(texto) {
   }
   out.detectado = ['numero', 'materia', 'especialidad', 'distrito', 'organo', 'juez', 'especialista'].filter(k => out[k]);
   return out;
+}
+
+/* ---------- Tablas de revisión (E12, spec tabla-de-revision.md) ----------
+   Una fila por documento y una columna por pregunta. Cada celda del agente trae una cita textual
+   que Folio busca en el texto del documento, en el equipo (D-53). Fecha y resolución se leen con leerEncabezado. */
+const TABLAS_MAX = 20, TABLA_LIMITE = 60000;   // caracteres por documento (~17 000 tokens); lo demás no se envía y la fila lo dice
+const PLAZO_COL = '¿Qué plazo o fecha menciona (por ejemplo, "cinco días para contestar" o "audiencia el 28/10/2026")? Copia lo que dice el documento; no calcules fechas.';
+const PLANTILLAS = {
+  cronologia: { titulo: 'Cronología de resoluciones', desc: 'Fecha · resolución · qué ordena · plazo que menciona · quién debe actuar', columnas: [
+    { id: 'fecha', nombre: 'Fecha', tipo: 'fecha', local: 'fecha', pregunta: '¿Cuál es la fecha del documento o de la resolución?' },
+    { id: 'resolucion', nombre: 'Resolución', tipo: 'texto', local: 'resolucion', pregunta: '¿Qué número de resolución es (por ejemplo, "Resolución 3")? Si el documento no es una resolución, responde null.' },
+    { id: 'ordena', nombre: 'Qué ordena', tipo: 'texto', nota: 'resumen del agente, con cita', pregunta: 'En una o dos líneas: ¿qué decide u ordena el juzgado? Si es un escrito de parte, ¿qué pide?' },
+    { id: 'plazo', nombre: 'Plazo que menciona', tipo: 'texto', plazo: true, nota: 'Folio no calcula plazos', pregunta: PLAZO_COL },
+    { id: 'quien', nombre: 'Quién debe actuar', tipo: 'texto', pregunta: '¿Quién debe hacer algo según el documento (demandante, demandado, ambas partes, un tercero)?' }] },
+  pruebas: { titulo: 'Medios probatorios', desc: 'Prueba ofrecida · quién la ofrece · hecho que busca probar · ¿admitida?', columnas: [
+    { id: 'prueba', nombre: 'Prueba ofrecida', tipo: 'texto', pregunta: '¿Qué medios probatorios se ofrecen o se mencionan en el documento?' },
+    { id: 'quien', nombre: 'Quién la ofrece', tipo: 'texto', pregunta: '¿Qué parte ofrece esas pruebas?' },
+    { id: 'hecho', nombre: 'Hecho que busca probar', tipo: 'texto', pregunta: '¿Qué hecho se busca probar con ellas?' },
+    { id: 'admitida', nombre: '¿Admitida?', tipo: 'sino', pregunta: '¿El juzgado admite esas pruebas en este documento? Responde "sí" o "no"; null si el documento no lo dice.' }] },
+  notificaciones: { titulo: 'Notificaciones', desc: 'Fecha de notificación · acto notificado · medio · plazo que menciona · qué debo hacer', columnas: [
+    { id: 'fecha', nombre: 'Fecha de notificación', tipo: 'fecha', pregunta: '¿En qué fecha se notifica o se emite la notificación?' },
+    { id: 'acto', nombre: 'Acto notificado', tipo: 'texto', local: 'resolucion', pregunta: '¿Qué resolución o acto se notifica (por ejemplo, "Resolución 4")?' },
+    { id: 'medio', nombre: 'Medio', tipo: 'texto', pregunta: '¿Por qué medio se notifica (casilla electrónica, domicilio real o procesal, edicto)?' },
+    { id: 'plazo', nombre: 'Plazo que menciona', tipo: 'texto', plazo: true, nota: 'Folio no calcula plazos', pregunta: PLAZO_COL },
+    { id: 'hacer', nombre: 'Qué debo hacer', tipo: 'texto', pregunta: 'En una línea: ¿qué debe hacer la parte notificada según el documento?' }] },
+  blanco: { titulo: 'Tabla de revisión', desc: 'Tú defines las columnas y sus preguntas', columnas: [] }
+};
+const TIPOS_COL = { texto: 'Texto', fecha: 'Fecha', sino: 'Sí / no', cita: 'Cita textual' };
+function nuevaTabla(e, plantilla, docIds) {
+  const pl = PLANTILLAS[plantilla] || PLANTILLAS.blanco, t = new Date().toISOString();
+  const tabla = { id: uid(), titulo: pl.titulo, plantilla, createdAt: t, updatedAt: t, columnas: pl.columnas.map(c => ({ ...c })),
+    filas: docIds.map(docId => ({ docId, estado: 'pendiente', celdas: {} })) };
+  e.tablas = [...(e.tablas || []), tabla].slice(-TABLAS_MAX);
+  return tabla;
+}
+// Texto comparable: sin tildes, mayúsculas, comillas, puntuación ni espacios repetidos; guarda la posición original de cada carácter
+function normCita(s) {
+  const out = [], pos = []; let esp = true;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i].normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    if (!c) continue;
+    if (/[\s ]/.test(c) || /[.,;:()¿?¡!«»"“”'‘’\[\]…-]/.test(c)) { if (!esp) { out.push(' '); pos.push(i); esp = true; } continue; }
+    out.push(c); pos.push(i); esp = false;
+  }
+  return { t: out.join('').trimEnd(), pos };
+}
+// Busca la cita en el texto del documento (el mismo que se envió). Acepta "…" entre tramos citados en orden.
+function buscarCita(texto, cita) {
+  const tramos = String(cita || '').split(/…|\.\.\./).map(x => normCita(x).t.trim()).filter(x => x.length >= 6);
+  if (!tramos.length) return null;
+  const T = normCita(String(texto || '')); let desde = 0, ini = -1, fin = -1;
+  for (const tr of tramos) {
+    const i = T.t.indexOf(tr, desde); if (i < 0) return { ok: false };
+    if (ini < 0) ini = i; fin = i + tr.length; desde = fin;
+  }
+  const a = T.pos[ini], b = T.pos[Math.max(ini, fin - 1)] + 1;
+  return { ok: true, ini: a, fin: b, pagina: paginaEn(texto, a) };
+}
+function paginaEn(texto, i) { const m = [...String(texto).slice(0, i + 1).matchAll(/\[Pág\. (\d+)\]/g)]; return m.length ? +m[m.length - 1][1] : null; }
+// Consulta por documento: un JSON con valor, cita literal y página por columna
+const TABLA_PROMPT = `Eres el módulo de revisión de documentos de Folio. Lees UN documento de un expediente judicial peruano y respondes preguntas sobre ese documento. Devuelve SOLO un objeto JSON válido, sin texto adicional, con esta forma:
+{"celdas": {"<id de la pregunta>": {"valor": string|null, "cita": string|null}}}
+Reglas:
+1. Responde solo con lo que dice el documento. Si no aparece, usa "valor": null y "cita": null. No inventes.
+2. "cita" es una copia LITERAL, palabra por palabra, de un pasaje corto del documento (máximo 300 caracteres) que respalda el valor. Si necesitas saltar texto, usa "…".
+3. No calcules plazos ni fechas: copia lo que dice el documento. Las fechas van como DD/MM/AAAA. Las preguntas de tipo sí/no se responden "sí" o "no".
+4. Conserva los marcadores como [PERSONA_1] o [DNI_1] tal cual.`;
+function preguntasTabla(cols) { return cols.map(c => `- ${c.id} (${TIPOS_COL[c.tipo] || 'Texto'}): ${c.pregunta}`).join('\n'); }
+function mensajeTabla(nombre, textoP, cols) { return `DOCUMENTO: «${nombre}»\n\n${textoP}\n\n=== PREGUNTAS ===\n${preguntasTabla(cols)}`; }
+// Recorte por tamaño: hasta qué página llega lo que se envía
+function recorteDoc(texto) {
+  const t = String(texto || '');
+  if (t.length <= TABLA_LIMITE) return { texto: t, recorte: null };
+  const corte = t.slice(0, TABLA_LIMITE), total = [...t.matchAll(/\[Pág\. (\d+)\]/g)].pop();
+  return { texto: corte, recorte: { hasta: paginaEn(corte, corte.length - 1), de: total ? +total[1] : null } };
 }
 
 /* ---------- Contexto del expediente (la "memoria") ---------- */
