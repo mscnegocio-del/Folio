@@ -1,5 +1,14 @@
 # Changelog — Folio
 
+## [0.8.1] — 2026-10-21 — ley aplicable
+Política 2026-10-21 r2 (borrador): al desbloquear se pide aceptar de nuevo.
+
+### Avisos legales
+- Términos de uso, sección 10 (Ley aplicable): cualquier controversia se someterá a los jueces del Perú, sin indicar una ciudad.
+### Sitio
+- El pie dice «© 2026 mscnegocio@gmail.com, Perú» y la portada muestra la interfaz de tres zonas (expedientes, agente y ficha).
+
+
 ## [0.8.0] — 2026-10-21 — tabla de revisión del expediente
 Elige varios documentos y obtén una tabla: una fila por documento y una columna por pregunta, cada dato con su cita textual **verificada en tu equipo**. Política 2026-10-21 (borrador): al desbloquear se pide aceptar de nuevo.
 

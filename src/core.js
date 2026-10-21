@@ -2,7 +2,7 @@
    Folio MVP · núcleo
    Todo corre en el navegador. No hay servidor de Folio.
    ============================================================ */
-const APP = { name: 'Folio', version: '0.8.0', policyVersion: '2026-10-21 (borrador)' };
+const APP = { name: 'Folio', version: '0.8.1', policyVersion: '2026-10-21 r2 (borrador)' };
 const ITER = 310000;
 const te = new TextEncoder(), td = new TextDecoder();
 const $ = (s, el = document) => el.querySelector(s);

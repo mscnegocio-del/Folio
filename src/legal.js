@@ -24,6 +24,9 @@ const POLICY_CHANGES = [
   ] },
   { version: '2026-10-21 (borrador)', items: [
     'Política de privacidad, sección 4: si usas una tabla de revisión, Folio envía completos los documentos que elijas (no solo fragmentos), uno por consulta, con los datos reemplazados, con la misma revisión previa y anotados en el Registro de envíos. Las citas que devuelve el agente se comprueban en tu equipo. No hay nuevas conexiones.'
+  ] },
+  { version: '2026-10-21 r2 (borrador)', items: [
+    'Términos de uso, sección 10 (Ley aplicable): cualquier controversia se someterá a los jueces del Perú, sin indicar una ciudad.'
   ] }
 ];
 function policyChangesSince(version) {
@@ -97,7 +100,7 @@ function termsHTML() {
 <h3>9. Responsabilidad</h3>
 <p>En la medida permitida por la legislación peruana, el desarrollador no responde por daños derivados del uso de Folio o de las respuestas del agente, salvo dolo o culpa inexcusable.</p>
 <h3>10. Ley aplicable</h3>
-<p>Estos términos se rigen por las leyes de la República del Perú. Cualquier controversia se someterá a los jueces de ${esc(OWNER.city)}.</p>
+<p>Estos términos se rigen por las leyes de la República del Perú. Cualquier controversia se someterá a los jueces del Perú.</p>
 <h3>11. Contacto</h3>
 <p>${esc(OWNER.email)}</p>
 </div>`;
