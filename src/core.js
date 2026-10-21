@@ -386,6 +386,101 @@ function revertirPropuesta(e, pr) {
   pr.estado = 'pendiente'; delete pr.histId; return true;
 }
 
+/* ---------- Encabezado de resoluciones, cédulas y carátulas (E11, spec nuevo-expediente-desde-resolucion.md) ----------
+   Se lee en el equipo, con reglas, sin IA ni red (D-48). Lo dudoso se deja vacío antes que mal llenado. */
+const ENC_ROLES = [   // etiqueta (sin tildes, en minúsculas) → rol de la parte
+  [/^(co)?demandantes?$|^accionantes?$|^solicitantes?$|^recurrentes?$/, 'Demandante'],
+  [/^(co)?demandad[oa]s?$|^emplazad[oa]s?$/, 'Demandado'],
+  [/^imputad[oa]s?$|^acusad[oa]s?$|^investigad[oa]s?$|^procesad[oa]s?$|^sentenciad[oa]s?$|^denunciad[oa]s?$/, 'Imputado(a)'],
+  [/^agraviad[oa]s?$|^victimas?$|^denunciantes?$/, 'Agraviado(a)'],
+  [/^menor(es)?( alimentistas?)?$|^alimentistas?$|^beneficiari[oa]s?$/, 'Menor alimentista'],
+  [/^terceros?( civilmente responsables?)?$|^litisconsortes?$/, 'Tercero']
+];
+const ENC_CAMPOS = { expediente: 'numero', 'n expediente': 'numero', 'exp': 'numero', 'nro de expediente': 'numero', materia: 'materia', delito: 'materia', 'delitos': 'materia',
+  juez: 'juez', jueza: 'juez', 'juez(a)': 'juez', 'juez a': 'juez', 'magistrado': 'juez', especialista: 'especialista', 'especialista legal': 'especialista', 'especialista judicial': 'especialista',
+  secretario: 'especialista', secretaria: 'especialista', 'secretario(a)': 'especialista', 'secretario judicial': 'especialista' };
+const ENC_ESPECIALIDAD = { FC: 'Familia', FA: 'Familia', FT: 'Familia', FP: 'Familia', PE: 'Penal', CI: 'Civil', CO: 'Comercial', LA: 'Laboral', CA: 'Contencioso administrativo', DC: 'Constitucional' };
+const ENC_NUM = /\b(\d{5}-\d{4}-\d{1,2}-\d{4}-[A-Z]{2}-[A-Z]{2}-\d{2})\b/;
+const ENC_ENTIDAD = /\b(ministerio|fiscal|procurad|municipalidad|gobierno|banco|caja|empresa|s\.?\s?a\.?\s?c?\.?$|s\.?r\.?l\.?|e\.?i\.?r\.?l\.?|sociedad|asociacion|cooperativa|estado|sunat|essalud|onp|universidad|instituto|corporacion|compania|inversiones|servicios)\b/i;
+const ENC_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
+const ENC_NUMS = { uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12, trece: 13, catorce: 14, quince: 15, dieciseis: 16, diecisiete: 17,
+  dieciocho: 18, diecinueve: 19, veinte: 20, veintiuno: 21, veintidos: 22, veintitres: 23, veinticuatro: 24, veinticinco: 25, veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29,
+  treinta: 30, 'treinta y uno': 31, 'treinta y un': 31, primero: 1, un: 1 };
+const ENC_ORD = { primera: 1, segunda: 2, tercera: 3, cuarta: 4, quinta: 5, sexta: 6, septima: 7, setima: 7, octava: 8, novena: 9, decima: 10 };
+// "QUISPE ROJAS ROSA ELENA" o "QUISPE ROJAS, ROSA ELENA" → "Rosa Elena Quispe Rojas"; razones sociales y entidades se dejan en su orden
+function encNombre(s) {
+  let t = String(s || '').replace(/\s+/g, ' ').trim().replace(/^[\s:.,;-]+|[\s,;:-]+$/g, '');
+  if (/^(\p{L}\.\s?){1,4}$/u.test(t)) return t.toUpperCase();   // iniciales de un menor: A. H. Q.
+  t = t.replace(/(\p{L}{2,})\.$/u, '$1');
+  if (!t) return '';
+  const cap = x => x.toLowerCase().replace(/(^|[\s(-])(\p{L})/gu, (m, a, l) => a + l.toUpperCase())
+    .replace(/\s(De|Del|Y|E)(?=\s)/g, m => m.toLowerCase()).replace(/\s(de|del) (La|Las|Los)(?=\s)/g, (m, a, b) => ` ${a} ${b.toLowerCase()}`)
+    .replace(/\b(S\.?\s?A\.?\s?[AC]?\.?|S\.?R\.?L\.?|E\.?I\.?R\.?L\.?)$/i, m => m.toUpperCase());
+  if (encEntidad(t) || /\d/.test(t)) return /[a-z]/.test(t) ? t : cap(t);
+  if (t.includes(',')) { const [ap, no] = t.split(',', 2); t = `${no.trim()} ${ap.trim()}`; }
+  else { const w = t.split(' '); if (w.length >= 3 && t === t.toUpperCase()) t = [...w.slice(2), ...w.slice(0, 2)].join(' '); }
+  return t === t.toUpperCase() ? cap(t) : t;
+}
+const encEntidad = t => ENC_ENTIDAD.test(norm(t)) || /\bS\.?\s?A\.?\s?[AC]?\.?$/i.test(t);
+const encFrase = s => { const t = String(s || '').replace(/\s+/g, ' ').trim().replace(/[.;]+$/, ''); return t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t; };
+const encTitulo = s => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/(^|\s)(\p{L})/gu, (m, a, l) => a + l.toUpperCase()).replace(/\s(De|Del|La|Las|Los|Y|En)(?=\s)/g, m => m.toLowerCase()).replace(/(\d)°?\s/, '$1.° ');
+function encFecha(t) {
+  let m = t.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\b/);
+  encFecha.raw = m ? m[0] : '';
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  const n = norm(t);
+  m = n.match(/\b(\d{1,2}|[a-z]+(?: y uno| y un)?) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|setiembre|septiembre|octubre|noviembre|diciembre) (?:de|del)? ?(\d{4}|dos mil [a-z ]+?)(?=[\s.,;-]|$)/);
+  if (!m) return '';
+  const d = /^\d+$/.test(m[1]) ? +m[1] : ENC_NUMS[m[1]], mes = m[2] === 'septiembre' ? 9 : ENC_MESES.indexOf(m[2]) + 1;
+  let y = /^\d+$/.test(m[3]) ? +m[3] : 2000 + (ENC_NUMS[m[3].replace(/^dos mil ?/, '').trim()] || 0);
+  if (!d || !mes || y < 1990 || y > 2100) return '';
+  encFecha.raw = t.slice(m.index, m.index + m[0].length);   // norm() conserva la longitud: se resalta el texto original
+  return `${y}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+function leerEncabezado(texto) {
+  const out = { numero: '', materia: '', especialidad: '', distrito: '', organo: '', juez: '', especialista: '', partes: [], resolucion: null, detectado: [], marcas: [] };
+  const lineas = String(texto || '').replace(/\r/g, '').split('\n').slice(0, 80).map(l => l.replace(/[\t ]+/g, ' ').replace(/ {2,}/g, ' ').trim());
+  const vistos = new Set(), etiqueta = /^([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑa-záéíóúñ.°º()\/ ]{1,38}?)\s*:\s*(.*)$/;
+  let ultimo = null;   // para nombres que siguen en la línea de abajo
+  for (const l of lineas) {
+    const m = l.match(etiqueta);
+    if (!m) { if (ultimo && l && l === l.toUpperCase() && !/[:]/.test(l) && l.length < 60 && /\p{L}/u.test(l) && !/^(RESOLUCI|AUTO|SENTENCIA|DECRETO|VISTOS|CEDULA|CÉDULA)/i.test(l)) { ultimo.push(l); out.marcas.push(l); } else ultimo = null; continue; }
+    const k = norm(m[1]).replace(/[.°º]/g, '').replace(/\s+/g, ' ').trim(), v = m[2].trim();
+    const campo = ENC_CAMPOS[k] || ENC_CAMPOS[k.replace(/^n(ro)? /, 'n ')];
+    const rol = ENC_ROLES.find(([re]) => re.test(k))?.[1];
+    ultimo = null;
+    if ((campo || rol) && v) out.marcas.push(v);
+    if (campo && !out[campo] && v) { out[campo] = v; ultimo = campo === 'juez' || campo === 'especialista' ? (out['_' + campo] = [v]) : null; continue; }
+    if (rol && v) { const lista = [v]; out.partes.push({ rol, lista }); ultimo = lista; }
+  }
+  for (const c of ['juez', 'especialista']) if (out['_' + c]) { out[c] = encNombre(out['_' + c].join(' ')); delete out['_' + c]; }
+  const num = (out.numero.match(ENC_NUM) || String(texto).slice(0, 4000).match(ENC_NUM) || [])[1] || '';
+  out.numero = num;
+  out.materia = encFrase(out.materia);
+  // Partes: varias por rol separadas por ";" o " Y "; sin repetir
+  out.partes = out.partes.flatMap(({ rol, lista }) => lista.join(' ').split(/\s*;\s*/).flatMap(n => encEntidad(n) ? [n] : n.split(/\s+Y\s+(?=[A-ZÁÉÍÓÚÑ]{2})/)).map(n => ({ nombre: encNombre(n), rol })))
+    .filter(p => p.nombre && p.nombre.length > 2 && !vistos.has(norm(p.nombre)) && vistos.add(norm(p.nombre)));
+  // Juzgado y corte: primeras líneas sin etiqueta
+  for (const l of lineas.slice(0, 25)) {
+    const c = l.match(/CORTE SUPERIOR DE JUSTICIA (?:DE(?:L)?\s+)?([A-ZÁÉÍÓÚÑ ]{3,40}?)\s*(?:[-–—]|SEDE|$)/i);
+    if (c && !out.distrito) { out.distrito = encTitulo(c[1]); out.marcas.push(c[1].trim()); }
+    const o = l.match(/^(?:\d+\s*[°º]?\s*)?(?:(?:PRIMER|SEGUND|TERCER|CUART|QUINT|SEXT|S[EÉ]PTIM|OCTAV|NOVEN|D[EÉ]CIM)[OA]?\s+)?(JUZGADO|SALA)\b[^:]{3,90}$/i);
+    if (o && !out.organo && !/CORTE SUPERIOR/i.test(l)) { out.organo = encTitulo(l).replace(/^(\d+)\.?°?\s*/, '$1.° '); out.marcas.push(l); }
+  }
+  // Organo dentro de una etiqueta (cédulas: "JUZGADO : 2° JUZGADO DE FAMILIA…")
+  if (!out.organo) for (const l of lineas) { const m = l.match(/^(?:JUZGADO|ÓRGANO JURISDICCIONAL|ORGANO JURISDICCIONAL|DEPENDENCIA)\s*:\s*(.{5,90})$/i); if (m) { out.organo = encTitulo(m[1]).replace(/^(\d+)\.?°?\s*/, '$1.° '); out.marcas.push(m[1]); break; } }
+  if (num) out.especialidad = ENC_ESPECIALIDAD[num.split('-')[5]] || '';
+  // Resolución: número (cifra o palabra) y fecha
+  const cab = lineas.join('\n'), r = cab.match(/RESOLUCI[OÓ]N\s+(?:N(?:[UÚ]MERO|RO\.?|°|º|\.)?\s*)?(\d{1,3}|[A-ZÁÉÍÓÚÑ]+(?:\s+Y\s+[A-ZÁÉÍÓÚÑ]+)?)\b/i);
+  if (r) {
+    const w = norm(r[1]), n = /^\d+$/.test(w) ? +w : ENC_NUMS[w] || ENC_ORD[w] || null;
+    const ix = cab.indexOf(r[0]), fecha = encFecha(cab.slice(ix, ix + 400)) || encFecha(cab);
+    if (n) { out.resolucion = { acto: `Resolución ${n}`, fecha }; out.marcas.push(r[0]); if (encFecha.raw) out.marcas.push(encFecha.raw); }
+  }
+  out.detectado = ['numero', 'materia', 'especialidad', 'distrito', 'organo', 'juez', 'especialista'].filter(k => out[k]);
+  return out;
+}
+
 /* ---------- Contexto del expediente (la "memoria") ---------- */
 function plazoState(p) { if (p.done) return 'cumplido'; const d = daysUntil(p.fecha); return d < 0 ? `vencido hace ${-d} día(s)` : d === 0 ? 'vence hoy' : `vence en ${d} día(s)`; }
 function memoryText(e) {
@@ -395,6 +490,8 @@ function memoryText(e) {
   if (e.especialidad) L.push(`Especialidad: ${e.especialidad}`);
   if (e.organo) L.push(`Órgano jurisdiccional: ${e.organo}`);
   if (e.distrito) L.push(`Distrito judicial: ${e.distrito}`);
+  if (e.juez) L.push(`Juez: ${e.juez}`);
+  if (e.especialista) L.push(`Especialista: ${e.especialista}`);
   if (e.estado) L.push(`Estado procesal: ${e.estado}`);
   if (e.partes.length) { L.push('Partes:'); e.partes.forEach(p => L.push(`- ${p.nombre} (${p.rol}${p.esCliente ? ', cliente del abogado' : ''})${p.doc ? `, documento ${p.doc}` : ''}`)); }
   if (m.resumen) L.push(`Resumen del caso:\n${m.resumen}`);

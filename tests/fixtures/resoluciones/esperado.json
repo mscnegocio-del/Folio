@@ -1,0 +1,22 @@
+{
+ "alimentos-resolucion.txt": {"numero": "00845-2026-0-1501-JP-FC-01", "materia": "Alimentos", "especialidad": "Familia", "distrito": "Junín", "organo": "Juzgado de Paz Letrado de Huancayo",
+   "juez": "Carmen Rosa Villanueva Paredes", "especialista": "Luis Alberto Ríos Mendoza",
+   "partes": [["Julio César Huamán Torres", "Demandado"], ["Rosa Elena Quispe Rojas", "Demandante"], ["A. H. Q.", "Menor alimentista"]],
+   "resolucion": ["Resolución 1", "2026-08-12"]},
+ "penal-auto.txt": {"numero": "01234-2026-3-0901-JR-PE-02", "materia": "Apropiación ilícita", "especialidad": "Penal", "distrito": "Lima Norte", "organo": "2.° Juzgado de Investigación Preparatoria",
+   "juez": "Jorge Luis Torres Campos", "especialista": "María Fernanda Salazar Vega",
+   "partes": [["Carlos Alberto Mendoza Ríos", "Imputado(a)"], ["Inversiones Andinas del Centro S.A.C.", "Agraviado(a)"], ["Rosa María Paredes Luna", "Agraviado(a)"]],
+   "resolucion": ["Resolución 3", "2026-10-14"]},
+ "civil-decreto.txt": {"numero": "03321-2025-0-0401-JR-CI-03", "materia": "Obligación de dar suma de dinero", "especialidad": "Civil", "distrito": "Arequipa", "organo": "Tercer Juzgado Civil - Sede Central",
+   "juez": "Ana Lucía Cáceres Delgado", "especialista": "Pedro Pablo Flores Huanca",
+   "partes": [["Caja Municipal de Ahorro y Crédito del Sur S.A.", "Demandante"], ["Marco Antonio Loayza Pinto", "Demandado"], ["Elena Sofía Chávez Rojas", "Demandado"]],
+   "resolucion": ["Resolución 7", "2026-09-03"]},
+ "laboral-sentencia.txt": {"numero": "00517-2026-0-1601-JR-LA-01", "materia": "Desnaturalización de contrato y otros", "especialidad": "Laboral", "distrito": "La Libertad", "organo": "Primer Juzgado de Trabajo Permanente de Trujillo",
+   "juez": "Roberto Carlos Guevara Sánchez", "especialista": "Lucía Aguilar Meza",
+   "partes": [["Wilmer Alfredo Rojas Castillo", "Demandante"], ["Empresa Agroindustrial Los Valles S.A.A.", "Demandado"]],
+   "resolucion": ["Resolución 5", "2026-09-23"]},
+ "cedula-familia.txt": {"numero": "00102-2026-0-1001-JR-FC-02", "materia": "Violencia familiar", "especialidad": "Familia", "distrito": "", "organo": "2.° Juzgado de Familia de Cusco",
+   "juez": "Norma Isabel Huamaní Quispe", "especialista": "Jhon Edgar Condori Apaza",
+   "partes": [["Ministerio Público", "Demandante"], ["Roxana Ticona Mamani", "Agraviado(a)"], ["Fredy Ccahuana Huillca", "Imputado(a)"]],
+   "resolucion": ["Resolución 4", "2026-10-05"]}
+}

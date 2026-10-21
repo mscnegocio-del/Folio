@@ -1,6 +1,6 @@
 # Spec — E11: nuevo expediente desde una resolución
 
-> Estado: **preguntas respondidas por el usuario (2026-10-21); prototipo en revisión** · Épica E11 · Decisiones D-48 a D-51
+> Estado: **prototipo aprobado e implementado (2026-10-21)**; falta calibrar con encabezados reales con datos cambiados · Épica E11 · Decisiones D-48 a D-51
 > Prototipo navegable: `process/prototipos/nuevo-expediente-v0.7.html` (estados con `?estado=formulario|leyendo|lleno|escaneo|creado`, `&tema=dark`)
 > Origen: idea del usuario (2026-10-21) tras revisar Harvey (Vault, tablas de revisión). Folio no copia su nube: todo se lee en el equipo.
 
@@ -69,11 +69,11 @@ exp.origen = { docId, tipo: 'resolucion'|'cedula'|'caratula'|'otro', detectado: 
 ## 9. Fases
 | Fase | Contenido |
 |---|---|
-| F0 | Aprobación de esta spec + fixtures con datos cambiados |
-| F1 | Lector de encabezado (`leerEncabezado(texto)` en core.js) con pruebas sobre los fixtures |
-| F2 | Zona de arrastre en "Nuevo expediente", formulario lleno y lista de partes editable; `juez`/`especialista` en la Ficha |
-| F3 | PDF como primer documento y primer movimiento; "agregar datos nuevos" desde Documentos |
-| F4 | Resumen opcional con el agente → caja de cambios propuestos; e2e, capturas → Release v0.7.0 |
+| F0 | ✅ Decisiones (D-48 a D-51) y prototipo aprobado (2026-10-21). Pendiente: encabezados reales con datos cambiados |
+| F1 | ✅ Lector de encabezado (`leerEncabezado(texto)` en core.js) con 5 fixtures ficticios |
+| F2 | ✅ Zona de arrastre en "Nuevo expediente", formulario lleno y lista de partes editable; `juez`/`especialista` en la Ficha |
+| F3 | ✅ PDF como primer documento y primer movimiento; "agregar datos nuevos" desde Documentos |
+| F4 | ✅ "Resumir con el agente" → caja de cambios propuestos; e2e y capturas (2026-10-21). Falta: calibración real → Release v0.7.0 |
 
 ## 10. Decisiones del usuario (2026-10-21)
 1. El juez y el especialista **no se reemplazan** por marcadores: son funcionarios públicos (D-49).

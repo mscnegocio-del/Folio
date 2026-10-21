@@ -1,5 +1,16 @@
 # Changelog — Folio
 
+## [Sin publicar]
+### Agregado (v0.7 · E11: nuevo expediente desde una resolución)
+- "Nuevo expediente" abre una ventana con una zona para **arrastrar o adjuntar** una resolución, cédula o carátula (PDF, Word o texto) y, debajo, el formulario a mano de siempre (ahora con juez y especialista).
+- Folio lee el encabezado **en tu equipo, sin IA y sin red**: número, materia, especialidad (del número), distrito, juzgado, juez, especialista, partes con su rol y la resolución con su fecha. Muestra "Lo que Folio leyó" con lo detectado resaltado; lo que no aparece queda vacío y se avisa.
+- Las partes se revisan en una lista (nombre, rol, DNI, "Mi cliente", quitar) y quedan registradas desde el primer momento, así que sus nombres ya se reemplazan en la primera consulta. El juez y el especialista son funcionarios públicos: no se reemplazan.
+- Al crear, el documento queda como primer documento y la resolución como primer movimiento. El Inicio muestra "Creado desde «…»" y ofrece siempre "¿Quieres que el agente resuma lo que ordena esta resolución?" (consulta normal, con vista previa; sus propuestas van a la caja de cambios).
+- Al agregar a un expediente una resolución del mismo número, Folio ofrece sumar solo las partes, el juzgado y el movimiento nuevos; nada se aplica sin tu clic.
+- La Ficha tiene un bloque "Juzgado" (órgano, juez y especialista).
+### Pruebas
+- e2e: 5 encabezados ficticios (alimentos, penal, civil, laboral y una cédula) en `tests/fixtures/resoluciones/`, flujo completo de crear desde una resolución, datos nuevos de una segunda resolución, archivo sin texto, Esc y accesibilidad (axe). Capturas 26 y 27.
+
 ## [0.6.0] — 2026-10-18 — rediseño "tres zonas"
 Expedientes a la izquierda, el agente al centro y la Ficha del expediente a la derecha. Varias conversaciones por expediente, aviso cuando una conversación ya es larga y memoria que el agente propone y tú apruebas. Política 2026-10-18 (borrador): al desbloquear se pide aceptar de nuevo.
 
