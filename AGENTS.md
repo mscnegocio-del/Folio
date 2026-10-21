@@ -59,7 +59,7 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Ley 29733, roles y riesgos: process/legal-privacy.md
 - Cómo escribir posts en X (fórmula, ganchos, calendario): process/estrategia-x.md
 - Specs: process/specs/ (biblioteca-legal-peru.md, rediseno-visual-v0.3.md, rediseno-ux-v0.5.md, rediseno-chat-v0.6.md, nuevo-expediente-desde-resolucion.md)
-- Prototipo de referencia de la v0.6 (regla D-42): process/prototipos/rediseno-chat-v0.6.html
+- Prototipo de referencia de la v0.6 (regla D-42): process/prototipos/rediseno-chat-v0.6.html · E11 (v0.7): process/prototipos/nuevo-expediente-v0.7.html
 - Biblioteca legal (mantenedor, formatos del SPIJ): normas/README.md · reporte: normas/reporte-verificacion.md
 
 ## Estado actual → memory.md

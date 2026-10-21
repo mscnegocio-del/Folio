@@ -1,6 +1,7 @@
 # Spec — E11: nuevo expediente desde una resolución
 
-> Estado: **borrador, pendiente de aprobación del usuario** · Épica E11 · Decisiones propuestas D-48 a D-51
+> Estado: **preguntas respondidas por el usuario (2026-10-21); prototipo en revisión** · Épica E11 · Decisiones D-48 a D-51
+> Prototipo navegable: `process/prototipos/nuevo-expediente-v0.7.html` (estados con `?estado=formulario|leyendo|lleno|escaneo|creado`, `&tema=dark`)
 > Origen: idea del usuario (2026-10-21) tras revisar Harvey (Vault, tablas de revisión). Folio no copia su nube: todo se lee en el equipo.
 
 ## 1. Problema
@@ -29,13 +30,13 @@ Las resoluciones, cédulas y carátulas impresas desde los sistemas del PJ repit
 Varias partes por rol se separan por `;`, saltos de línea o "y". Los nombres pueden venir en mayúsculas: se muestran con capitalización de nombre propio y el abogado puede corregir.
 
 ## 4. Flujo
-1. "Nuevo expediente" ofrece arriba una zona: **"Arrastra una resolución, cédula o carátula (PDF, Word o texto) para llenar los datos"** · "o llénalo a mano" (el formulario actual queda debajo, sin cambios).
+1. "Nuevo expediente" (desde el + de la barra o desde la pantalla vacía, que abren el mismo formulario) ofrece arriba una zona para **arrastrar o adjuntar**: **"Arrastra una resolución, cédula o carátula (PDF, Word o texto) para llenar los datos"** · "o llénalo a mano" (el formulario actual queda debajo, sin cambios).
 2. Folio extrae el texto en el equipo (pdf.js / mammoth, como hoy) y lee el encabezado con reglas.
 3. El formulario aparece **lleno**, con lo detectado resaltado y un resumen: "Folio encontró: número, materia, juzgado, juez, especialista y 3 partes · revisa antes de crear".
 4. **Partes detectadas** en una lista con su rol, editable (nombre, rol, documento si aparece), con "Mi cliente" (una o varias) y ✕ para quitar. Se agregan todas a la vez al crear: desde la primera consulta se seudonimizan.
 5. Si no detecta algo, ese campo queda vacío con la nota "no aparece en el documento". Si el PDF no tiene texto (escaneo): "Este PDF parece una imagen escaneada: Folio no puede leerlo. Llena los datos a mano".
 6. Al crear: el PDF se guarda como primer documento y la resolución como primer movimiento (si se detectó número y fecha). Se abre el Inicio del expediente.
-7. **Opcional, solo con proveedor conectado y después de crear:** "¿Quieres que el agente resuma lo que ordena esta resolución?" → consulta normal (ya seudonimizada, con vista previa) cuyas propuestas (estado procesal, plazo por confirmar, pendientes) van a la caja "Cambios propuestos" de la Ficha. Ningún plazo se guarda sin confirmación.
+7. **Siempre que haya proveedor conectado, después de crear** (D-50), el Inicio ofrece: "¿Quieres que el agente resuma lo que ordena esta resolución?" [Resumir con el agente] [Ahora no] → consulta normal (ya seudonimizada, con vista previa) cuyas propuestas (estado procesal, plazo por confirmar, pendientes) van a la caja "Cambios propuestos" de la Ficha. Ningún plazo se guarda sin confirmación.
 
 También desde un expediente abierto: al agregar una resolución en Documentos, si su número coincide, Folio ofrece "Agregar las partes y datos nuevos que encontré" (mismo resumen, nada se aplica sin clic).
 
@@ -74,8 +75,8 @@ exp.origen = { docId, tipo: 'resolucion'|'cedula'|'caratula'|'otro', detectado: 
 | F3 | PDF como primer documento y primer movimiento; "agregar datos nuevos" desde Documentos |
 | F4 | Resumen opcional con el agente → caja de cambios propuestos; e2e, capturas → Release v0.7.0 |
 
-## 10. Preguntas abiertas
-1. ¿`juez` y `especialista` se seudonimizan o no? (propuesta D-49: no, son funcionarios públicos en ejercicio).
-2. ¿Ofrecemos el resumen con el agente (paso 7) por defecto o solo si el abogado lo pide?
-3. ¿La zona de arrastre también en la pantalla vacía ("Crea tu primer expediente")? Propuesta: sí, es la primera impresión (D-51).
-4. Diseño: la v0.6 se hizo tal cual un prototipo (D-42). ¿Hacemos un prototipo HTML de esta pantalla antes de F2?
+## 10. Decisiones del usuario (2026-10-21)
+1. El juez y el especialista **no se reemplazan** por marcadores: son funcionarios públicos (D-49).
+2. El resumen con el agente se ofrece **siempre** después de crear desde un documento (si hay proveedor conectado); el abogado puede responder "Ahora no" (D-50).
+3. La zona para **arrastrar o adjuntar** va dentro del formulario de "Nuevo expediente", el mismo que abre la pantalla vacía (D-51).
+4. Se hace un **prototipo HTML** antes de F2: `process/prototipos/nuevo-expediente-v0.7.html`. Como en la v0.6, se implementará tal cual una vez aprobado.
