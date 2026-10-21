@@ -1,6 +1,6 @@
-# AGENTS.md — Folio v0.6.0
+# AGENTS.md — Folio v0.7.0
 > Generado: 2026-09-30 · Actualizado: 2026-10-18 · Autor: Milton Alejandro Salcedo Cruz
-> v0.6.0 (E10, rediseño "tres zonas") publicada el 2026-10-18
+> v0.7.0 (E11, nuevo expediente desde una resolución) lista el 2026-10-21 · en diseño: v0.8 (E12, tabla de revisión)
 
 Folio es un agente de IA gratuito y de código abierto para abogados litigantes en el Perú.
 Cada expediente tiene su propia memoria; todo se guarda cifrado en el equipo del abogado y
@@ -58,8 +58,8 @@ la IA se usa con la cuenta propia del abogado (BYOK). Folio no tiene servidores.
 - Investigación de mercado, CEJ/SINOE, modelos y costos: process/research.md
 - Ley 29733, roles y riesgos: process/legal-privacy.md
 - Cómo escribir posts en X (fórmula, ganchos, calendario): process/estrategia-x.md
-- Specs: process/specs/ (biblioteca-legal-peru.md, rediseno-visual-v0.3.md, rediseno-ux-v0.5.md, rediseno-chat-v0.6.md, nuevo-expediente-desde-resolucion.md)
-- Prototipo de referencia de la v0.6 (regla D-42): process/prototipos/rediseno-chat-v0.6.html · E11 (v0.7): process/prototipos/nuevo-expediente-v0.7.html
+- Specs: process/specs/ (biblioteca-legal-peru.md, rediseno-visual-v0.3.md, rediseno-ux-v0.5.md, rediseno-chat-v0.6.md, nuevo-expediente-desde-resolucion.md, tabla-de-revision.md)
+- Prototipo de referencia de la v0.6 (regla D-42): process/prototipos/rediseno-chat-v0.6.html · E11 (v0.7): process/prototipos/nuevo-expediente-v0.7.html · E12 (v0.8): process/prototipos/tabla-revision-v0.8.html
 - Biblioteca legal (mantenedor, formatos del SPIJ): normas/README.md · reporte: normas/reporte-verificacion.md
 
 ## Estado actual → memory.md

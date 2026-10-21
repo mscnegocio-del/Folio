@@ -1,6 +1,8 @@
 # Changelog — Folio
 
-## [Sin publicar]
+## [0.7.0] — 2026-10-21 — nuevo expediente desde una resolución
+Crea un expediente arrastrando la resolución, cédula o carátula que ya tienes: Folio lee el encabezado en tu equipo, sin IA, y registra a las partes antes de la primera consulta. Sin cambios en la política de privacidad.
+
 ### Agregado (v0.7 · E11: nuevo expediente desde una resolución)
 - "Nuevo expediente" abre una ventana con una zona para **arrastrar o adjuntar** una resolución, cédula o carátula (PDF, Word o texto) y, debajo, el formulario a mano de siempre (ahora con juez y especialista).
 - Folio lee el encabezado **en tu equipo, sin IA y sin red**: número, materia, especialidad (del número), distrito, juzgado, juez, especialista, partes con su rol y la resolución con su fecha. Muestra "Lo que Folio leyó" con lo detectado resaltado; lo que no aparece queda vacío y se avisa.
