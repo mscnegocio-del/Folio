@@ -11,7 +11,8 @@ const S = {
   vista: 'inicio', vistaPrev: null, ficha: 'abierta', fichaTab: 'ficha', fichaModo: 'ficha', fuente: null, borrador: null,
   sideOpen: false, fichaMovil: false, ctx: { memoria: true, docs: true, biblioteca: true }, menu: null,
   prop: { exp: null, sel: {}, confirmar: null, nuevos: [] },   // F5: ✓/✕ de cada propuesta, plazo en confirmación y cambios recién aplicados (resaltados)
-  ne: null, recienCreado: null,   // E11: ventana "Nuevo expediente" y expediente recién creado desde un documento
+  ne: null, recienCreado: null,
+  tablaId: null, nt: null, revision: null, fuenteDoc: null,   // E12: tabla abierta, ventana "Nueva tabla", revisión en curso y celda en la ficha   // E11: ventana "Nuevo expediente" y expediente recién creado desde un documento
   seguirAqui: {}   // F4: conversaciones en las que el abogado eligió "Seguir aquí" (nivel del aviso que ocultó; no se guarda)
 };
 const root = () => $('#root');
@@ -261,7 +262,7 @@ async function doUnlock(pass) {
   } catch (e) { btn.disabled = false; err.textContent = e instanceof FolioError ? e.message : 'No se pudo abrir la bóveda.'; }
 }
 function lockNow(msg) {
-  cerrarEnvio(false); S.menu = null; S.ne = null;   // la ventana «Nuevo expediente» (con el texto del documento) no sobrevive al bloqueo
+  cerrarEnvio(false); S.menu = null; S.ne = null; S.nt = null; S.revision?.ctrl.abort(); S.revision = null;   // la ventana «Nuevo expediente» (con el texto del documento) no sobrevive al bloqueo
   if (S.sending && S.abort) S.abort.abort();
   Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, consent: null, updateHidden: false, screen: 'lock', vista: 'inicio', sideOpen: false, fichaMovil: false });
   closeDialog(); render(); if (msg) toast(msg);
@@ -321,7 +322,7 @@ function caratulaTitle(e) {
   return cli || con ? `${cli || 'Cliente'} contra ${con || 'contraparte'}` : (e.materia || 'Expediente sin partes');
 }
 function upsertIndex(e) {
-  const props = e.memoria.propuestas.filter(p => p.estado === 'pendiente').map(p => ({ tipo: p.tipo, seccion: p.seccion, fecha: p.fecha || '', desc: p.despues, chatId: p.chatId, chat: e.chats.find(c => c.id === p.chatId)?.titulo || '' }));
+  const props = e.memoria.propuestas.filter(p => p.estado === 'pendiente').map(p => ({ tipo: p.tipo, seccion: p.seccion, fecha: p.fecha || '', desc: p.despues, chatId: p.chatId, chat: e.chats.find(c => c.id === p.chatId)?.titulo || (e.tablas || []).find(t => t.id === p.chatId)?.titulo || '' }));
   const s = { id: e.id, numero: e.numero, titulo: caratulaTitle(e), materia: e.materia, estado: e.estado || '', ejemplo: !!e.ejemplo, updatedAt: e.updatedAt, plazos: e.memoria.plazos.filter(p => !p.done).map(p => ({ fecha: p.fecha, desc: p.desc })), props };
   const i = S.index.findIndex(x => x.id === e.id); if (i >= 0) S.index[i] = s; else S.index.unshift(s);
 }
@@ -339,6 +340,7 @@ async function addAudit(entry) { S.audit.unshift(entry); S.audit = S.audit.slice
 async function openExp(id, silent) {
   try {
     if (S.exp?.id === id) { Object.assign(S, { vista: 'inicio', sideOpen: false }); resetFicha(); render(); return; }   // ya abierto: vuelve a su inicio
+    S.revision?.ctrl.abort();
     const e = await store.get('exp:' + id); if (!e) throw new FolioError('No se encontró el expediente.');
     normalizeExp(e); S.visitaPrevia = e.ultimaVisita; e.ultimaVisita = new Date().toISOString();
     await store.put('exp:' + id, e);   // migración y visita: no cambian la fecha de modificación ni el orden de la lista
@@ -416,7 +418,7 @@ function deadlineChip(fecha, done) {
    v0.6 · tres zonas (E10): expedientes · el Agente · Ficha del expediente
    El marcado sigue TAL CUAL el prototipo process/prototipos/rediseno-chat-v0.6.html (D-42).
    ============================================================ */
-const EXP_VISTAS = ['inicio', 'chat', 'memoria'];
+const EXP_VISTAS = ['inicio', 'chat', 'memoria', 'tabla'];
 const MQ_MOVIL = matchMedia('(max-width:1023px)');
 const HOY_DIAS = 14;   // "Hoy" muestra las fechas registradas vencidas y las de los próximos 14 días
 // Íconos del prototipo (trazo fino, decorativos)
@@ -430,7 +432,10 @@ const IC = {
   volver: '<path d="M19 12H5M11 6l-6 6 6 6"/>', flecha: '<path d="M5 12h14M13 6l6 6-6 6"/>', menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   doc: '<path d="M6.5 3.5h7l4 4v12.5a.5.5 0 0 1-.5.5H6.5a.5.5 0 0 1-.5-.5v-16a.5.5 0 0 1 .5-.5z"/><path d="M13.5 3.5v4h4M9 12.5h6M9 16h4"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', aviso: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.5M12 17h.01"/>',
-  puntos: '<circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/>'
+  puntos: '<circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/>',
+  tabla: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 4.5v15"/>',
+  copiar: '<rect x="8" y="8" width="11.5" height="11.5" rx="2"/><path d="M15.5 8V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2"/>',
+  bajar: '<path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/>'
 };
 const ic = (n, st = '') => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"${st ? ` style="${st}"` : ''}>${IC[n]}</svg>`;
 const numCorto = n => (n || '').split('-').slice(0, 2).join('-') || 'Sin número';
@@ -448,10 +453,10 @@ function chatsOrdenados(e) { return e.chats.filter(c => c.mensajes.length).sort(
 function docsLeidos(e) { const s = new Set(); e.chats.forEach(c => c.mensajes.forEach(m => (m.meta?.frags || []).forEach(n => s.add(n)))); return s; }
 
 /* Ficha: abierta o cerrada en pantalla ancha; hoja (ficha-movil) en el celular */
-const fichaVisible = () => !!S.exp && (S.vista === 'inicio' || S.vista === 'chat');
+const fichaVisible = () => !!S.exp && (S.vista === 'inicio' || S.vista === 'chat' || S.vista === 'tabla');
 function fichaAbierta() { return MQ_MOVIL.matches ? S.fichaMovil : S.ficha === 'abierta'; }
 function abrirFicha() { if (MQ_MOVIL.matches) S.fichaMovil = true; else S.ficha = 'abierta'; }
-function resetFicha() { Object.assign(S, { fichaModo: 'ficha', fichaTab: 'ficha', fuente: null, borrador: null }); }
+function resetFicha() { Object.assign(S, { fichaModo: 'ficha', fichaTab: 'ficha', fuente: null, borrador: null, fuenteDoc: null }); }
 function layout() {
   const v = $('#v6'); if (!v) return;
   const movil = MQ_MOVIL.matches, abierta = S.ficha === 'abierta' && fichaVisible();
@@ -531,12 +536,16 @@ function convsHTML() {
   const e = S.exp, c = activeChat(e), enChat = S.vista === 'chat', todas = chatsOrdenados(e);
   let lista = todas.slice(0, 3);
   if (enChat && c.mensajes.length && !lista.includes(c)) lista = [c, ...lista.slice(0, 2)];
-  return `<div class="convs">${enChat && !c.mensajes.length ? '<button class="conv on" data-action="new-chat">Nueva conversación</button>' : ''}${lista.map(x => `<button class="conv${enChat && x.id === c.id ? ' on' : ''}" data-action="open-chat" data-id="${x.id}" title="${esc(x.titulo)}">${esc(x.titulo || 'Conversación sin título')}</button>`).join('')}<button class="conv nueva" data-action="new-chat">+ Nueva conversación</button>${todas.length > 3 ? `<button class="conv todas" data-action="vista-inicio">Ver todas (${todas.length})</button>` : ''}</div>`;
+  const tablas = [...(e.tablas || [])].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).slice(0, 2);
+  if (S.vista === 'tabla' && tablaActual() && !tablas.includes(tablaActual())) tablas.unshift(tablaActual());
+  const tb = tablas.map(t => `<button class="conv${S.vista === 'tabla' && t.id === S.tablaId ? ' on' : ''}" data-action="open-tabla" data-id="${t.id}" title="${esc(t.titulo)}">${ic('tabla')}${esc(t.titulo)}</button>`).join('');
+  return `<div class="convs">${tb}${enChat && !c.mensajes.length ? '<button class="conv on" data-action="new-chat">Nueva conversación</button>' : ''}${lista.map(x => `<button class="conv${enChat && x.id === c.id ? ' on' : ''}" data-action="open-chat" data-id="${x.id}" title="${esc(x.titulo)}">${esc(x.titulo || 'Conversación sin título')}</button>`).join('')}<button class="conv nueva" data-action="new-chat">+ Nueva conversación</button><button class="conv nueva" data-action="nueva-tabla">+ Nueva tabla de revisión</button>${todas.length > 3 ? `<button class="conv todas" data-action="vista-inicio">Ver todas (${todas.length})</button>` : ''}</div>`;
 }
 
 /* ---------- Centro: encabezado y vistas ---------- */
 function centroHTML() {
   const v = S.vista;
+  if (v === 'tabla') return `<header class="cab" id="cab">${cabHTML()}</header>${updateBarHTML()}<div class="tabla-v" id="scroll">${tablaHTML()}</div>`;
   const body = v === 'hoy' ? hoyHTML() : v === 'inicio' ? inicioHTML() : v === 'chat' ? chatHTML() : v === 'memoria' ? memoriaHTML() : v === 'ajustes' ? settingsHTML() : emptyHTML();
   return `<header class="cab" id="cab">${cabHTML()}</header>${updateBarHTML()}<div class="scroll" id="scroll">${body}</div>${v === 'chat' ? `${largaHTML()}<div class="pie-chat">${cajaHTML('chat')}</div>` : ''}`;
 }
@@ -552,9 +561,10 @@ function cabHTML() {
   const e = S.exp, v = S.vista;
   const corto = e ? `<span class="num">${esc(numCorto(e.numero))}</span>${e.materia ? ' · ' + esc(e.materia) : ''}` : '';
   const [miga, titulo] = v === 'hoy' ? ['', 'Hoy'] : v === 'inicio' ? [`<span class="num">${esc(e.numero || 'Sin número')}</span>`, 'Inicio del expediente']
-    : v === 'chat' ? [corto, activeChat(e).titulo || 'Nueva conversación'] : v === 'memoria' ? [corto, 'Memoria del expediente'] : v === 'ajustes' ? ['', 'Ajustes'] : ['', 'Expedientes'];
+    : v === 'chat' ? [corto, activeChat(e).titulo || 'Nueva conversación'] : v === 'tabla' ? [corto, tablaActual()?.titulo || 'Tabla de revisión'] : v === 'memoria' ? [corto, 'Memoria del expediente'] : v === 'ajustes' ? ['', 'Ajustes'] : ['', 'Expedientes'];
   return `<button class="ib solo-movil" data-action="toggle-side" aria-label="Expedientes">${ic('menu')}</button>
-    <div class="tit">${miga ? `<span class="miga">${miga}</span>` : ''}<span class="titulo"${v === 'chat' ? ' role="heading" aria-level="1"' : ''}>${esc(titulo)}</span></div>
+    <div class="tit">${miga ? `<span class="miga">${miga}</span>` : ''}<span class="titulo"${v === 'chat' || v === 'tabla' ? ' role="heading" aria-level="1"' : ''}>${esc(titulo)}</span></div>
+    ${v === 'tabla' ? `<div class="acc-t"><button class="pb" data-action="tabla-col"${S.revision ? ' disabled' : ''}>${ic('mas')}<span class="t">Columna</span></button><button class="pb" data-action="tabla-copiar" aria-label="Copiar">${ic('copiar')}<span class="t">Copiar</span></button><button class="pb" data-action="tabla-csv" aria-label="Exportar CSV">${ic('bajar')}<span class="t">Exportar CSV</span></button><button class="ib" data-action="tabla-menu" aria-label="Más opciones de la tabla">${ic('puntos')}</button></div>` : ''}
     ${v === 'chat' ? `<button class="pb solo-pc" data-action="new-chat">${ic('mas')}Nueva conversación</button><button class="ib" data-action="chat-menu" aria-label="Más opciones de la conversación" title="${conversados(activeChat(e)).length ? `Contexto usado: ${usoContexto(e)} % del presupuesto de esta conversación` : ''}">${ic('puntos')}</button>` : ''}
     ${fichaVisible() ? `<button class="ib${fichaAbierta() ? ' on' : ''}" data-action="toggle-ficha" aria-label="Ficha del expediente" title="Ficha del expediente">${ic('ficha')}</button>` : ''}`;
 }
@@ -611,6 +621,8 @@ function inicioHTML() {
     <div class="bloque"><span class="lbl">Conversaciones</span>
       <div class="lista-conv">${chats.length ? chats.map(lcHTML).join('') : '<div class="vacio-conv">Todavía no conversas con el agente sobre este expediente.</div>'}</div>
     </div>
+    ${(e.tablas || []).length ? `<div class="bloque"><span class="lbl">Tablas de revisión</span><div class="lista-conv">${[...e.tablas].sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).map(t => { const r = resumenTabla(t);
+      return `<button class="lc" data-action="open-tabla" data-id="${t.id}"><span><b>${esc(t.titulo)}</b><small>${plural(t.filas.length, 'documento', 'documentos')} · ${plural(t.columnas.length, 'columna', 'columnas')}</small></span><span class="e"><span class="num">${esHoy(t.updatedAt) ? 'hoy' : diaLocal(t.updatedAt)}</span>${r.mal ? `<i class="w">${r.mal} por revisar</i>` : r.ok ? `<i>✓ ${plural(r.ok, 'cita verificada', 'citas verificadas')}</i>` : ''}</span></button>`; }).join('')}</div></div>` : ''}
   </div>`;
 }
 function novedadesHTML(e) {
@@ -668,7 +680,7 @@ function fichaHTML() {
   const head = S.fichaModo === 'ficha'
     ? `<div class="ftabs" role="tablist" aria-label="Ficha del expediente">${tabs.map(([k, l, n]) => `<button class="tab${S.fichaTab === k ? ' on' : ''}" role="tab" aria-selected="${S.fichaTab === k}" data-action="ftab" data-tab="${k}">${l}${n != null ? ` <span class="num">${n}</span>` : ''}</button>`).join('')}</div>`
     : `<button class="volver" data-action="ficha-volver">${ic('volver')}Volver a la ficha</button>`;
-  const body = S.fichaModo === 'fuente' ? fuenteHTML() : S.fichaModo === 'borrador' ? borradorHTML() : S.fichaTab === 'docs' ? fdocsHTML() : S.fichaTab === 'movs' ? fmovsHTML() : fichaPanelHTML();
+  const body = S.fichaModo === 'fuente' ? fuenteHTML() : S.fichaModo === 'fuente-doc' ? fuenteDocHTML() : S.fichaModo === 'borrador' ? borradorHTML() : S.fichaTab === 'docs' ? fdocsHTML() : S.fichaTab === 'movs' ? fmovsHTML() : fichaPanelHTML();
   return `<div class="fcab">${head}<button class="ib" data-action="toggle-ficha" aria-label="Cerrar la ficha" title="Cerrar la ficha">${ic('cerrar')}</button></div><div class="fcuerpo" id="fcuerpo" tabindex="-1">${body}</div>`;
 }
 function fichaPanelHTML() {
@@ -776,7 +788,7 @@ function fdocsHTML() {
   return `<div class="panel" data-drop>
     ${docs.length ? `<div>${docs.map(d => `<button class="li" data-action="view-doc" data-id="${d.id}"><span class="doc-ic">${tipo(d)}</span><span>${esc(d.name)}${det(d)}</span></button>`).join('')}</div>`
       : '<div class="sin">Sin documentos. Agrega la demanda, resoluciones o escritos clave para que el agente pueda citarlos. El texto se extrae en tu equipo y se guarda cifrado.</div>'}
-    <button class="pb" data-action="pick-file">${ic('mas')}Agregar documento</button>
+    <div class="row" style="gap:6px"><button class="pb" data-action="pick-file">${ic('mas')}Agregar documento</button>${docsConTexto(e).length ? `<button class="pb" data-action="nueva-tabla">${ic('tabla')}Revisar en una tabla</button>` : ''}</div>
   </div>`;
 }
 function fmovsHTML() {
@@ -1144,6 +1156,7 @@ function acciones(e) {
       { texto: `Prepara el esquema del escrito para absolver el traslado${penal ? ' de la acusación' : ''}: observaciones, fundamentos y medios probatorios. Deja entre corchetes lo que debo completar. ${VERIFICA}` }],
     ['/resumir-documento', 'Resumen de un documento del expediente', { texto: 'Resume este documento del expediente en pocas líneas: qué pide o resuelve, fechas y puntos clave. ' + VERIFICA + ' @', arroba: true }],
     ['/pegar-cej', 'Ordenar movimientos copiados del CEJ', { cej: true }],
+    ['/cronologia', 'Tabla con la cronología de resoluciones del expediente', { tabla: 'cronologia' }],
     ['/preparar-audiencia', penal ? 'Puntos para la audiencia de control de acusación' : 'Puntos para preparar la próxima audiencia',
       { texto: `Prepara los puntos para la audiencia${penal ? ' de control de acusación' : ''}: qué plantear, en qué orden y qué pruebas llevar. ${VERIFICA}` }]
   ];
@@ -1180,6 +1193,7 @@ async function elegirMenu(i) {
   }
   const accion = mn.items[i][2]; cerrarMenu();
   if (accion.cej) { q.value = ''; await pasteCEJ(); return; }
+  if (accion.tabla) { q.value = ''; nuevaTablaVentana(accion.tabla); return; }
   q.value = accion.texto; q.focus(); q.setSelectionRange(q.value.length, q.value.length);
   if (accion.arroba) actualizarMenu(q);
 }
@@ -1603,6 +1617,272 @@ async function datosNuevosDe(e, docName, text) {
   await saveExp(); refreshExp(); aviso(`Expediente actualizado · ${plural(sel.length, 'dato', 'datos')}`);
 }
 
+/* ============================================================
+   Tablas de revisión (E12 · prototipo tabla-revision-v0.8.html)
+   Una fila por documento; cada celda del agente con su cita verificada en el equipo (D-53).
+   Los documentos elegidos salen completos y seudonimizados, uno por consulta (D-54).
+   ============================================================ */
+const tablaActual = () => (S.exp?.tablas || []).find(t => t.id === S.tablaId);
+const docsConTexto = e => e.docs.filter(d => !d.scanned && (S.docTexts[d.id] || '').trim());
+const fechaDMA = iso => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}/${m[2]}/${m[1]}` : ''; };
+const isoDeDMA = s => { const m = String(s || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''; };
+const docTokens = d => tokensDe(Math.min((S.docTexts[d.id] || '').length, TABLA_LIMITE) + 900);
+function abrirTabla(id) {
+  S.tablaId = id; S.vista = 'tabla'; S.sideOpen = false; S.ficha = 'cerrada'; resetFicha(); render();
+}
+/* ---------- Ventana "Nueva tabla de revisión" ---------- */
+function nuevaTablaVentana(plantilla = 'cronologia') {
+  const e = S.exp; if (!e) return;
+  S.nt = { plantilla, sel: new Set(docsConTexto(e).map(d => d.id)) };
+  $('#v6')?.insertAdjacentHTML('beforeend', `<div class="velo" id="velo-nt"><div class="modal ne nt" role="dialog" aria-modal="true" aria-labelledby="nt-t"></div></div>`);
+  fondoInerte(true); pintarNT(); setTimeout(() => $('#velo-nt .pl.on')?.focus(), 30);
+}
+function cerrarNT() { S.nt = null; $('#velo-nt')?.remove(); fondoInerte(false); }
+function pintarNT() {
+  const e = S.exp, n = S.nt, m = $('#velo-nt .modal'); if (!n || !m) return;
+  const s = S.settings, docs = [...e.docs].sort((a, b) => (a.addedAt || '').localeCompare(b.addedAt || '')), sel = docs.filter(d => n.sel.has(d.id));
+  const tokens = sel.reduce((a, d) => a + docTokens(d), 0), dest = s.provider === 'custom' ? 'tu servidor propio' : `${provLabel(s.provider)} con tu cuenta`;
+  const tipo = d => d.type === 'pdf' ? 'PDF' : d.type === 'docx' ? 'DOC' : 'TXT';
+  const local = (PLANTILLAS[n.plantilla].columnas || []).filter(c => c.local).map(c => c.local === 'fecha' ? 'fecha' : 'número de resolución');
+  m.innerHTML = `<div class="mc"><h2 id="nt-t">Nueva tabla de revisión</h2><button type="button" class="ib" data-action="nt-cerrar" aria-label="Cerrar">${ic('cerrar')}</button></div>
+    <div class="mcuerpo">
+      <div class="campo"><span class="lbl2">Plantilla</span><div class="plantillas" role="radiogroup" aria-label="Plantilla">${Object.entries(PLANTILLAS).map(([k, p]) => `<button type="button" class="pl${n.plantilla === k ? ' on' : ''}" role="radio" aria-checked="${n.plantilla === k}" data-action="nt-plantilla" data-k="${k}"><b>${k === 'blanco' ? 'En blanco' : esc(p.titulo)}</b><small>${esc(p.desc)}</small></button>`).join('')}</div></div>
+      <div class="campo"><span class="lbl2">Documentos a revisar</span>
+        ${docs.length ? `<div class="docs-l">${docs.map(d => { const ok = !d.scanned && (S.docTexts[d.id] || '').trim();
+          return `<label class="dl${ok ? '' : ' off'}"><input type="checkbox" data-nt-doc="${d.id}"${ok ? (n.sel.has(d.id) ? ' checked' : '') : ' disabled'}><span class="doc-ic">${tipo(d)}</span><span>${esc(d.name)}</span><small>${ok ? `${d.pages ? plural(d.pages, 'pág.', 'págs.') + ' · ' : ''}≈ ${docTokens(d).toLocaleString('es-PE')} tokens` : 'escaneado: sin texto'}</small></label>`; }).join('')}</div>`
+          : '<div class="lista-vacia">Este expediente aún no tiene documentos. Agrégalos en la pestaña Documentos de la ficha.</div>'}
+      </div>
+      ${isReady(s) ? `<div class="estim">
+        <div class="l">${ic('candado')}<span>Se enviarán <b>${plural(sel.length, 'documento completo', 'documentos completos')}</b> (≈ ${tokens.toLocaleString('es-PE')} tokens) a <b>${esc(dest)}</b>, uno por consulta, con los datos reemplazados. <a href="#" data-action="nt-ver">Ver lo que se enviará</a></span></div>
+        ${local.length ? `<div class="l">${ic('check')}<span>Se lee en tu equipo, sin IA: ${listaY(local)}.</span></div>` : ''}
+        ${n.plantilla === 'blanco' ? `<div class="l">${ic('mas')}<span>Después de crearla agregas tus columnas y sus preguntas.</span></div>` : ''}
+      </div>` : `<div class="sin-prov"><span>Conecta tu proveedor de IA para revisar documentos con el agente.</span><button class="pb" data-action="open-settings">Conectar proveedor</button></div>`}
+    </div>
+    <div class="mp"><span class="nota">${ic('candado')}La tabla se guarda cifrada en este expediente</span><button type="button" class="pb" data-action="nt-cerrar">Cancelar</button><button type="button" class="pb prim" data-action="nt-crear"${sel.length && isReady(s) ? '' : ' disabled'}>${n.plantilla === 'blanco' ? 'Crear tabla' : `Revisar ${plural(sel.length, 'documento', 'documentos')}`}</button></div>`;
+}
+async function crearTabla({ siempre = false } = {}) {
+  const e = S.exp, n = S.nt; if (!n) return;
+  const ids = e.docs.filter(d => n.sel.has(d.id)).map(d => d.id); if (!ids.length) return;
+  const t = nuevaTabla(e, n.plantilla, ids);
+  if (t.columnas.length && !(await vistaPreviaLote(t, t.columnas, ids, { siempre }))) { e.tablas = e.tablas.filter(x => x.id !== t.id); return; }
+  cerrarNT(); await saveExp(); abrirTabla(t.id);
+  if (t.columnas.length) revisarTabla(t, t.columnas, ids); else columnaVentana();
+}
+/* ---------- Lo que sale: un documento completo por consulta, seudonimizado ---------- */
+// Columnas que van al agente para un documento: las que el encabezado no resuelve en el equipo
+function colsAgente(texto, cols) { const r = leerEncabezado(texto).resolucion; return cols.filter(c => !(c.local === 'fecha' ? r?.fecha : c.local === 'resolucion' ? r?.acto : '')); }
+function loteTabla(e, cols, ids) {
+  return ids.map(id => { const d = e.docs.find(x => x.id === id), P = makePseudo(e, S.settings.pseudo), r = recorteDoc(S.docTexts[id] || ''), textoP = P.apply(r.texto), pend = colsAgente(S.docTexts[id] || '', cols);
+    return { d, P, user: pend.length ? mensajeTabla(d.name, textoP, pend) : '' }; }).filter(x => x.user);
+}
+async function vistaPreviaLote(t, cols, ids, { siempre = false } = {}) {
+  if (!siempre && !S.settings.review) return true;
+  const lote = loteTabla(S.exp, cols, ids), texto = lote.map((x, i) => `=== DOCUMENTO ${i + 1} DE ${lote.length} (una consulta) ===\n${x.user}`).join('\n\n');
+  const reemp = lote.flatMap(x => reemplazosEn(x.P, x.user)).filter((r, i, a) => a.findIndex(y => y[1] === r[1]) === i);
+  if (!lote.length) return true;   // todo se leyó en el equipo: no sale nada
+  return abrirEnvio({ provider: S.settings.provider, model: S.settings.model, n: S.settings.pseudo ? reemp.length : 0, texto, reemp, instr: TABLA_PROMPT });
+}
+/* ---------- Motor: un documento a la vez; fecha y resolución del encabezado sin IA ---------- */
+async function revisarTabla(t, cols, ids) {
+  const e = S.exp, s = S.settings; if (S.revision) return;
+  const ctrl = new AbortController(); S.revision = { tablaId: t.id, ctrl, hechos: 0, total: ids.length };
+  ids.forEach(id => { const f = t.filas.find(x => x.docId === id); if (f) { f.estado = 'pendiente'; delete f.error; } });
+  pintarTabla();
+  try {
+    for (const id of ids) {
+      if (ctrl.signal.aborted || S.exp !== e) break;   // si cambias de expediente, la revisión se detiene
+      const f = t.filas.find(x => x.docId === id), d = e.docs.find(x => x.id === id); if (!f || !d) continue;
+      f.estado = 'revisando'; pintarTabla();
+      const texto = S.docTexts[id] || '', r = recorteDoc(texto), enc = leerEncabezado(texto), P = makePseudo(e, s.pseudo);
+      f.recorte = r.recorte || undefined;
+      const pend = [];
+      for (const c of cols) {
+        const loc = c.local === 'fecha' ? fechaDMA(enc.resolucion?.fecha) : c.local === 'resolucion' ? enc.resolucion?.acto || '' : '';
+        if (loc) f.celdas[c.id] = { valor: loc, origen: 'local', verificada: null };
+        else if (f.celdas[c.id]?.origen !== 'abogado') pend.push(c);
+      }
+      if (pend.length) {
+        const textoP = P.apply(r.texto), user = mensajeTabla(d.name, textoP, pend);
+        try {
+          const out = await llm({ cfg: s, system: TABLA_PROMPT, messages: [{ role: 'user', content: user }], maxTokens: 3000, signal: ctrl.signal });
+          await logSend('Tabla de revisión', TABLA_PROMPT.length + user.length, P);
+          const j = parseJSONLoose(out).celdas || {};
+          for (const c of pend) {
+            const x = j[c.id] || {}, valor = typeof x.valor === 'string' && x.valor.trim() ? x.valor.trim() : typeof x.valor === 'number' ? String(x.valor) : null;
+            const cita = typeof x.cita === 'string' && x.cita.trim() ? x.cita.trim().slice(0, 600) : null;
+            const b = cita ? buscarCita(textoP, cita) : null;
+            f.celdas[c.id] = { valor: valor ? P.restore(valor) : null, cita, verificada: b ? b.ok : null, pagina: b?.ok ? b.pagina : null, origen: 'agente' };
+          }
+          f.estado = 'lista';
+        } catch (err) {
+          if (err.name === 'AbortError') { f.estado = 'pendiente'; break; }
+          Object.assign(f, { estado: 'error', error: err instanceof FolioError ? err.message : 'No se pudo revisar este documento.' });
+        }
+      } else f.estado = 'lista';
+      if (S.exp !== e) break;
+      S.revision.hechos++; t.updatedAt = new Date().toISOString(); await saveExp(); pintarTabla();
+    }
+  } finally { if (S.revision?.ctrl === ctrl) S.revision = null; if (S.exp === e) { t.updatedAt = new Date().toISOString(); await saveExp().catch(fail); pintarTabla(); renderBarra(); } }
+}
+/* ---------- Vista de la tabla (centro) ---------- */
+function marcaCelda(c, col) {
+  if (c.origen === 'local') return '<span class="marca loc">leído en tu equipo</span>';
+  if (c.origen === 'abogado') return '<span class="marca">editado por ti</span>';
+  const pz = col.plazo ? '<span class="marca w">verifica en la resolución y tu casilla</span>' : '';
+  if (c.verificada === true) return `<span class="marca ok">✓ cita ${c.pagina ? `en pág. ${c.pagina}` : 'encontrada'}</span>${pz}`;
+  if (c.verificada === false) return `<span class="marca w">⚠ cita no encontrada en el documento</span>${pz}`;
+  return `<span class="marca w">sin cita: revísala</span>${pz}`;
+}
+function celdaHTML(t, f, col) {
+  const c = f.celdas[col.id];
+  if (!c || c.valor == null || c.valor === '') return '<span class="vacia">— no aparece</span>';
+  const sel = S.fuenteDoc && S.fuenteDoc.docId === f.docId && S.fuenteDoc.colId === col.id && S.fichaModo === 'fuente-doc';
+  const cls = `celda${c.origen === 'agente' && c.verificada !== true ? ' nf' : ''}${col.plazo ? ' pz' : ''}${sel ? ' sel' : ''}`;
+  return `<button type="button" class="${cls}" data-action="celda" data-doc="${f.docId}" data-col="${esc(col.id)}"><span class="v">${esc(c.valor)}</span>${marcaCelda(c, col)}</button>`;
+}
+function resumenTabla(t) {
+  const celdas = t.filas.flatMap(f => Object.values(f.celdas)), ag = celdas.filter(c => c.origen === 'agente' && c.valor);
+  return { ok: ag.filter(c => c.verificada === true).length, mal: ag.filter(c => c.verificada !== true).length, loc: celdas.filter(c => c.origen === 'local').length };
+}
+function movsCandidatos(t) {
+  const e = S.exp; if (t.plantilla !== 'cronologia' && t.plantilla !== 'notificaciones') return [];
+  const colAct = t.plantilla === 'cronologia' ? 'resolucion' : 'acto', colSum = t.plantilla === 'cronologia' ? 'ordena' : 'hacer';
+  return t.filas.filter(f => f.estado === 'lista').map(f => {
+    const d = e.docs.find(x => x.id === f.docId), fecha = isoDeDMA(f.celdas.fecha?.valor), acto = f.celdas[colAct]?.valor || (d ? d.name.replace(/\.[a-z0-9]+$/i, '') : '');
+    return { fecha, acto, sumilla: f.celdas[colSum]?.valor || '' };
+  }).filter(m => m.acto && !e.movimientos.some(v => norm(v.acto) === norm(m.acto) && (!m.fecha || !v.fecha || v.fecha === m.fecha)));
+}
+function plazosCandidatos(t) {
+  const col = t.columnas.find(c => c.plazo); if (!col) return [];
+  return t.filas.filter(f => f.celdas[col.id]?.valor && !f.celdas[col.id].propuesta).map(f => ({ f, col }));
+}
+function tablaHTML() {
+  const t = tablaActual(); if (!t) return '<div class="col"><p class="sin">Esa tabla ya no existe.</p></div>';
+  const e = S.exp, rv = S.revision?.tablaId === t.id ? S.revision : null, r = resumenTabla(t), movs = movsCandidatos(t), pl = plazosCandidatos(t);
+  const tipo = d => d?.type === 'pdf' ? 'PDF' : d?.type === 'docx' ? 'DOC' : 'TXT';
+  const estado = rv ? `<div class="estado-t"><div class="prog"><span>Revisando <b>${Math.min(rv.hechos + 1, rv.total)} de ${rv.total}</b> ${rv.total === 1 ? 'documento' : 'documentos'} · el agente lee uno por uno, con los datos reemplazados</span><span class="barra-p"><i style="width:${Math.round(rv.hechos / rv.total * 100)}%"></i></span></div><div class="acc"><button class="pb" data-action="tabla-detener">Detener</button></div></div>`
+    : `<div class="estado-t"><div class="res"><span><b>${plural(t.filas.length, 'documento', 'documentos')}</b></span>${r.ok ? `<span class="ok">✓ ${plural(r.ok, 'cita verificada', 'citas verificadas')} en el documento</span>` : ''}${r.mal ? `<span class="w">⚠ ${r.mal} por revisar</span>` : ''}${r.loc ? `<span>${plural(r.loc, 'dato leído', 'datos leídos')} en tu equipo</span>` : ''}${t.filas.some(f => f.estado === 'pendiente') ? '<button class="pb" data-action="tabla-continuar">Continuar la revisión</button>' : ''}</div>
+      <div class="acc">${t.columnas.some(c => c.plazo) ? `<button class="pb" data-action="tabla-proponer"${pl.length ? '' : ' disabled'}>Proponer a la memoria (${pl.length})</button>` : ''}${t.plantilla === 'cronologia' || t.plantilla === 'notificaciones' ? `<button class="pb prim" data-action="tabla-movs"${movs.length ? '' : ' disabled'}>${movs.length ? `Agregar a Movimientos (${movs.length})` : 'En Movimientos ✓'}</button>` : ''}</div></div>`;
+  const filas = t.filas.map(f => {
+    const d = e.docs.find(x => x.id === f.docId);
+    const docTd = `<td><div class="docn"><span class="doc-ic">${tipo(d)}</span><span><b>${esc(d?.name || 'Documento borrado')}</b><small>${d?.pages ? plural(d.pages, 'pág.', 'págs.') : ''}${f.recorte ? ` · se revisaron las págs. 1–${f.recorte.hasta || '?'}${f.recorte.de ? ` de ${f.recorte.de}` : ''}` : ''}</small></span></div></td>`;
+    if (!t.columnas.length) return `<tr>${docTd}<td class="cola">Agrega una columna para revisar este documento.</td></tr>`;
+    if (f.estado === 'revisando') return `<tr>${docTd}<td colspan="${t.columnas.length}"><div class="skel" style="width:70%"></div><div class="skel" style="width:45%"></div><span class="cola">Revisando con el agente…</span></td></tr>`;
+    if (f.estado === 'pendiente' && !Object.keys(f.celdas).length) return `<tr>${docTd}<td colspan="${t.columnas.length}" class="cola">${rv ? 'En cola' : 'Sin revisar'}</td></tr>`;
+    if (f.estado === 'error') return `<tr>${docTd}<td colspan="${t.columnas.length}" class="cola err">${esc(f.error || 'No se pudo revisar.')} <button class="pb" data-action="tabla-fila" data-doc="${f.docId}">Reintentar</button></td></tr>`;
+    return `<tr>${docTd}${t.columnas.map(c => `<td>${celdaHTML(t, f, c)}</td>`).join('')}</tr>`;
+  }).join('');
+  return `${estado}<div class="tabla-w"><table class="rev" aria-label="${esc(t.titulo)}"><thead><tr><th scope="col">Documento</th>${t.columnas.map(c => `<th scope="col">${esc(c.nombre)}${c.nota ? `<small>${esc(c.nota)}</small>` : ''}</th>`).join('')}</tr></thead><tbody>${filas}</tbody></table></div>
+    <div class="nota-t">Cada celda del agente trae una cita textual: Folio la busca en el documento <b>en tu equipo</b>. ✓ = la encontró; ⚠ = no está en el texto, revísala. Los plazos se verifican siempre en la resolución y en tu casilla.</div>`;
+}
+function pintarTabla() { if (S.vista !== 'tabla') return; const c = $('#centro'); if (!c) return; const sc = $('.tabla-w', c)?.scrollTop || 0; c.innerHTML = centroHTML(); const w = $('.tabla-w', c); if (w) w.scrollTop = sc; layout(); }
+/* ---------- Ficha en modo "Fuente del documento" ---------- */
+function fuenteDocHTML() {
+  const t = tablaActual(), fd = S.fuenteDoc, e = S.exp; if (!t || !fd) return '';
+  const f = t.filas.find(x => x.docId === fd.docId), col = t.columnas.find(c => c.id === fd.colId), c = f?.celdas[fd.colId], d = e.docs.find(x => x.id === fd.docId);
+  if (!f || !col || !c || !d) return '<div class="panel"><div class="sin">Esa celda ya no existe.</div></div>';
+  const P = makePseudo(e, S.settings.pseudo), textoP = P.apply(recorteDoc(S.docTexts[d.id] || '').texto);
+  let pasaje = '', b = null;
+  if (c.cita) { b = buscarCita(textoP, c.cita); if (b?.ok) { const a = Math.max(0, b.ini - 220), z = Math.min(textoP.length, b.fin + 220);
+    pasaje = `${a > 0 ? '… ' : ''}${esc(P.restore(textoP.slice(a, b.ini)))}<mark>${esc(P.restore(textoP.slice(b.ini, b.fin)))}</mark>${esc(P.restore(textoP.slice(b.fin, z)))}${z < textoP.length ? ' …' : ''}`.replace(/\[Pág\. \d+\]\n?/g, ''); } }
+  const est = c.origen === 'local' ? ['', 'Leído en tu equipo del encabezado, sin IA'] : c.origen === 'abogado' ? ['', 'Editado por ti'] : b?.ok ? ['', 'Cita encontrada en el documento'] : c.cita ? ['w', 'La cita del agente no está en el documento'] : ['w', 'El agente no dio una cita'];
+  const nota = c.origen === 'local' ? 'Folio leyó este dato del encabezado del documento, en tu equipo. Verifícalo en la resolución.'
+    : c.origen === 'abogado' ? 'Escribiste este valor. Folio no lo verifica.'
+    : b?.ok ? `Folio verificó en tu equipo que esta cita está en el documento. "${esc(col.nombre)}" es un resumen del agente: revisa el documento completo antes de usarlo en un escrito.`
+    : c.cita ? `El agente citó: «${esc(P.restore(c.cita))}». Folio no encontró ese texto en el documento. Corrige la celda o vuelve a revisar la fila.` : 'Sin una cita no se puede comprobar de dónde salió. Corrige la celda o vuelve a revisar la fila.';
+  return `<div class="panel fuente">
+    <div class="bloque"><span class="lbl">Fuente en el documento · ${esc(col.nombre)}</span><h3>${esc(d.name)}${b?.ok && b.pagina ? ` · pág. ${b.pagina}` : ''}</h3></div>
+    <span class="vig${est[0] ? ' warn' : ''}">${ic(est[0] ? 'aviso' : 'check', 'width:13px;height:13px')}${est[1]}</span>
+    <div class="bloque"><span class="lbl">Valor</span><div class="fest">${esc(c.valor || '—')}</div></div>
+    ${pasaje ? `<div class="pasaje">${pasaje}</div>` : ''}
+    ${col.plazo ? '<div class="verif">' + ic('aviso') + '<span>Folio no calcula plazos: verifica la fecha en la resolución y en tu casilla.</span></div>' : ''}
+    <p class="nota">${nota}</p>
+    <div class="acc"><button class="pb" data-action="celda-editar">Editar celda</button><button class="pb" data-action="tabla-fila" data-doc="${f.docId}"${S.revision ? ' disabled' : ''}>Volver a revisar esta fila</button></div>
+  </div>`;
+}
+/* ---------- Columnas, edición, movimientos, memoria y exportación ---------- */
+function columnaVentana() {
+  const t = tablaActual(); if (!t) return;
+  const ids = t.filas.map(f => f.docId), tokens = S.exp.docs.filter(d => ids.includes(d.id)).reduce((a, d) => a + docTokens(d), 0);
+  $('#v6')?.insertAdjacentHTML('beforeend', `<div class="velo" id="velo-col"><div class="modal ne chica" role="dialog" aria-modal="true" aria-labelledby="nc-t">
+    <div class="mc"><h2 id="nc-t">Nueva columna</h2><button type="button" class="ib" data-action="col-cerrar" aria-label="Cerrar">${ic('cerrar')}</button></div>
+    <div class="mcuerpo">
+      <label class="campo"><span class="lbl2">Nombre</span><input class="input" id="col-n" placeholder="Ej.: monto de la pensión" maxlength="60"></label>
+      <label class="campo"><span class="lbl2">Pregunta para el agente</span><textarea class="input" id="col-p" rows="2" placeholder="Ej.: ¿qué monto o porcentaje de pensión se pide, se ofrece o se fija en este documento?"></textarea></label>
+      <div class="campo"><span class="lbl2" id="col-tl">Tipo</span><div class="seg" role="radiogroup" aria-labelledby="col-tl">${Object.entries(TIPOS_COL).map(([k, l], i) => `<button type="button" role="radio" aria-checked="${!i}" class="${i ? '' : 'on'}" data-action="col-tipo" data-k="${k}">${l}</button>`).join('')}</div></div>
+      <div class="estim"><div class="l">${ic('candado')}<span>Se revisarán de nuevo <b>${plural(ids.length, 'documento', 'documentos')}</b> (≈ ${tokens.toLocaleString('es-PE')} tokens) solo para esta columna, con los datos reemplazados.</span></div></div>
+      <p class="ne-err" id="col-err" role="alert"></p>
+    </div>
+    <div class="mp"><button type="button" class="pb" data-action="col-cerrar">Cancelar</button><button type="button" class="pb prim" data-action="col-crear">Agregar columna</button></div></div></div>`);
+  fondoInerte(true); setTimeout(() => $('#col-n')?.focus(), 30);
+}
+function cerrarColumna() { $('#velo-col')?.remove(); fondoInerte(false); }
+async function crearColumna() {
+  const t = tablaActual(); if (!t) return;
+  const nombre = $('#col-n').value.trim(), pregunta = $('#col-p').value.trim(), tipo = $('#velo-col .seg .on')?.dataset.k || 'texto';
+  if (!nombre || !pregunta) { $('#col-err').textContent = 'Escribe el nombre y la pregunta.'; return; }
+  const col = { id: 'c' + uid().slice(0, 6), nombre, pregunta: tipo === 'cita' ? `${pregunta} Responde copiando el texto literal.` : pregunta, tipo };
+  const ids = t.filas.map(f => f.docId);
+  if (!(await vistaPreviaLote(t, [col], ids))) return;
+  t.columnas.push(col); cerrarColumna(); await saveExp(); pintarTabla();
+  revisarTabla(t, [col], ids);
+}
+async function editarCelda() {
+  const t = tablaActual(), fd = S.fuenteDoc; if (!t || !fd) return;
+  const f = t.filas.find(x => x.docId === fd.docId), c = f?.celdas[fd.colId]; if (!f) return;
+  const r = await askDialog({ title: 'Editar celda', ok: 'Guardar', collect: d => $('#celda-v', d).value.trim(),
+    body: `<label class="field"><span>${esc(t.columnas.find(x => x.id === fd.colId)?.nombre || 'Valor')}</span><textarea class="textarea" id="celda-v" rows="3">${esc(c?.valor || '')}</textarea></label><p class="small muted">El valor queda como "editado por ti": Folio no lo verifica.</p>` });
+  if (r == null || r === false) return;
+  f.celdas[fd.colId] = { ...(c || {}), valor: r || null, origen: 'abogado', verificada: null };
+  t.updatedAt = new Date().toISOString(); await saveExp(); pintarTabla(); renderFicha();
+}
+async function agregarMovs() {
+  const t = tablaActual(), e = S.exp, movs = movsCandidatos(t); if (!movs.length) return;
+  const nuevos = movs.map(m => ({ id: uid(), fecha: m.fecha, acto: m.acto, sumilla: m.sumilla, addedAt: new Date().toISOString(), deTabla: t.id }));
+  e.movimientos.push(...nuevos); await saveExp(); pintarTabla(); renderFicha();
+  aviso(`${plural(nuevos.length, 'movimiento agregado', 'movimientos agregados')}`, async () => { const ids = new Set(nuevos.map(n => n.id)); e.movimientos = e.movimientos.filter(v => !ids.has(v.id)); await saveExp(); pintarTabla(); renderFicha(); });
+}
+async function proponerDeTabla() {
+  const t = tablaActual(), e = S.exp, pl = plazosCandidatos(t); if (!pl.length) return;
+  const items = pl.map(({ f, col }) => {
+    const v = f.celdas[col.id].valor, fecha = isoDeDMA(v), d = e.docs.find(x => x.id === f.docId), de = f.celdas.resolucion?.valor || f.celdas.acto?.valor || d?.name || '';
+    return fecha ? { k: 'plazo', v: `${v} (${de})`, fecha } : { k: 'pend', v: `Verificar plazo: ${v} (${de})` };
+  });
+  addProposals(e, items, t.id); pl.forEach(({ f, col }) => { f.celdas[col.id].propuesta = true; });
+  await saveExp(); pintarTabla(); renderBarra(); revisarCambios();
+  aviso(`${plural(items.length, 'cambio enviado', 'cambios enviados')} a la caja de la ficha`);
+}
+function tablaFilas(t) {
+  const e = S.exp, cols = t.columnas;
+  return [['Documento', ...cols.map(c => c.nombre), ...cols.map(c => `Cita · ${c.nombre}`)],
+    ...t.filas.map(f => { const d = e.docs.find(x => x.id === f.docId); return [d?.name || '', ...cols.map(c => f.celdas[c.id]?.valor || ''), ...cols.map(c => f.celdas[c.id]?.cita ? makePseudo(e, false).restore(f.celdas[c.id].cita) : '')]; })];
+}
+function exportarTabla() {
+  const t = tablaActual(); if (!t) return;
+  const csv = tablaFilas(t).map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  download(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), `${t.titulo.toLowerCase().replace(/[^a-z0-9áéíóúñ]+/gi, '-')}-${numCorto(S.exp.numero || 'expediente')}.csv`);
+  aviso('Tabla descargada en tu equipo (CSV)');
+}
+async function copiarTabla() {
+  const t = tablaActual(); if (!t) return;
+  const filas = tablaFilas(t).map(r => r.slice(0, 1 + t.columnas.length));
+  await navigator.clipboard.writeText(filas.map(r => r.map(x => String(x).replace(/\s+/g, ' ')).join('\t')).join('\n'));
+  aviso('Copiada: pégala en tu escrito como tabla');
+}
+async function tablaMenu() {
+  const t = tablaActual(); if (!t) return;
+  const r = await askDialog({ title: 'Tabla de revisión', ok: 'Guardar', collect: d => ({ titulo: $('#tb-t', d).value.trim() }),
+    body: `<label class="field"><span>Título</span><input class="input" id="tb-t" value="${esc(t.titulo)}" maxlength="80"></label>
+      <p class="small muted">${plural(t.filas.length, 'documento', 'documentos')} · ${plural(t.columnas.length, 'columna', 'columnas')}. Si borras la tabla, los documentos y la memoria se mantienen.</p>
+      <button type="button" class="btn danger sm" data-action="tabla-borrar">Borrar tabla</button>` });
+  if (!r) return; if (r.titulo) t.titulo = r.titulo; await saveExp(); render();
+}
+async function borrarTabla() {
+  const e = S.exp, t = tablaActual(); closeDialog(); if (!t) return;
+  if (!(await askDialog({ title: 'Borrar tabla', ok: 'Borrar', danger: true, body: `<p>Se borrará «${esc(t.titulo)}» de este equipo. Los documentos, los movimientos y la memoria se mantienen. No se puede deshacer.</p>` }))) return;
+  e.tablas = e.tablas.filter(x => x.id !== t.id); S.vista = 'inicio'; S.tablaId = null; resetFicha(); await saveExp(); render(); aviso('Tabla borrada');
+}
+
 async function expForm(e) {
   const isNew = !e; e = e || {};
   const r = await askDialog({ title: isNew ? 'Nuevo expediente' : 'Datos del expediente', ok: isNew ? 'Crear expediente' : 'Guardar cambios', wide: true,
@@ -1765,6 +2045,8 @@ function setPath(obj, path, val) { const ks = path.split('.'); let o = obj; whil
 document.addEventListener('click', async ev => {
   if (ev.target.id === 'velo-envio') { cerrarEnvio(false); return; }
   if (ev.target.id === 'velo-ne') { cerrarNE(); return; }
+  if (ev.target.id === 'velo-nt') { cerrarNT(); return; }
+  if (ev.target.id === 'velo-col') { cerrarColumna(); return; }
   if (S.menu && !ev.target.closest('#menu-caja, #q')) cerrarMenu();
   const db = ev.target.closest('[data-dlg]'); if (db) { onDlgButton(db); return; }
   const a = ev.target.closest('[data-action]'); if (!a) return;
@@ -1797,6 +2079,7 @@ document.addEventListener('click', async ev => {
       case 'hoy-ir': {
         await openExp(id); const e = S.exp; if (!e || e.id !== id) break;
         if (a.dataset.chat && e.chats.some(c => c.id === a.dataset.chat)) { e.chatActivo = a.dataset.chat; S.vista = 'chat'; }
+        else if (a.dataset.chat && (e.tablas || []).some(t => t.id === a.dataset.chat)) { S.tablaId = a.dataset.chat; S.vista = 'tabla'; }
         abrirFicha(); resetFicha(); render(); revisarCambios(); break; }
       case 'open-chat': abrirChat(id); break;
       case 'new-chat': await irAChatNuevo(); $('#q')?.focus(); break;
@@ -1806,7 +2089,7 @@ document.addEventListener('click', async ev => {
       case 'riel-abrir': S.ficha = 'cerrada'; layout(); break;
       case 'riel-buscar': S.ficha = 'cerrada'; layout(); $('#q-exp')?.focus(); break;
       case 'ftab': S.fichaTab = a.dataset.tab; renderFicha(); break;
-      case 'ficha-volver': S.fichaModo = 'ficha'; renderFicha(); layout(); break;
+      case 'ficha-volver': S.fichaModo = 'ficha'; S.fuenteDoc = null; renderFicha(); layout(); pintarTabla(); break;
       case 'abrir-borrador': S.borrador = +a.dataset.i; S.fichaModo = 'borrador'; abrirFicha(); renderFicha(); layout(); $('#fcuerpo').scrollTop = 0; break;
       case 'borr-guardar': await guardarBorrador(); break;
       case 'borr-copiar': { const m = activeChat(S.exp).mensajes[S.borrador]; if (m) { await navigator.clipboard.writeText(m.content); toast('Borrador copiado.'); } break; }
@@ -1821,6 +2104,27 @@ document.addEventListener('click', async ev => {
       case 'envio-enviar': cerrarEnvio(true); break;
       case 'menu-pick': await elegirMenu(+a.dataset.i); break;
       case 'new-exp': nuevoExpediente(); break;
+      case 'nueva-tabla': nuevaTablaVentana(); break;
+      case 'open-tabla': abrirTabla(id); break;
+      case 'nt-cerrar': cerrarNT(); break;
+      case 'nt-plantilla': S.nt.plantilla = a.dataset.k; pintarNT(); $(`#velo-nt [data-k="${a.dataset.k}"]`)?.focus(); break;
+      case 'nt-ver': if (S.nt) await crearTabla({ siempre: true }); break;
+      case 'nt-crear': await crearTabla(); break;
+      case 'celda': S.fuenteDoc = { docId: a.dataset.doc, colId: a.dataset.col }; S.fichaModo = 'fuente-doc'; abrirFicha(); renderFicha(); layout(); pintarTabla(); break;
+      case 'celda-editar': await editarCelda(); break;
+      case 'tabla-fila': { const t = tablaActual(); if (t && !S.revision) await revisarTabla(t, t.columnas, [a.dataset.doc]); renderFicha(); break; }
+      case 'tabla-detener': S.revision?.ctrl.abort(); break;
+      case 'tabla-continuar': { const t = tablaActual(); if (t && !S.revision) revisarTabla(t, t.columnas, t.filas.filter(f => f.estado !== 'lista').map(f => f.docId)); break; }
+      case 'tabla-movs': await agregarMovs(); break;
+      case 'tabla-proponer': await proponerDeTabla(); break;
+      case 'tabla-col': columnaVentana(); break;
+      case 'col-cerrar': cerrarColumna(); break;
+      case 'col-tipo': $$('#velo-col .seg button').forEach(x => { x.classList.toggle('on', x === a); x.setAttribute('aria-checked', x === a); }); break;
+      case 'col-crear': await crearColumna(); break;
+      case 'tabla-copiar': await copiarTabla(); break;
+      case 'tabla-csv': exportarTabla(); break;
+      case 'tabla-menu': await tablaMenu(); break;
+      case 'tabla-borrar': await borrarTabla(); break;
       case 'ne-cerrar': cerrarNE(); break;
       case 'ne-otro': leerNE(); Object.assign(S.ne, { estado: 'formulario', archivo: null, enc: null, error: '' }); pintarNE(); break;
       case 'ne-agregar': leerNE(); S.ne.partes.push({ nombre: '', rol: S.ne.partes.length ? 'Demandado' : 'Demandante', doc: '', cli: !S.ne.partes.length }); pintarNE(); $$('#velo-ne .pt [data-pt=nombre]').pop()?.focus(); break;
@@ -1907,6 +2211,7 @@ document.addEventListener('change', async ev => {
     }
     else if (t.id === 'file-docs') { const f = [...t.files]; t.value = ''; await addFiles(f); }
     else if (t.id === 'ne-file') { const f = t.files[0]; t.value = ''; await archivoNE(f); }
+    else if (t.dataset.ntDoc && S.nt) { if (t.checked) S.nt.sel.add(t.dataset.ntDoc); else S.nt.sel.delete(t.dataset.ntDoc); pintarNT(); $(`#velo-nt [data-nt-doc="${t.dataset.ntDoc}"]`)?.focus(); }
     else if (t.id === 'file-backup') { const f = t.files[0]; t.value = ''; if (f) await importBackup(f); }
   } catch (e) { fail(e); }
 });
@@ -1936,8 +2241,10 @@ document.addEventListener('keydown', ev => {
   if (envioPend && ev.key === 'Escape') { ev.preventDefault(); cerrarEnvio(false); $('#q')?.focus(); return; }
   // F6: el foco no sale de la vista previa mientras está abierta (Tab y Shift+Tab giran dentro)
   if (S.ne && ev.key === 'Escape') { ev.preventDefault(); cerrarNE(); return; }
+  if ($('#velo-col') && !envioPend && ev.key === 'Escape') { ev.preventDefault(); cerrarColumna(); return; }
+  if (S.nt && !envioPend && ev.key === 'Escape') { ev.preventDefault(); cerrarNT(); return; }
   if (S.ne && t.hasAttribute?.('data-ne-zona') && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); $('#ne-file').click(); return; }
-  const velo = envioPend ? '#velo-envio' : S.ne ? '#velo-ne' : '';
+  const velo = envioPend ? '#velo-envio' : S.ne ? '#velo-ne' : $('#velo-col') ? '#velo-col' : S.nt ? '#velo-nt' : '';
   if (velo && ev.key === 'Tab') {
     const f = $$(`${velo} button:not([disabled]), ${velo} input:not([hidden]), ${velo} select, ${velo} summary, ${velo} [tabindex="0"]`).filter(x => x.offsetParent);
     const i = f.indexOf(document.activeElement), sig = ev.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i < 0 || i === f.length - 1 ? 0 : i + 1);

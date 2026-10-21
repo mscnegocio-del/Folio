@@ -1,6 +1,6 @@
 # Spec — E12: tabla de revisión del expediente (cronología de resoluciones)
 
-> Estado: **spec y prototipo aprobados por el usuario (2026-10-21)** · Épica E12 · Decisiones D-52 a D-54 · Va en la v0.8.0 (la v0.7.0 sale antes)
+> Estado: **implementado (2026-10-21), listo para la v0.8.0** · Épica E12 · Decisiones D-52 a D-54 · Va en la v0.8.0 (la v0.7.0 sale antes)
 > Prototipo navegable: `process/prototipos/tabla-revision-v0.8.html` (estados con `?estado=elegir|revisando|lista|celda|columna`, `&tema=dark`)
 > Origen: análisis de Harvey (2026-10-21). Harvey Vault tiene *review tables*: una fila por documento, columnas que la IA llena (fecha, moneda, texto literal), plantillas con un clic para tipos comunes (también litigio) y revisión final del abogado. Folio toma la idea, pero **verifica cada cita en el equipo** y no sube nada a una nube propia.
 
@@ -70,14 +70,19 @@ exp.tablas = [{ id, titulo, plantilla: 'cronologia'|'pruebas'|'blanco', createdA
 ## 9. Fases
 | Fase | Contenido |
 |---|---|
-| F0 | Aprobación de esta spec y del prototipo |
-| F1 | Datos `exp.tablas`, plantillas, columnas locales (fecha y resolución con `leerEncabezado`), vista de tabla en el centro |
-| F2 | Extracción con el agente por documento (JSON con valor, cita y página), vista previa del lote, progreso y "Detener" |
-| F3 | Verificación local de citas, Ficha en modo Fuente del documento, edición de celdas, volver a revisar |
-| F4 | Agregar a Movimientos, proponer a la memoria, exportar CSV y copiar; política r3; e2e y capturas → Release v0.8.0 |
+| F0 | ✅ Spec y prototipo aprobados (D-52 a D-54) |
+| F1 | ✅ Datos `exp.tablas`, plantillas, columnas locales (fecha y resolución con `leerEncabezado`), vista de tabla en el centro |
+| F2 | ✅ Extracción con el agente por documento (JSON con valor, cita y página), vista previa del lote, progreso y "Detener" |
+| F3 | ✅ Verificación local de citas, Ficha en modo Fuente del documento, edición de celdas, volver a revisar |
+| F4 | ✅ Agregar a Movimientos, proponer a la memoria, exportar CSV y copiar; política r3; e2e y capturas → Release v0.8.0 |
 
 ## 10. Decisiones del usuario (2026-10-21)
 1. **Sí al cambio de política** (D-54): la sección 4 dirá que, si usas una tabla de revisión, salen los documentos completos que elijas, seudonimizados. Se sube `APP.policyVersion` y se pide aceptar de nuevo al desbloquear.
 2. **Plantillas** (D-52): cronología de resoluciones, medios probatorios, **notificaciones** y en blanco.
 3. **Versiones:** primero se publica la v0.7.0 (E11) y la tabla va en la v0.8.0.
 4. El prototipo está aprobado: se implementa tal cual (con la plantilla de notificaciones agregada).
+
+## 11. Notas de implementación (2026-10-21)
+- Además del prototipo: "⋯" en el encabezado de la tabla para renombrarla o borrarla, "Continuar la revisión" si se detuvo, y la acción `/cronologia` en la caja de texto.
+- La revisión se detiene si cambias de expediente o bloqueas Folio; las filas pendientes se continúan después.
+- La cita se verifica contra el mismo texto que se envió (seudonimizado), así los marcadores no rompen la comparación.

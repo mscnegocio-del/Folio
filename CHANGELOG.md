@@ -1,5 +1,22 @@
 # Changelog — Folio
 
+## [0.8.0] — 2026-10-21 — tabla de revisión del expediente
+Elige varios documentos y obtén una tabla: una fila por documento y una columna por pregunta, cada dato con su cita textual **verificada en tu equipo**. Política 2026-10-21 (borrador): al desbloquear se pide aceptar de nuevo.
+
+### Agregado (v0.8 · E12: tabla de revisión)
+- "Nueva tabla de revisión" (desde Documentos, la barra o `/cronologia`): plantillas **Cronología de resoluciones**, **Medios probatorios**, **Notificaciones** y **En blanco**; eliges los documentos y ves antes cuántos se envían y cuántos tokens, a qué proveedor y que van con los datos reemplazados.
+- El agente revisa **un documento por consulta** y llena la tabla fila por fila ("Revisando 2 de 5 · Detener"). La fecha y el número de resolución se leen en tu equipo, sin IA.
+- Cada celda del agente trae una **cita textual** que Folio busca en el documento, en tu equipo: **✓** si la encontró (con su página), **⚠** si no está en el texto. Los plazos van siempre en ámbar con "verifica en la resolución y tu casilla".
+- Un clic en una celda abre la **fuente en la Ficha**: el pasaje del documento con la cita resaltada. Puedes **editar la celda** ("editado por ti") o **volver a revisar la fila**.
+- **Agregar a Movimientos** (con Deshacer; omite los que ya existen), **Proponer a la memoria** (los plazos van a la caja de cambios como pendientes por verificar o plazos por confirmar), **Copiar** como tabla y **Exportar CSV**.
+- **Columnas propias**: nombre, pregunta para el agente y tipo (texto, fecha, sí/no o cita textual); solo se pregunta esa columna en cada documento.
+- Las tablas quedan en el expediente (Inicio y barra); "⋯" para renombrar o borrar.
+### Avisos legales
+- Política 2026-10-21 (borrador), sección 4: si usas una tabla de revisión, salen completos los documentos que elijas, uno por consulta, con los datos reemplazados. Sin nuevas conexiones.
+### Pruebas
+- e2e: ventana de nueva tabla, vista previa del lote, una consulta por documento sin nombres reales, citas ✓ y ⚠, fuente con la cita resaltada, editar, Movimientos con Deshacer, propuestas, CSV, columna nueva y accesibilidad (axe). Capturas 28 y 29.
+
+
 ## [0.7.0] — 2026-10-21 — nuevo expediente desde una resolución
 Crea un expediente arrastrando la resolución, cédula o carátula que ya tienes: Folio lee el encabezado en tu equipo, sin IA, y registra a las partes antes de la primera consulta. Sin cambios en la política de privacidad.
 

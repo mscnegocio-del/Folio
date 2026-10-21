@@ -21,6 +21,9 @@ const POLICY_CHANGES = [
   ] },
   { version: '2026-10-18 (borrador)', items: [
     'Política de privacidad, sección 4: para que puedas revisar lo que salió (“Ver lo que se envió”), Folio guarda cifrada en tu equipo una copia del texto exacto enviado en las respuestas más recientes de cada conversación. Al seguir en una conversación nueva, el resumen que prepara el agente también se guarda cifrado en tu equipo. Nada de esto sale a otro lugar.'
+  ] },
+  { version: '2026-10-21 (borrador)', items: [
+    'Política de privacidad, sección 4: si usas una tabla de revisión, Folio envía completos los documentos que elijas (no solo fragmentos), uno por consulta, con los datos reemplazados, con la misma revisión previa y anotados en el Registro de envíos. Las citas que devuelve el agente se comprueban en tu equipo. No hay nuevas conexiones.'
   ] }
 ];
 function policyChangesSince(version) {
@@ -38,7 +41,7 @@ function policyHTML() {
 <h3>3. Tu rol frente a los datos de tus clientes</h3>
 <p>Al registrar expedientes en Folio, tú (abogado o estudio) decides qué datos personales se tratan y con qué finalidad. Por eso eres el responsable de ese tratamiento conforme a la Ley N.° 29733, Ley de Protección de Datos Personales, y su Reglamento aprobado por Decreto Supremo N.° 016-2024-JUS. Folio es una herramienta de software bajo tu control; en esta versión no accede a esos datos.</p>
 <h3>4. Envío a proveedores de inteligencia artificial</h3>
-<p>Cuando usas el agente, la aplicación envía directamente desde tu equipo al proveedor que configuraste (por ejemplo, OpenAI, Anthropic u OpenRouter) los fragmentos del expediente necesarios para responder. Ese envío:</p>
+<p>Cuando usas el agente, la aplicación envía directamente desde tu equipo al proveedor que configuraste (por ejemplo, OpenAI, Anthropic u OpenRouter) los fragmentos del expediente necesarios para responder. Si usas una <em>tabla de revisión</em>, envía completos los documentos que elijas, uno por consulta, para que el agente responda sobre cada uno. Ese envío:</p>
 <ul>
 <li>se hace con tu propia cuenta y API key, bajo los términos y la política de privacidad del proveedor, que aceptas directamente con él;</li>
 <li>constituye un flujo transfronterizo de datos personales, porque esos proveedores procesan la información en servidores ubicados fuera del Perú;</li>

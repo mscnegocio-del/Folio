@@ -26,7 +26,7 @@ SHOTS = Path(__file__).resolve().parent / "shots"
 SHOTS.mkdir(exist_ok=True)
 PASS = "Litigio-Seguro-2026"
 REAL_DATA = ["Rosa Elena", "Huamán", "HUAMÁN", "45879632", "41236598", "964 123 456", "rosa.quispe", "Los Pinos"]
-sent, errors, failures, font_requests, update_requests, normas_requests = [], [], [], [], [], []
+sent, errors, failures, font_requests, update_requests, normas_requests, tablas_sent = [], [], [], [], [], [], []
 
 # Biblioteca legal (E8): paquetes de prueba armados con el conversor real a partir de textos FICTICIOS
 FIX = ROOT / "tests" / "fixtures" / "normas"
@@ -79,6 +79,18 @@ def handle(route, request):
             if "módulo de memoria" in text:
                 content = json.dumps({"estado": "MOCK-ESTADO", "hechos_agregar": "MOCK-HECHO [PERSONA_2] alega ingresos menores.",
                                       "pendientes_nuevos": ["MOCK-PEND"], "plazos_nuevos": [{"fecha": "2027-06-30", "descripcion": "Absolver el traslado (MOCK-PLAZO)"}]})
+            if "módulo de revisión de documentos" in text:
+                tablas_sent.append(body)
+                u = body["messages"][-1]["content"]; doc = u.split("\n\n", 1)[1].split("\n\n=== PREGUNTAS ===")[0]
+                ids = [l[2:].split(" (")[0] for l in u.split("=== PREGUNTAS ===\n")[1].splitlines() if l.startswith("- ")]
+                i = max(doc.find("RESUELVE"), doc.find("Se adjunta")); i = i if i >= 0 else len(doc) // 2
+                cel = {}
+                for k in ids:
+                    if k == "quien": cel[k] = {"valor": "Demandado", "cita": "esto no está en el documento"}
+                    elif k == "plazo": cel[k] = {"valor": "Cinco días para contestar", "cita": "por el plazo de cinco días"} if "cinco días" in doc else {"valor": None, "cita": None}
+                    elif k == "fecha": cel[k] = {"valor": "05/10/2026", "cita": doc[i:i + 40]}
+                    else: cel[k] = {"valor": f"MOCK-{k} [PERSONA_1]", "cita": doc[i:i + 50]}
+                content = json.dumps({"celdas": cel})
             if "seguirá en una nueva" in text:
                 content = json.dumps({"resumen_conversacion": "MOCK-RESUMEN: [PERSONA_1] pidió el esquema de absolución; falta el perito.",
                                       "pendientes_nuevos": ["MOCK-PEND-F4"], "plazos_nuevos": []})
@@ -141,7 +153,7 @@ with sync_playwright() as p:
     check(v6("vista") == "inicio" and v6("ficha") == "abierta" and "riel" not in pg.get_attribute("#v6", "class"), "tres zonas: el expediente abre en Inicio con la ficha abierta (1440 px)")
     check(pg.inner_text("#cab .titulo") == "Inicio del expediente" and "00845-2026-0-1501-JP-FC-01" in pg.inner_text("#cab .miga"), "encabezado de una línea con el número del expediente")
     check(pg.inner_text(".inicio h1") == "Alimentos" and "(tu cliente)" in pg.inner_text(".inicio .imeta"), "inicio: carátula, cliente y estado en una línea")
-    check(pg.locator(".barra .exp.on + .convs .conv.nueva").count() == 1, "barra: el expediente activo despliega «+ Nueva conversación»")
+    check(pg.locator(".barra .exp.on + .convs .conv.nueva", has_text="Nueva conversación").count() == 1 and pg.locator(".barra .exp.on + .convs .conv.nueva", has_text="Nueva tabla de revisión").count() == 1, "barra: el expediente activo despliega «+ Nueva conversación» y «+ Nueva tabla de revisión»")
     check("Próximo plazo" in pg.text_content(".ficha") and pg.locator(".ficha .plazo").count() == 1 and "[PERSONA_1]" in pg.inner_text(".ficha"), "ficha: estado, próximo plazo y partes con su marcador")
     check(pg.inner_text(".inicio .atajo >> nth=0").startswith("Preparar:") and pg.locator(".inicio .atajo", has_text="/pegar-cej").count() == 1, "inicio: atajos según el caso y /pegar-cej")
     check(pg.locator(".caja .cchip.on", has_text="Biblioteca").count() == 1 and "OpenRouter" in pg.inner_text(".caja .destino"), "caja: chips de contexto y píldora de destino")
@@ -220,7 +232,7 @@ with sync_playwright() as p:
     check(ly.startswith("Leyó") and "la memoria" not in ly and "1 documento" in ly, "«Leyó…» refleja lo que se envió")
     for k in ["memoria", "docs", "biblioteca"]: pg.click(f".cchip[data-k={k}]")
     pg.fill("#q", "/"); pg.dispatch_event("#q", "input")
-    check(pg.locator("#menu-caja button").count() == 4 and "verificar plazos y normas" in pg.inner_text("#menu-caja .t"), "/: acciones con nombre jurídico y recordatorio")
+    check(pg.locator("#menu-caja button").count() == 5 and "verificar plazos y normas" in pg.inner_text("#menu-caja .t"), "/: acciones con nombre jurídico y recordatorio")
     pg.type("#q", "prep"); pg.keyboard.press("Enter")
     check(pg.input_value("#q").startswith("Prepara los puntos para la audiencia") and "verificar los plazos" in pg.input_value("#q"), "/: la acción llena la consulta con su recordatorio de verificar")
     pg.fill("#q", "")
@@ -523,6 +535,58 @@ with sync_playwright() as p:
     (SHOTS / "vacio.txt").write_text("   ", encoding="utf-8"); npg.set_input_files("#ne-file", str(SHOTS / "vacio.txt")); npg.wait_for_selector("#velo-ne .zona-ne.error")
     check("no tiene texto" in npg.inner_text("#velo-ne .zona-ne.error") and npg.locator("#velo-ne [data-ne-campo=numero]").count() == 1, "E11: archivo sin texto → aviso y formulario a mano")
     npg.keyboard.press("Escape"); check(npg.locator("#velo-ne").count() == 0, "E11: Esc cierra «Nuevo expediente»")
+
+    # v0.8 · E12: tabla de revisión (una fila por documento, citas verificadas en el equipo)
+    npg.set_input_files("#file-docs", str(RES / "cedula-familia.txt")); npg.wait_for_function("S.exp.docs.length===3")
+    npg.click(".ficha [data-tab=docs]"); npg.click(".ficha [data-action=nueva-tabla]"); npg.wait_for_selector("#velo-nt")
+    check(npg.locator("#velo-nt .pl").count() == 4 and npg.locator("#velo-nt .pl", has_text="Notificaciones").count() == 1 and npg.locator("#velo-nt [data-nt-doc]:checked").count() == 3,
+          "E12: «Nueva tabla de revisión» con 4 plantillas y los documentos con texto marcados")
+    check("3 documentos completos" in npg.inner_text("#velo-nt .estim") and "fecha y número de resolución" in npg.inner_text("#velo-nt .estim"), "E12: estimación de lo que sale y lo que se lee en el equipo")
+    npg.uncheck("#velo-nt [data-nt-doc] >> nth=2"); check("2 documentos completos" in npg.inner_text("#velo-nt .estim"), "E12: desmarcar un documento actualiza la estimación")
+    npg.check("#velo-nt [data-nt-doc] >> nth=2")
+    axe_ok(npg, "nueva tabla de revisión")
+    n_tab = len(tablas_sent); npg.click("[data-action=nt-crear]"); npg.wait_for_selector("#velo-envio")
+    t = npg.inner_text("#velo-envio .envio")
+    check("DOCUMENTO 1 DE" in t and "Quispe Rojas" not in t and "QUISPE ROJAS" not in t and "[PERSONA_" in t, "E12: vista previa del lote, documentos completos con los datos reemplazados")
+    npg.click("[data-action=envio-enviar]"); npg.wait_for_function("!S.revision && S.vista==='tabla' && tablaActual().filas.every(f=>f.estado==='lista')", timeout=20000)
+    body = json.dumps(tablas_sent[n_tab:], ensure_ascii=False)
+    check(len(tablas_sent) - n_tab == 3 and "Quispe Rojas" not in body and "QUISPE ROJAS" not in body and "HUAMÁN" not in body, "E12: una consulta por documento, sin nombres reales")
+    fila = npg.locator(".rev tbody tr").first
+    check("Resolución 1" in fila.inner_text() and "12/08/2026" in fila.inner_text() and fila.locator(".marca.loc").count() == 2, "E12: fecha y resolución leídas en el equipo")
+    check(npg.locator(".rev .marca.ok", has_text="cita").count() >= 3 and npg.locator(".rev .celda.nf").count() == 3 and npg.locator(".rev .marca.w", has_text="verifica en la resolución").count() == 2,
+          "E12: citas verificadas (✓), cita inventada marcada (⚠) y plazos con aviso de verificar")
+    check("Julio César Huamán Torres" in npg.inner_text(".rev") and "[PERSONA_" not in npg.inner_text(".rev") and npg.evaluate("S.audit.filter(a=>a.kind==='Tabla de revisión').length") == 3, "E12: valores con los datos reales en pantalla y cada envío en el registro")
+    npg.screenshot(path=str(SHOTS / "28-tabla-revision.png"))
+    axe_ok(npg, "tabla de revisión")
+    npg.click(".rev tbody tr >> nth=0 >> [data-col=ordena]"); npg.wait_for_selector(".ficha .pasaje mark")
+    check("Cita encontrada en el documento" in npg.inner_text(".ficha") and "ADMITIR" in npg.inner_text(".ficha .pasaje mark"), "E12: la celda abre la fuente del documento con la cita resaltada")
+    npg.wait_for_timeout(450); fw = npg.evaluate("getComputedStyle(document.querySelector('#ficha')).width")
+    check(fw == "340px", f"E12: la ficha abre a su ancho normal junto a la tabla ({fw})")
+    npg.screenshot(path=str(SHOTS / "29-tabla-fuente.png"))
+    npg.click(".rev tbody tr >> nth=0 >> [data-col=quien]"); npg.wait_for_timeout(200)
+    check("La cita del agente no está en el documento" in npg.inner_text(".ficha"), "E12: una cita que no está en el documento se avisa")
+    npg.click(".ficha [data-action=celda-editar]"); npg.fill("#celda-v", "Demandado (corregido)"); npg.click("[data-dlg=yes]"); npg.wait_for_timeout(200)
+    check("editado por ti" in npg.inner_text(".rev tbody tr >> nth=0"), "E12: corregir una celda queda como «editado por ti»")
+    movs0 = npg.evaluate("S.exp.movimientos.length")
+    check("Agregar a Movimientos (1)" in npg.inner_text("[data-action=tabla-movs]"), "E12: solo se ofrecen los movimientos que aún no existen")
+    npg.click("[data-action=tabla-movs]"); npg.wait_for_selector("#aviso")
+    check(npg.evaluate("S.exp.movimientos.length") == movs0 + 1 and npg.evaluate("S.exp.movimientos.some(m=>m.acto==='Resolución 4' && m.fecha==='2026-10-05')"), "E12: la fila pasa a Movimientos con su fecha y acto")
+    npg.click("#aviso [data-action=aviso-deshacer]"); npg.wait_for_timeout(200)
+    check(npg.evaluate("S.exp.movimientos.length") == movs0, "E12: «Deshacer» quita los movimientos agregados")
+    npg.click("[data-action=tabla-proponer]"); npg.wait_for_selector("#cambios")
+    check(npg.locator("#cambios .cb", has_text="Verificar plazo: Cinco días para contestar").count() == 2, "E12: los plazos van a la caja de cambios como pendientes por verificar")
+    with npg.expect_download() as dl:
+        npg.click("[data-action=tabla-csv]")
+    csv = open(dl.value.path(), encoding="utf-8-sig").read()
+    check(csv.startswith('"Documento";"Fecha";"Resolución";"Qué ordena"') and "Cita · Qué ordena" in csv, "E12: exportar CSV con valores y citas")
+    npg.click("[data-action=tabla-col]"); npg.wait_for_selector("#velo-col")
+    npg.fill("#col-n", "Monto"); npg.fill("#col-p", "¿Qué monto de pensión se menciona?"); npg.click("#velo-col [data-k=sino]"); n_tab = len(tablas_sent)
+    npg.click("[data-action=col-crear]"); npg.wait_for_selector("#velo-envio"); npg.click("[data-action=envio-enviar]")
+    npg.wait_for_function("(t=>!S.revision && t.columnas.length===6 && t.filas.every(f=>f.estado==='lista' && f.celdas[t.columnas[5].id]))(tablaActual())", timeout=20000)
+    check(len(tablas_sent) - n_tab == 3 and "- c" in tablas_sent[-1]["messages"][-1]["content"] and "Qué ordena" not in tablas_sent[-1]["messages"][-1]["content"] and npg.locator(".rev th", has_text="Monto").count() == 1,
+          "E12: una columna nueva solo pregunta esa columna en cada documento")
+    npg.click(".barra .exp.on"); npg.wait_for_selector(".inicio")
+    check(npg.locator(".inicio .lc", has_text="Cronología de resoluciones").count() == 1 and npg.locator(".barra .conv", has_text="Cronología de resoluciones").count() == 1, "E12: la tabla queda en el Inicio y en la barra")
     n.close()
 
     m = b.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2); mp = m.new_page()

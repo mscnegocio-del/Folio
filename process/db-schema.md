@@ -43,6 +43,8 @@ Base `folio-mvp` · versión 1 · object store `kv` (clave → valor). Todo regi
   ultimaVisita,                  // ISO de la última vez que el abogado abrió el expediente (crearlo cuenta como visita)
   juez, especialista,            // v0.7 (E11): funcionarios del juzgado; opcionales; no se seudonimizan (D-49)
   origen?: { docId, nombre, detectado:[...], resolucion, ofrecer },   // v0.7 (E11): documento del que se creó; `ofrecer` = mostrar "Resumir con el agente"
+  tablas?: [{ id, titulo, plantilla, createdAt, updatedAt, columnas:[{ id, nombre, pregunta, tipo, local?, plazo?, nota? }],
+            filas:[{ docId, estado, recorte?, error?, celdas:{ [colId]: { valor, cita?, verificada, pagina?, origen:'local'|'agente'|'abogado', propuesta? } } }] }],   // v0.8 (E12), máx. 20; `cita` se guarda con marcadores
   docs: [{ id, name, type:'pdf'|'docx'|'txt', pages, chars, addedAt, scanned? }],
   createdAt, updatedAt
 }
@@ -67,6 +69,7 @@ Abrir un expediente registra `ultimaVisita` sin cambiar `updatedAt` (la lista si
 Se exporta cifrada (no se descifra nada). Restaurar reemplaza todo y pide la contraseña de esa copia.
 
 ## Migraciones
+- v0.8 (E12): sin migración; `tablas` es opcional. Los movimientos agregados desde una tabla llevan `deTabla`.
 - v0.7 (E11): sin migración; `juez`, `especialista` y `origen` son opcionales.
 - Proveedor `ollama` guardado de versiones previas → se migra a `openrouter` al desbloquear (`doUnlock`).
 - v0.6 (`normalizeExp`, al abrir cada expediente): `exp.chat` → `exp.chats[0]` con título "Conversación anterior" (o una conversación vacía si no había mensajes); se agregan `chatActivo`, `memoria.propuestas`, `memoria.historial` y `ultimaVisita`. Funciona también con copias de seguridad antiguas: se migran al abrir.
