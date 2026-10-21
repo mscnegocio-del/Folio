@@ -11,6 +11,7 @@ const S = {
   vista: 'inicio', vistaPrev: null, ficha: 'abierta', fichaTab: 'ficha', fichaModo: 'ficha', fuente: null, borrador: null,
   sideOpen: false, fichaMovil: false, ctx: { memoria: true, docs: true, biblioteca: true }, menu: null,
   prop: { exp: null, sel: {}, confirmar: null, nuevos: [] },   // F5: ✓/✕ de cada propuesta, plazo en confirmación y cambios recién aplicados (resaltados)
+  ne: null, recienCreado: null,   // E11: ventana "Nuevo expediente" y expediente recién creado desde un documento
   seguirAqui: {}   // F4: conversaciones en las que el abogado eligió "Seguir aquí" (nivel del aviso que ocultó; no se guarda)
 };
 const root = () => $('#root');
@@ -260,7 +261,7 @@ async function doUnlock(pass) {
   } catch (e) { btn.disabled = false; err.textContent = e instanceof FolioError ? e.message : 'No se pudo abrir la bóveda.'; }
 }
 function lockNow(msg) {
-  cerrarEnvio(false); S.menu = null;
+  cerrarEnvio(false); S.menu = null; S.ne = null;   // la ventana «Nuevo expediente» (con el texto del documento) no sobrevive al bloqueo
   if (S.sending && S.abort) S.abort.abort();
   Vault.lock(); Object.assign(S, { settings: null, draftCfg: null, index: [], exp: null, docTexts: {}, audit: [], lastSend: null, consent: null, updateHidden: false, screen: 'lock', vista: 'inicio', sideOpen: false, fichaMovil: false });
   closeDialog(); render(); if (msg) toast(msg);
@@ -604,6 +605,7 @@ function inicioHTML() {
     <h1>${esc(e.materia || caratulaTitle(e))}</h1>
     ${meta ? `<div class="imeta">${esc(meta)}</div>` : ''}
     ${novedadesHTML(e)}
+    ${origenHTML(e)}
     ${cajaHTML('inicio')}
     ${ready ? `<div class="atajos">${S.quick.map(([l], i) => `<button class="atajo" data-action="quick" data-i="${i}">${esc(l)}</button>`).join('')}<button class="atajo" data-action="paste-cej">/pegar-cej</button></div>` : ''}
     <div class="bloque"><span class="lbl">Conversaciones</span>
@@ -675,6 +677,7 @@ function fichaPanelHTML() {
   const sin = t => `<div class="sin">${t}</div>`, nuevos = recienAplicados(e);
   return `<div class="panel">
     <div class="bloque"><span class="lbl">Estado</span>${e.estado ? `<div class="fest">${esc(e.estado)}</div>` : sin('Sin registrar')}</div>
+    ${e.juez || e.especialista ? `<div class="bloque"><span class="lbl">Juzgado</span>${e.organo ? `<div class="fest">${esc(e.organo)}</div>` : ''}${e.juez ? `<div class="parte"><span>Juez: ${esc(e.juez)}</span></div>` : ''}${e.especialista ? `<div class="parte"><span>Especialista: ${esc(e.especialista)}</span></div>` : ''}</div>` : ''}
     <div class="bloque"><span class="lbl">Próximo plazo</span>${next
       ? `<div class="plazo"><span class="num">${ddmm(next.fecha)}</span><div><b>${esc(next.desc)}</b><small>${esc(cap(whenLabel(next.fecha)))} · verifícalo con la resolución</small></div></div>`
       : sin(`Ningún plazo confirmado${propPlazos ? ` · ${propPlazos === 1 ? 'hay 1 propuesto abajo' : `hay ${propPlazos} propuestos abajo`}` : ''}`)}</div>
@@ -914,9 +917,9 @@ function showUpdateHow() {
 function emptyHTML() {
   return `<div class="empty"><div class="stamp ${S.stampPress ? 'press' : ''}" style="margin-bottom:2rem"><b>Guardado solo en este equipo</b><span>Bóveda abierta</span></div>
     <h1>Crea tu primer expediente</h1>
-    <p class="lead">Cada expediente tiene su propia memoria: partes, plazos, movimientos, documentos y estrategia. El agente la lee antes de responder, así no repites el contexto en cada consulta.</p>
+    <p class="lead">Arrastra la última resolución o cédula que te llegó y Folio llena los datos por ti. También puedes llenarlo a mano. Cada expediente tiene su propia memoria y el agente la lee antes de responder.</p>
     ${!isReady(S.settings) ? `<div class="note warn"><p>Aún no conectas un proveedor de IA. Puedes registrar expedientes igual y conectarlo cuando quieras.</p><button class="btn sm" data-action="open-settings">Conectar proveedor</button></div>` : ''}
-    <div class="row"><button class="btn primary" data-action="new-exp">Crear expediente</button><button class="btn" data-action="load-sample">Probar con un expediente de ejemplo</button></div>
+    <div class="row"><button class="btn primary" data-action="new-exp">Nuevo expediente</button><button class="btn" data-action="load-sample">Probar con un expediente de ejemplo</button></div>
     <p class="tiny muted" style="margin-top:1rem">El ejemplo usa datos ficticios.</p></div>`;
 }
 /* ---------- Memoria: lo que el abogado escribió o aprobó (spec v0.5 §5.2) ---------- */
@@ -982,6 +985,7 @@ async function addFiles(files) {
       e.docs.push({ id, name: f.name, type: r.type, pages: r.pages, chars: text.length, addedAt: todayISO(), scanned: !!r.scanned });
       await saveExp(); refreshExp();
       toast(r.scanned ? `${f.name}: casi no tiene texto. Puede ser un escaneo.` : `${f.name} agregado.`, !!r.scanned);
+      if (!r.scanned) await datosNuevosDe(e, f.name, text);
     } catch (err) { fail(err); }
   }
 }
@@ -1447,6 +1451,158 @@ async function pasteCEJ() {
    Formularios de expediente y movimiento
    ============================================================ */
 const ESPECIALIDADES = ['Civil', 'Familia', 'Penal', 'Laboral', 'Contencioso administrativo', 'Constitucional', 'Comercial', 'Otra'];
+/* ============================================================
+   Nuevo expediente desde una resolución, cédula o carátula (E11 · prototipo nuevo-expediente-v0.7.html)
+   El encabezado se lee en el equipo, sin IA ni red (D-48); el juez y el especialista no se seudonimizan (D-49)
+   ============================================================ */
+const NE_ROLES = ['Demandante', 'Demandado', 'Menor alimentista', 'Agraviado(a)', 'Imputado(a)', 'Tercero', 'Otro'];
+const NE_CAMPOS = [['numero', 'Número de expediente', '00000-2026-0-0000-XX-XX-00'], ['materia', 'Materia', 'Ej.: alimentos, desalojo, violencia familiar'], ['especialidad', 'Especialidad', ''],
+  ['distrito', 'Distrito judicial', 'Ej.: Junín'], ['organo', 'Órgano jurisdiccional', 'Ej.: 2.° Juzgado de Familia de Huancayo'], ['juez', 'Juez', 'Nombres y apellidos'],
+  ['especialista', 'Especialista', 'Especialista o secretario'], ['estado', 'Estado procesal', 'Ej.: calificación de la demanda']];
+function nuevoExpediente() {
+  S.ne = { estado: 'formulario', archivo: null, enc: null, datos: {}, partes: [] };
+  $('#v6')?.insertAdjacentHTML('beforeend', `<div class="velo" id="velo-ne"><div class="modal ne" role="dialog" aria-modal="true" aria-labelledby="ne-t"></div></div>`);
+  fondoInerte(true); pintarNE(); setTimeout(() => $('#velo-ne .zona-ne')?.focus(), 30);
+}
+function cerrarNE() { S.ne = null; $('#velo-ne')?.remove(); fondoInerte(false); }
+// Mientras la ventana está abierta, el resto de la pantalla no se recorre con teclado ni lector de pantalla
+function fondoInerte(si) { $$('#v6 > :not(.velo):not(.aviso)').forEach(x => { x.inert = si; if (si) x.setAttribute('aria-hidden', 'true'); else x.removeAttribute('aria-hidden'); }); }
+// Guarda lo que el abogado escribió antes de volver a pintar la ventana
+function leerNE() {
+  const n = S.ne, m = $('#velo-ne'); if (!n || !m) return;
+  $$('[data-ne-campo]', m).forEach(i => { n.datos[i.dataset.neCampo] = i.value.trim(); });
+  $$('.pt', m).forEach((r, i) => { const p = n.partes[i]; if (!p) return; p.nombre = $('[data-pt=nombre]', r).value; p.rol = $('[data-pt=rol]', r).value; p.doc = $('[data-pt=doc]', r).value; p.cli = $('[data-pt=cli]', r).checked; });
+}
+// Encabezado leído, con lo detectado resaltado (para ver de dónde salió cada dato)
+function hojaNE(texto, marcas) {
+  const l = String(texto).replace(/\r/g, '').split('\n'), fin = l.findIndex((x, i) => i > 4 && /^\s*(AUTOS|VISTOS|VISTO|CONSIDERANDO|AL ESCRITO|SE ADJUNTA)/i.test(x));
+  const t = l.slice(0, fin > 0 ? fin + 1 : 22).join('\n').replace(/[ \t]+$/gm, '').trimEnd() + (fin > 0 ? ' …' : ''), rangos = [];
+  for (const m of [...new Set(marcas.filter(x => x && x.length > 2))].sort((a, b) => b.length - a.length)) {
+    let i = t.indexOf(m); while (i >= 0 && rangos.some(([a, b]) => i < b && i + m.length > a)) i = t.indexOf(m, i + 1);
+    if (i >= 0) rangos.push([i, i + m.length]);
+  }
+  rangos.sort((a, b) => a[0] - b[0]); let html = '', p = 0;
+  for (const [a, b] of rangos) { html += esc(t.slice(p, a)) + `<mark>${esc(t.slice(a, b))}</mark>`; p = b; }
+  return html + esc(t.slice(p));
+}
+function pintarNE() {
+  const n = S.ne, m = $('#velo-ne .modal'); if (!n || !m) return;
+  const st = n.estado, lleno = st === 'lleno', a = n.archivo, enc = n.enc, pseudo = S.settings.pseudo;
+  const det = k => lleno && enc?.detectado.includes(k) ? `<i class="det">${k === 'especialidad' ? 'del número' : 'del documento'}</i>` : '';
+  const campo = ([k, l, ph]) => {
+    const v = n.datos[k] || '', leido = lleno && enc?.detectado.includes(k), falta = lleno && !leido;
+    const input = k === 'especialidad' ? `<select class="select" data-ne-campo="especialidad"><option value="">Elegir</option>${ESPECIALIDADES.map(x => `<option ${v === x ? 'selected' : ''}>${x}</option>`).join('')}</select>`
+      : `<input class="input${k === 'numero' ? ' mono' : ''}" data-ne-campo="${k}" value="${esc(v)}" placeholder="${esc(ph)}" autocomplete="off">`;
+    return `<label class="field${k === 'organo' || k === 'estado' ? ' ancho' : ''}${leido ? ' leido' : ''}${falta ? ' falta' : ''}"><span>${l} ${det(k)}</span>${input}${falta ? `<small>${k === 'estado' ? 'No aparece en el encabezado. El agente puede proponerlo al resumir la resolución.' : 'No aparece en el encabezado.'}</small>` : ''}</label>`;
+  };
+  const clientes = n.partes.filter(p => p.cli).length;
+  const pt = (p, i) => `<div class="pt${p.cli ? ' cli' : ''}"><input class="input" data-pt="nombre" value="${esc(p.nombre)}" placeholder="Nombres y apellidos o razón social" aria-label="Nombre">
+    <select class="select" data-pt="rol" aria-label="Rol">${NE_ROLES.map(r => `<option${r === p.rol ? ' selected' : ''}>${r}</option>`).join('')}</select>
+    <input class="input doc-in" data-pt="doc" value="${esc(p.doc || '')}" placeholder="DNI (opcional)" aria-label="Documento">
+    <label class="cli-t"><input type="checkbox" data-pt="cli" data-action="ne-cli"${p.cli ? ' checked' : ''}>Mi cliente</label>
+    <button type="button" class="ib" data-action="ne-quitar" data-i="${i}" aria-label="Quitar parte">${ic('cerrar')}</button>
+    <span class="tok">${pseudo ? `se enviará como [PERSONA_${i + 1}]` : 'el reemplazo de datos está desactivado: se enviará con su nombre'}</span></div>`;
+  const zona = st === 'formulario' ? `<label class="zona-ne" tabindex="0" data-ne-zona><span class="ico">${ic('doc')}</span><span class="tx"><b>Arrastra una resolución, cédula o carátula</b><small>Folio llena los datos y registra a las partes · PDF, Word o texto · ${ic('candado')} se lee en tu equipo, no sale nada</small></span><span class="pb">Adjuntar archivo</span><input type="file" id="ne-file" accept=".pdf,.docx,.txt,.md" hidden></label>`
+    : st === 'leyendo' ? `<div class="zona-ne archivo"><span class="ico">${ic('doc')}</span><span class="tx"><b>${esc(a.name)}</b><small>Leyendo el encabezado en tu equipo…</small><span class="barra-p"><i></i></span></span></div>`
+    : st === 'lleno' ? `<div class="zona-ne archivo"><span class="ico">${ic('doc')}</span><span class="tx"><b>${esc(a.name)}</b><small>Se guardará como primer documento${enc?.resolucion ? ' y primer movimiento' : ''} del expediente</small></span><button type="button" class="pb" data-action="ne-otro">Cambiar archivo</button></div>`
+    : `<div class="zona-ne error"><span class="ico">${ic('aviso')}</span><span class="tx"><b>${n.error ? esc(n.error) : 'Este PDF parece una imagen escaneada'}</b><small>${n.error ? 'Llena los datos a mano o prueba con otro archivo.' : 'Folio no puede leer su texto. Llena los datos a mano o prueba con otra resolución.'}</small></span><button type="button" class="pb" data-action="ne-otro">Probar con otro</button></div>`;
+  const nDatos = enc ? enc.detectado.length : 0, nPartes = enc ? enc.partes.length : 0;
+  m.innerHTML = `<div class="mc"><h2 id="ne-t">Nuevo expediente</h2><button type="button" class="ib" data-action="ne-cerrar" aria-label="Cerrar">${ic('cerrar')}</button></div>
+    <div class="mcuerpo">${zona}
+      ${lleno ? `<div class="encontro" role="status">${ic('check')}<span>${nDatos || nPartes ? `Folio encontró <b>${plural(nDatos, 'dato', 'datos')}</b> y <b>${plural(nPartes, 'parte', 'partes')}</b> en el documento. Revísalos y marca a tu cliente antes de crear.` : 'Folio no encontró un encabezado conocido en este documento. Llena los datos a mano; el documento se guardará igual.'}</span></div>` : '<div class="o">o llénalo a mano</div>'}
+      <div class="dos${lleno ? ' con-doc' : ''}">
+        ${lleno ? `<div class="doc"><span class="lbl">Lo que Folio leyó</span><div class="hoja" tabindex="0" role="region" aria-label="Encabezado leído">${hojaNE(a.text, enc.marcas)}</div><small>Solo se lee el encabezado; el resto se guarda como documento.</small></div>` : ''}
+        <div class="formulario"${st === 'leyendo' ? ' inert' : ''}>
+          <div class="grid2">${NE_CAMPOS.map(campo).join('')}</div>
+          ${lleno && (n.datos.juez || n.datos.especialista) ? `<div class="funcionarios">${ic('candado')}<span>El juez y el especialista son funcionarios públicos: sus nombres no se reemplazan al consultar a la IA.</span></div>` : ''}
+          <div class="partes"><div class="cab-p"><span class="lbl">Partes</span>${lleno && n.partes.length ? `<small>${clientes ? plural(clientes, 'cliente marcado', 'clientes marcados') : 'Marca quién es tu cliente'}</small>` : ''}</div>
+            ${n.partes.length ? n.partes.map(pt).join('') : '<div class="lista-vacia">Agrega a tu cliente y a las demás partes. Sus nombres se reemplazan por marcadores antes de cada consulta.</div>'}
+            <button type="button" class="agregar" data-action="ne-agregar">${ic('mas')}Agregar parte</button>
+          </div>
+          <p class="ne-err" id="ne-err" role="alert"></p>
+        </div>
+      </div>
+    </div>
+    <div class="mp"><span class="nota">${ic('candado')}Todo se guarda cifrado en este equipo</span><button type="button" class="pb" data-action="ne-cerrar">Cancelar</button><button type="button" class="pb prim" data-action="ne-crear"${(lleno && n.partes.length && !clientes) || st === 'leyendo' ? ' disabled' : ''}>Crear expediente</button></div>`;
+}
+async function archivoNE(f) {
+  const n = S.ne; if (!n || !f) return;
+  leerNE(); n.archivo = { name: f.name }; n.estado = 'leyendo'; n.error = ''; pintarNE();
+  try {
+    if (f.size > 40 * 1024 * 1024) throw new FolioError(`${f.name} supera 40 MB.`);
+    const r = await extractText(f); if (S.ne !== n) return;
+    const text = r.text.slice(0, 1500000);
+    if (r.scanned || !text.trim()) { Object.assign(n, { estado: 'escaneo', archivo: null, error: r.type === 'pdf' ? '' : 'Este archivo no tiene texto' }); pintarNE(); return; }
+    const enc = leerEncabezado(text);
+    n.archivo = { name: f.name, text, type: r.type, pages: r.pages };
+    n.enc = enc;
+    for (const k of enc.detectado) if (!n.datos[k]) n.datos[k] = enc[k];
+    const ya = new Set(n.partes.map(p => norm(p.nombre)));
+    n.partes = [...n.partes.filter(p => p.nombre.trim()), ...enc.partes.filter(p => !ya.has(norm(p.nombre))).map(p => ({ nombre: p.nombre, rol: p.rol, doc: '', cli: false }))];
+    n.estado = 'lleno'; pintarNE();
+  } catch (err) { if (S.ne !== n) return; Object.assign(n, { estado: 'escaneo', archivo: null, error: err instanceof FolioError ? err.message : 'No se pudo leer el archivo.' }); pintarNE(); }
+}
+async function crearNE() {
+  const n = S.ne; if (!n) return; leerNE();
+  const d = n.datos, partes = n.partes.filter(p => p.nombre.trim());
+  if (!d.numero && !partes.length) { $('#ne-err').textContent = 'Ingresa al menos el número de expediente o el nombre de tu cliente.'; return; }
+  if (n.estado === 'lleno' && partes.length && !partes.some(p => p.cli)) { $('#ne-err').textContent = 'Marca quién es tu cliente.'; return; }
+  const e = blankExp(d); e.juez = d.juez || ''; e.especialista = d.especialista || '';
+  partes.forEach(p => addParte(e, p.nombre, p.rol, p.doc, p.cli));
+  const docTexts = {};
+  if (n.archivo?.text) {
+    const a = n.archivo, id = uid();
+    await store.put('doc:' + id, { id, expId: e.id, name: a.name, text: a.text }); docTexts[id] = a.text;
+    e.docs.push({ id, name: a.name, type: a.type, pages: a.pages, chars: a.text.length, addedAt: todayISO() });
+    const r = n.enc?.resolucion;
+    if (r) e.movimientos.push({ id: uid(), fecha: r.fecha || '', acto: r.acto, sumilla: '', addedAt: new Date().toISOString() });
+    e.origen = { docId: id, nombre: a.name, detectado: n.enc?.detectado || [], resolucion: r?.acto || '', ofrecer: true };
+  }
+  cerrarNE();
+  Object.assign(S, { exp: e, docTexts, movsAll: false, vista: 'inicio', sideOpen: false, visitaPrevia: null, recienCreado: e.id }); resetFicha();
+  await saveExp(); S.settings.lastExp = e.id; await saveSettings(); render();
+  aviso(`Expediente creado${partes.length ? ` con ${plural(partes.length, 'parte', 'partes')}` : ''}${e.docs.length ? ' y 1 documento' : ''}`);
+}
+// Inicio de un expediente recién creado desde un documento: de dónde salió y la oferta de resumirlo (D-50)
+function origenHTML(e) {
+  const o = e.origen; if (!o) return '';
+  const rows = [], r = (f, t) => `<div class="r"><span class="num">${f}</span><span>${t}</span></div>`;
+  if (S.recienCreado === e.id) {
+    const mov = e.movimientos.find(v => v.acto === o.resolucion);
+    if (mov) rows.push(r(mov.fecha ? ddmm(mov.fecha) : '—', `${esc(mov.acto)}: primer movimiento del expediente`));
+    if (e.partes.length) rows.push(r('—', `${plural(e.partes.length, 'parte registrada', 'partes registradas')}: sus nombres se reemplazan antes de cada consulta`));
+    rows.push(r('—', '1 documento: la resolución, guardada cifrada en este equipo'));
+  }
+  const ofrece = o.ofrecer && isReady(S.settings) && e.docs.some(d => d.id === o.docId);
+  const s = S.settings;
+  return `${rows.length ? `<div class="nov"><span class="lbl">Creado desde «${esc(o.nombre)}»</span>${rows.join('')}</div>` : ''}
+    ${ofrece ? `<div class="ofrece"><div class="t">${ic('doc')}<div><b>¿Quieres que el agente resuma lo que ordena esta resolución?</b><br><small>Propondrá el estado procesal, los pendientes y los plazos que mencione. Tú revisas cada cambio en la ficha; ningún plazo se guarda sin tu confirmación.</small></div></div>
+      <div class="acc"><button class="pb prim" data-action="ne-resumir">Resumir con el agente</button><button class="pb" data-action="ne-ahora-no">Ahora no</button><button type="button" class="destino" data-action="destino" title="Ver lo que se enviará">${ic('candado')}${esc(s.provider === 'custom' ? 'Servidor propio' : provLabel(s.provider))}<span class="modelo">· <span class="num">${esc(s.model.split('/').pop())}</span></span></button></div></div>` : ''}`;
+}
+async function resumirOrigen() {
+  const e = S.exp, o = e.origen, d = o && e.docs.find(x => x.id === o.docId); if (!d) return;
+  o.ofrecer = false; await saveExp(); await irAChatNuevo();
+  await sendChat(`Resume lo que ordena @«${d.name}»: qué decide el juzgado, qué plazos menciona y qué debo hacer ahora. Recuérdame verificar cada plazo en la resolución y en mi casilla.`);
+}
+// Al agregar una resolución a un expediente abierto: si es del mismo número, ofrece las partes y datos nuevos (nada se aplica sin clic)
+async function datosNuevosDe(e, docName, text) {
+  const enc = leerEncabezado(text); if (!enc.numero || enc.numero !== e.numero) return;
+  const clave = s => norm(s).split(/\s+/).sort().join(' '), ya = new Set(e.partes.map(p => clave(p.nombre)));
+  const items = enc.partes.filter(p => !ya.has(clave(p.nombre))).map(p => ({ k: 'parte', label: `Parte: ${p.nombre} · ${lcFirst(p.rol)}`, p }));
+  for (const [k, l] of [['juez', 'Juez'], ['especialista', 'Especialista'], ['organo', 'Órgano jurisdiccional']]) if (enc[k] && enc[k] !== e[k]) items.push({ k, label: `${l}: ${enc[k]}${e[k] ? ` (antes: ${e[k]})` : ''}`, v: enc[k] });
+  const r = enc.resolucion; if (r && !e.movimientos.some(v => v.acto === r.acto)) items.push({ k: 'mov', label: `Movimiento: ${r.acto}${r.fecha ? ` del ${fmtDate(r.fecha)}` : ''}`, r });
+  if (!items.length) return;
+  const sel = await askDialog({ title: 'Datos nuevos en la resolución', ok: 'Agregar seleccionados', wide: true, collect: d => $$('[data-nuevo]', d).filter(c => c.checked).map(c => +c.dataset.nuevo),
+    body: `<p>Folio leyó el encabezado de «${esc(docName)}» en tu equipo. Marca lo que quieres agregar al expediente.</p><ul class="proposal">${items.map((it, i) => `<li><label class="check"><input type="checkbox" data-nuevo="${i}" checked><span>${esc(it.label)}</span></label></li>`).join('')}</ul>` });
+  if (!sel?.length) return;
+  sel.map(i => items[i]).forEach(it => {
+    if (it.k === 'parte') addParte(e, it.p.nombre, it.p.rol, '', false);
+    else if (it.k === 'mov') e.movimientos.push({ id: uid(), fecha: it.r.fecha || '', acto: it.r.acto, sumilla: '', addedAt: new Date().toISOString() });
+    else e[it.k] = it.v;
+  });
+  await saveExp(); refreshExp(); aviso(`Expediente actualizado · ${plural(sel.length, 'dato', 'datos')}`);
+}
+
 async function expForm(e) {
   const isNew = !e; e = e || {};
   const r = await askDialog({ title: isNew ? 'Nuevo expediente' : 'Datos del expediente', ok: isNew ? 'Crear expediente' : 'Guardar cambios', wide: true,
@@ -1457,6 +1613,8 @@ async function expForm(e) {
       <label class="field"><span>Especialidad</span><select class="select" name="especialidad"><option value="">Elegir</option>${ESPECIALIDADES.map(x => `<option ${e.especialidad === x ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
       <label class="field"><span>Distrito judicial</span><input class="input" name="distrito" value="${esc(e.distrito)}" placeholder="Ej.: Junín"></label>
       <label class="field" style="grid-column:1/-1"><span>Órgano jurisdiccional</span><input class="input" name="organo" value="${esc(e.organo)}" placeholder="Ej.: 2.° Juzgado de Familia de Huancayo"></label>
+      <label class="field"><span>Juez</span><input class="input" name="juez" value="${esc(e.juez)}" placeholder="Nombres y apellidos"></label>
+      <label class="field"><span>Especialista</span><input class="input" name="especialista" value="${esc(e.especialista)}" placeholder="Especialista o secretario"></label>
       <label class="field" style="grid-column:1/-1"><span>Estado procesal</span><input class="input" name="estado" value="${esc(e.estado)}" placeholder="Ej.: calificación de la demanda"></label>
       ${isNew ? `<label class="field"><span>Tu cliente</span><input class="input" name="cliente" placeholder="Nombres y apellidos"><small>Podrás agregar más partes en la memoria.</small></label>
       <label class="field"><span>Rol de tu cliente</span><select class="select" name="rolCliente">${['Demandante', 'Demandado', 'Agraviado(a)', 'Imputado(a)', 'Tercero', 'Otro'].map(x => `<option>${x}</option>`).join('')}</select></label>
@@ -1472,7 +1630,7 @@ async function expForm(e) {
     Object.assign(S, { exp: ne, docTexts: {}, movsAll: false, vista: 'inicio', sideOpen: false, visitaPrevia: null }); resetFicha();
     await saveExp(); S.settings.lastExp = ne.id; await saveSettings(); render(); toast('Expediente creado.');
   } else {
-    Object.assign(S.exp, { numero: r.numero, materia: r.materia, especialidad: r.especialidad, organo: r.organo, distrito: r.distrito, estado: r.estado });
+    Object.assign(S.exp, { numero: r.numero, materia: r.materia, especialidad: r.especialidad, organo: r.organo, distrito: r.distrito, estado: r.estado, juez: r.juez, especialista: r.especialista });
     await saveExp(); render(); toast('Datos guardados.');
   }
 }
@@ -1606,6 +1764,7 @@ function exportAudit() {
 function setPath(obj, path, val) { const ks = path.split('.'); let o = obj; while (ks.length > 1) o = o[ks.shift()]; o[ks[0]] = val; }
 document.addEventListener('click', async ev => {
   if (ev.target.id === 'velo-envio') { cerrarEnvio(false); return; }
+  if (ev.target.id === 'velo-ne') { cerrarNE(); return; }
   if (S.menu && !ev.target.closest('#menu-caja, #q')) cerrarMenu();
   const db = ev.target.closest('[data-dlg]'); if (db) { onDlgButton(db); return; }
   const a = ev.target.closest('[data-action]'); if (!a) return;
@@ -1661,7 +1820,15 @@ document.addEventListener('click', async ev => {
       case 'envio-cerrar': cerrarEnvio(false); $('#q')?.focus(); break;
       case 'envio-enviar': cerrarEnvio(true); break;
       case 'menu-pick': await elegirMenu(+a.dataset.i); break;
-      case 'new-exp': await expForm(null); break;
+      case 'new-exp': nuevoExpediente(); break;
+      case 'ne-cerrar': cerrarNE(); break;
+      case 'ne-otro': leerNE(); Object.assign(S.ne, { estado: 'formulario', archivo: null, enc: null, error: '' }); pintarNE(); break;
+      case 'ne-agregar': leerNE(); S.ne.partes.push({ nombre: '', rol: S.ne.partes.length ? 'Demandado' : 'Demandante', doc: '', cli: !S.ne.partes.length }); pintarNE(); $$('#velo-ne .pt [data-pt=nombre]').pop()?.focus(); break;
+      case 'ne-quitar': leerNE(); S.ne.partes.splice(+a.dataset.i, 1); pintarNE(); break;
+      case 'ne-cli': leerNE(); pintarNE(); break;
+      case 'ne-crear': await crearNE(); break;
+      case 'ne-resumir': await resumirOrigen(); break;
+      case 'ne-ahora-no': S.exp.origen.ofrecer = false; await saveExp(); renderCentro(); aviso('Puedes pedírselo después desde la conversación'); break;
       case 'edit-exp': await expForm(S.exp); break;
       case 'del-exp': await deleteExp(); break;
       case 'load-sample': await loadSample(); break;
@@ -1739,6 +1906,7 @@ document.addEventListener('change', async ev => {
       await saveSettings(); if (k === 'theme') applyTheme(); toast('Ajuste guardado.');
     }
     else if (t.id === 'file-docs') { const f = [...t.files]; t.value = ''; await addFiles(f); }
+    else if (t.id === 'ne-file') { const f = t.files[0]; t.value = ''; await archivoNE(f); }
     else if (t.id === 'file-backup') { const f = t.files[0]; t.value = ''; if (f) await importBackup(f); }
   } catch (e) { fail(e); }
 });
@@ -1767,8 +1935,11 @@ document.addEventListener('keydown', ev => {
   // Ctrl K: buscar expediente · Esc: cierra la barra o la hoja de la ficha en el celular
   if (envioPend && ev.key === 'Escape') { ev.preventDefault(); cerrarEnvio(false); $('#q')?.focus(); return; }
   // F6: el foco no sale de la vista previa mientras está abierta (Tab y Shift+Tab giran dentro)
-  if (envioPend && ev.key === 'Tab') {
-    const f = $$('#velo-envio button:not([disabled]), #velo-envio input, #velo-envio summary, #velo-envio [tabindex="0"]').filter(x => x.offsetParent);
+  if (S.ne && ev.key === 'Escape') { ev.preventDefault(); cerrarNE(); return; }
+  if (S.ne && t.hasAttribute?.('data-ne-zona') && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); $('#ne-file').click(); return; }
+  const velo = envioPend ? '#velo-envio' : S.ne ? '#velo-ne' : '';
+  if (velo && ev.key === 'Tab') {
+    const f = $$(`${velo} button:not([disabled]), ${velo} input:not([hidden]), ${velo} select, ${velo} summary, ${velo} [tabindex="0"]`).filter(x => x.offsetParent);
     const i = f.indexOf(document.activeElement), sig = ev.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i < 0 || i === f.length - 1 ? 0 : i + 1);
     if (f.length) { ev.preventDefault(); f[sig].focus(); } return;
   }
@@ -1782,9 +1953,10 @@ document.addEventListener('keydown', ev => {
   } else if (ev.key === 'Escape' && (S.sideOpen || S.fichaMovil)) { ev.preventDefault(); S.sideOpen = false; S.fichaMovil = false; layout(); }
 });
 window.addEventListener('resize', () => { if (S.screen === 'app') layout(); });
-document.addEventListener('dragover', ev => { const z = ev.target.closest?.('.dropzone, [data-drop]'); if (z) { ev.preventDefault(); z.classList.add('over'); } });
-document.addEventListener('dragleave', ev => { const z = ev.target.closest?.('.dropzone, [data-drop]'); if (z) z.classList.remove('over'); });
-document.addEventListener('drop', ev => { const z = ev.target.closest?.('.dropzone, [data-drop]'); if (!z) return; ev.preventDefault(); z.classList.remove('over'); addFiles([...ev.dataTransfer.files]).catch(fail); });
+document.addEventListener('dragover', ev => { const z = ev.target.closest?.('[data-ne-zona], .dropzone, [data-drop]'); if (z) { ev.preventDefault(); z.classList.add('over'); } });
+document.addEventListener('dragleave', ev => { const z = ev.target.closest?.('[data-ne-zona], .dropzone, [data-drop]'); if (z) z.classList.remove('over'); });
+document.addEventListener('drop', ev => { const z = ev.target.closest?.('[data-ne-zona], .dropzone, [data-drop]'); if (!z) return; ev.preventDefault(); z.classList.remove('over');
+  if (z.hasAttribute('data-ne-zona')) { archivoNE(ev.dataTransfer.files[0]).catch(fail); return; } addFiles([...ev.dataTransfer.files]).catch(fail); });
 window.addEventListener('beforeunload', () => { if (S.exp && Vault.key) saveExp(); });
 
 /* ============================================================

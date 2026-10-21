@@ -475,6 +475,56 @@ with sync_playwright() as p:
     m.close()
 
     # v0.6 · F6: celular con proveedor (conversación, aviso de contexto, cambios en la hoja), teclado y accesibilidad
+    # v0.7 · E11: nuevo expediente desde una resolución (lectura local del encabezado)
+    RES = ROOT / "tests" / "fixtures" / "resoluciones"; esperado = json.loads((RES / "esperado.json").read_text(encoding="utf-8"))
+    n = b.new_context(viewport={"width": 1440, "height": 900}); npg = n.new_page()
+    npg.on("pageerror", lambda e: errors.append("E11: " + str(e))); npg.route("**/*", handle)
+    onboarding(npg)
+    for f, e in esperado.items():
+        r = npg.evaluate("t => leerEncabezado(t)", (RES / f).read_text(encoding="utf-8"))
+        ok = all(r[k] == e[k] for k in ["numero", "materia", "especialidad", "distrito", "organo", "juez", "especialista"]) and [[p["nombre"], p["rol"]] for p in r["partes"]] == e["partes"] \
+            and [r["resolucion"]["acto"], r["resolucion"]["fecha"]] == e["resolucion"]
+        check(ok, f"E11: encabezado leído en el equipo · {f}")
+    n_sent = len(sent)
+    npg.click("[data-action=new-exp]"); npg.wait_for_selector("#velo-ne")
+    npg.set_input_files("#ne-file", str(RES / "alimentos-resolucion.txt")); npg.wait_for_selector("#velo-ne .encontro")
+    v = lambda k: npg.input_value(f"[data-ne-campo={k}]")
+    check(v("numero") == "00845-2026-0-1501-JP-FC-01" and v("organo") == "Juzgado de Paz Letrado de Huancayo" and v("juez") == "Carmen Rosa Villanueva Paredes" and v("especialidad") == "Familia",
+          "E11: el formulario se llena con lo que trae el encabezado")
+    check("7 datos" in npg.inner_text("#velo-ne .encontro") and npg.locator("#velo-ne .pt").count() == 3 and npg.locator("#velo-ne .hoja mark").count() >= 8 and npg.locator("#velo-ne .field.falta").count() == 1,
+          "E11: resumen de lo encontrado, encabezado resaltado, partes y «no aparece» en lo que falta")
+    check(npg.is_disabled("[data-action=ne-crear]") and "Marca quién es tu cliente" in npg.inner_text("#velo-ne .cab-p"), "E11: no se crea sin marcar al cliente")
+    check(npg.locator("#velo-ne .funcionarios").count() == 1 and len(sent) == n_sent, "E11: el juez y el especialista no se reemplazan; nada sale del equipo al leer")
+    npg.screenshot(path=str(SHOTS / "26-nuevo-desde-resolucion.png"))
+    axe_ok(npg, "nuevo expediente desde una resolución")
+    npg.check("#velo-ne .pt:has([value='Rosa Elena Quispe Rojas']) [data-pt=cli]"); npg.click("[data-action=ne-crear]"); npg.wait_for_selector(".inicio .ofrece")
+    x = npg.evaluate("""()=>{const e=S.exp,P=prepararEnvio('¿Qué ordena?');return {partes:e.partes.map(p=>[p.nombre,p.rol,p.esCliente]),docs:e.docs.length,mov:e.movimientos.map(m=>[m.acto,m.fecha]),juez:e.juez,
+      sys:P.system0}}""")
+    check(x["docs"] == 1 and x["mov"] == [["Resolución 1", "2026-08-12"]] and x["juez"] == "Carmen Rosa Villanueva Paredes" and [p[2] for p in x["partes"]] == [False, True, False],
+          "E11: el expediente se crea con sus partes, la resolución como documento y primer movimiento")
+    check("Rosa Elena" not in x["sys"] and "Huamán" not in x["sys"] and "[PERSONA_2]" in x["sys"] and "Juez: Carmen Rosa Villanueva Paredes" in x["sys"], "E11: desde la primera consulta las partes van reemplazadas; el juez no")
+    check("Creado desde «alimentos-resolucion.txt»" in npg.text_content(".inicio .nov") and npg.locator(".ficha .lbl", has_text="Juzgado").count() == 1 and len(sent) == n_sent,
+          "E11: Inicio con el origen y la ficha con el juzgado, sin salir nada del equipo")
+    npg.screenshot(path=str(SHOTS / "27-creado-desde-resolucion.png"))
+    npg.click("[data-action=ne-resumir]"); npg.wait_for_selector("#velo-envio")
+    t = npg.inner_text("#velo-envio .envio")
+    check("Resume lo que ordena" in t and "ADMITIR a trámite" in t and "Quispe Rojas" not in t, "E11: «Resumir con el agente» envía la resolución citada, con los datos reemplazados")
+    npg.click("[data-action=envio-enviar]"); npg.wait_for_selector("#hilo .resp .recibo", timeout=10000)
+    check(npg.evaluate("S.exp.origen.ofrecer") is False, "E11: la oferta de resumir no se repite")
+    otra = SHOTS / "resolucion-2.txt"
+    otra.write_text((RES / "alimentos-resolucion.txt").read_text(encoding="utf-8").replace("RESOLUCIÓN NÚMERO UNO", "RESOLUCIÓN NÚMERO DOS").replace("doce de agosto", "dos de octubre")
+                    .replace("MENOR        : A. H. Q.", "MENOR        : A. H. Q.\nTERCERO      : PÉREZ LUNA, ANA MARÍA"), encoding="utf-8")
+    npg.click(".barra .exp.on"); npg.wait_for_selector(".inicio"); npg.set_input_files("#file-docs", str(otra)); npg.wait_for_selector("#dlg [data-nuevo]", timeout=10000)
+    check(npg.locator("#dlg [data-nuevo]").count() == 2 and "Ana María Pérez Luna" in npg.inner_text("#dlg") and "Resolución 2 del 02/10/2026" in npg.inner_text("#dlg"),
+          "E11: una resolución del mismo expediente ofrece solo las partes y movimientos nuevos")
+    npg.click("[data-dlg=yes]"); npg.wait_for_timeout(300)
+    check(npg.evaluate("[S.exp.partes.length,S.exp.movimientos.length]") == [4, 2], "E11: «Agregar seleccionados» suma la parte y el movimiento")
+    npg.click("[data-action=new-exp]"); npg.wait_for_selector("#velo-ne")
+    (SHOTS / "vacio.txt").write_text("   ", encoding="utf-8"); npg.set_input_files("#ne-file", str(SHOTS / "vacio.txt")); npg.wait_for_selector("#velo-ne .zona-ne.error")
+    check("no tiene texto" in npg.inner_text("#velo-ne .zona-ne.error") and npg.locator("#velo-ne [data-ne-campo=numero]").count() == 1, "E11: archivo sin texto → aviso y formulario a mano")
+    npg.keyboard.press("Escape"); check(npg.locator("#velo-ne").count() == 0, "E11: Esc cierra «Nuevo expediente»")
+    n.close()
+
     m = b.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2); mp = m.new_page()
     mp.on("pageerror", lambda e: errors.append("móvil F6: " + str(e))); mp.route("**/*", handle)
     onboarding(mp); mp.wait_for_function("Lib.installed()", timeout=15000)
@@ -514,7 +564,9 @@ with sync_playwright() as p:
     dp.click("[data-action=load-sample]"); dp.wait_for_selector(".inicio"); dp.wait_for_timeout(400)
     dp.screenshot(path=str(SHOTS / "04-oscuro-expediente.png")); axe_ok(dp, "inicio en oscuro")
     dp.click(".barra .nav-hoy"); dp.wait_for_timeout(200); dp.screenshot(path=str(SHOTS / "19-oscuro-hoy.png"))
-    dp.click(".secc [data-action=new-exp]"); dp.fill("#dlg [name=numero]", "01234-2026-0-1501-JR-CI-01"); dp.click("[data-dlg=yes]"); dp.wait_for_selector(".inicio")
+    dp.click(".secc [data-action=new-exp]"); dp.wait_for_selector("#velo-ne")
+    check(dp.locator("#velo-ne .zona-ne", has_text="Arrastra una resolución").count() == 1 and dp.locator("#velo-ne .o", has_text="o llénalo a mano").count() == 1, "E11: «Nuevo expediente» con zona para arrastrar o adjuntar y formulario a mano")
+    dp.fill("[data-ne-campo=numero]", "01234-2026-0-1501-JR-CI-01"); dp.click("[data-action=ne-crear]"); dp.wait_for_selector(".inicio")
     check("Todavía no conversas" in dp.inner_text(".inicio") and dp.locator(".barra .exp").count() == 2, "expediente nuevo: abre en su Inicio y aparece en la barra")
     dp.screenshot(path=str(SHOTS / "12-oscuro-nuevo.png"))
     b.close()
