@@ -121,31 +121,79 @@ h1{font:400 clamp(34px,5vw,48px)/1.25 var(--display);letter-spacing:-.02em;margi
 .hero p{color:var(--desc);margin:0 auto;max-width:720px}
 .hero .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:36px 0 64px}
 
-/* ventana de la app */
-.window{max-width:1000px;margin:0 auto;border-radius:14px;overflow:hidden;background:var(--win);border:1px solid var(--win-bd);box-shadow:0 40px 120px -30px var(--sombra),0 0 0 1px var(--sombra2);display:grid;grid-template-columns:230px 1fr;text-align:left;font-family:-apple-system,"Segoe UI",var(--sans);font-size:13.2px;color:var(--win-text)}
-.side{background:var(--win-side);padding:14px 12px;border-right:1px solid var(--win-bd);min-height:440px}
-.dots{display:flex;gap:7px;margin-bottom:20px}
+/* ventana de la app: las tres zonas de la v0.6 (expedientes · agente · ficha), con datos ficticios */
+.window{max-width:1100px;margin:0 auto;border-radius:14px;overflow:hidden;background:var(--win);border:1px solid var(--win-bd);box-shadow:0 40px 120px -30px var(--sombra),0 0 0 1px var(--sombra2);display:grid;grid-template-columns:206px minmax(0,1fr) 248px;text-align:left;font-family:var(--sans);font-size:13px;line-height:1.5;color:var(--win-text)}
+.window svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.w-side{background:var(--win-side);padding:12px 10px;border-right:1px solid var(--win-bd);display:flex;flex-direction:column;gap:3px;min-height:540px}
+.dots{display:flex;gap:7px;margin:2px 4px 16px}
 .dots span{width:11px;height:11px;border-radius:50%;background:#ff5f57}
 .dots span:nth-child(2){background:#febc2e}.dots span:nth-child(3){background:#28c840}
-.side .logo{font-size:15px;margin:0 4px 16px}
-.side .logo img{height:24px}
-.newbtn{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--chip);border-radius:9px;padding:8px;margin-bottom:18px;color:var(--win-text)}
-.side small{display:block;color:var(--win-mute);font-size:11.5px;margin:0 6px 6px}
-.exp{padding:7px 8px;border-radius:7px;color:var(--win-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.exp.on{background:var(--chip);color:var(--win-text);box-shadow:inset 2px 0 var(--accent)}
-.main{display:flex;flex-direction:column}
-.bar{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-bottom:1px solid var(--win-bd);font-weight:500}
-.bar span{color:var(--win-mute);font-weight:400;font-size:12px}
-.chat{padding:22px 28px;display:flex;flex-direction:column;gap:14px;flex:1}
-.ask{align-self:flex-end;background:var(--bubble);border-radius:16px;padding:8px 14px;max-width:80%}
-.thought{color:var(--win-mute);font-size:12.4px}
-.answer p{margin:0 0 10px}
-.answer ul{margin:0 0 10px;padding-left:20px}
+.w-side .logo{font-size:15px;margin:0 4px 12px}
+.w-side .logo img{height:22px}
+.w-buscar{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--win-bd);border-radius:8px;padding:5px 9px;color:var(--win-mute);margin-bottom:4px;background:var(--win)}
+.w-buscar kbd{font:10.5px var(--mono)}
+.w-nav{display:flex;justify-content:space-between;align-items:center;padding:5px 9px;border-radius:7px}
+.w-nav i{font:normal 10.5px var(--mono);color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent);border-radius:100px;padding:0 7px}
+.w-lbl{font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--win-mute);margin:12px 9px 3px}
+.w-exp{padding:6px 9px;border-radius:7px;color:var(--win-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-exp b{display:block;font:400 10.5px var(--mono);overflow:hidden;text-overflow:ellipsis}
+.w-exp.on{background:var(--chip);color:var(--win-text)}
+.w-convs{margin:1px 0 6px 13px;padding-left:8px;border-left:1px solid var(--win-bd);display:grid;gap:1px}
+.w-conv{padding:4px 8px;border-radius:6px;font-size:12px;color:var(--win-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-conv.on{background:var(--win);color:var(--win-text);box-shadow:0 0 0 1px var(--win-bd)}
+.w-conv.nueva{color:var(--accent)}
+.w-centro{display:flex;flex-direction:column;min-width:0}
+.w-cab{display:grid;padding:10px 20px;border-bottom:1px solid var(--win-bd)}
+.w-cab small{font:10.5px var(--mono);color:var(--win-mute)}
+.w-cab b{font-weight:500;font-size:14px}
+.w-hilo{flex:1;padding:20px 24px 12px;display:flex;flex-direction:column;gap:10px}
+.ask{align-self:flex-end;background:var(--bubble);border-radius:16px;padding:8px 14px;max-width:84%}
+.thought{color:var(--win-mute);font-size:12px}
+.thought u{text-decoration-color:color-mix(in srgb,currentColor 45%,transparent);text-underline-offset:2px}
+.answer p{margin:0 0 6px}
+.answer ul{margin:0;padding-left:18px}
 .answer li{margin-bottom:4px}
-.answer code,.mono{font-family:var(--mono);font-size:12px;background:var(--chip);padding:1px 5px;border-radius:4px}
-.composer{margin:0 22px 18px;border:1px solid var(--win-bd);border-radius:14px;padding:12px 14px;color:var(--win-mute);display:flex;justify-content:space-between;align-items:center}
-.send{width:28px;height:28px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.answer b{font-weight:500}
+.w-cita{display:inline-block;font:11px var(--mono);border:1px solid var(--win-bd);border-radius:6px;padding:0 6px;white-space:nowrap;background:var(--win-side)}
+.w-cita i{font-style:normal;color:var(--ok)}
+.w-verif{display:flex;gap:8px;align-items:flex-start;background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn);border-radius:9px;padding:8px 11px;font-size:12px}
+.w-verif svg{margin-top:2px}
+.w-recibo{font-size:11.5px;color:var(--win-mute)}
+.w-recibo span{color:var(--accent)}
+.w-prop{display:flex;justify-content:space-between;align-items:center;gap:6px 12px;border:1px solid var(--win-bd);border-radius:10px;padding:8px 12px;font-size:12.5px;flex-wrap:wrap}
+.w-prop b{font-weight:500}
+.w-prop span:last-child{color:var(--accent);font-weight:500;white-space:nowrap}
+.w-caja{margin:0 18px 16px;border:1px solid var(--win-bd);border-radius:14px;padding:10px 10px 8px 13px;background:var(--win);box-shadow:0 10px 26px -20px var(--sombra)}
+.comp-txt{display:block;min-height:1.5em;color:var(--win-mute)}
+.w-fila{display:flex;align-items:center;gap:6px;margin-top:8px;min-width:0}
+.w-chips{display:flex;gap:6px;flex:1;min-width:0;overflow:hidden}
+.w-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;border:1px solid var(--win-bd);border-radius:100px;padding:1px 8px 1px 6px;white-space:nowrap}
+.w-chip svg{width:11px;height:11px;color:var(--accent)}
+.w-destino{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--win-text);background:var(--accent-soft);border-radius:100px;padding:2px 9px;white-space:nowrap}
+.w-destino svg{width:12px;height:12px;color:var(--accent)}
+.send{width:28px;height:28px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex:none}
 .send svg{width:14px;height:14px}
+.w-ficha{background:var(--win-side);border-left:1px solid var(--win-bd);padding:11px 13px 14px;display:flex;flex-direction:column;gap:13px;min-width:0;font-size:12px;contain:size;overflow:hidden;-webkit-mask-image:linear-gradient(#000 calc(100% - 48px),transparent);mask-image:linear-gradient(#000 calc(100% - 48px),transparent)}   /* no define el alto de la ventana: lo que no cabe se corta, como un panel con scroll */
+.w-pliegue{display:grid;grid-template-rows:1fr;flex:none}
+.w-pliegue > div{min-height:0;overflow:hidden}
+.w-tabs{display:flex;gap:0;font-size:11.5px;color:var(--win-mute);border-bottom:1px solid var(--win-bd);margin:0 -13px;padding:0 9px 10px;white-space:nowrap}
+.w-tabs span{padding:3px 6px;border-radius:6px}
+.w-tabs span.on{background:var(--chip);color:var(--win-text);font-weight:500}
+.w-b{display:grid;gap:4px}
+.w-b small{font:10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--win-mute)}
+.w-sin{color:var(--win-mute)}
+.w-cambios{border:1px solid var(--win-bd);border-radius:11px;padding:9px 10px;background:var(--win);display:grid;gap:7px;transition:opacity .35s ease,box-shadow .5s ease}
+.w-cambios > b{font-weight:500;font-size:12px}
+.w-cambios div{display:grid;grid-template-columns:12px 1fr;gap:6px;border-top:1px solid var(--win-bd);padding-top:7px;font-size:11.5px;line-height:1.45}
+.w-cambios div > i{font:normal 12px var(--mono);color:var(--ok)}
+.w-cambios em{display:block;font-style:normal;font-size:10.5px;color:var(--win-mute)}
+.w-cambios div.pz{color:var(--warn)}
+.w-cambios div.pz > i,.w-cambios div.pz em{color:var(--warn)}
+.w-acc{display:flex;gap:6px;font-size:11px;padding-top:2px}
+.w-acc span{border:1px solid var(--win-bd);border-radius:100px;padding:2px 9px;white-space:nowrap}
+.w-acc span:first-child{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:500}
+.w-parte{display:flex;justify-content:space-between;gap:6px;font-size:11.5px}
+.w-parte span:last-child{font:10.5px var(--mono);color:var(--win-mute);white-space:nowrap}
 
 /* secciones */
 section{padding:140px 0 0}
@@ -241,24 +289,30 @@ button.btn{cursor:pointer}
 .aviso a{color:var(--accent)}
 
 /* 1 · demo de la portada (solo si corre el script y no hay "reducir movimiento"; sin script se ve el estado final) */
-.demo .ask,.demo .thought{opacity:0;transform:translateY(6px);transition:opacity .35s ease,transform .35s ease}
-.demo .ask.on,.demo .thought.on{opacity:1;transform:none}
+.demo .ask,.demo .thought,.demo .w-verif,.demo .w-recibo,.demo .w-prop{opacity:0;transform:translateY(6px);transition:opacity .35s ease,transform .35s ease}
+.demo .ask.on,.demo .thought.on,.demo .w-verif.on,.demo .w-recibo.on,.demo .w-prop.on{opacity:1;transform:none}
+.demo .w-pliegue{grid-template-rows:0fr;margin-top:-13px;transition:grid-template-rows .5s ease,margin-top .5s ease}
+.demo .w-pliegue.on{grid-template-rows:1fr;margin-top:0}
+.demo .w-cambios{opacity:0}
+.demo .w-pliegue.on .w-cambios{opacity:1}
+.demo .w-hay{display:none}
+.demo .w-hay.on{display:inline}
 .demo .answer .w{opacity:0;transition:opacity .3s ease}
 .demo .answer .w.on{opacity:1}
 .demo .answer li::marker{color:transparent}
 .demo .answer li:has(.w.on)::marker{color:inherit}
 .thought.on:not(.listo)::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:1px;animation:latido 1s ease-in-out infinite}
-.answer code.destello{animation:destello 1.4s ease}
-.comp-txt{min-width:0}
+.w-cita.destello{animation:destello 1.4s ease}
+.w-cambios.foco{box-shadow:inset 0 0 0 2px var(--accent)}
 .comp-txt.escribe{color:var(--win-text)}
 .comp-txt.escribe::after{content:"";display:inline-block;width:1px;height:1.05em;background:var(--accent);margin-left:2px;vertical-align:-2px;animation:parpadeo 1s steps(1) infinite}
-.send{flex:none;transition:transform .15s ease}
+.send{transition:transform .15s ease}
 .send.pulso{transform:scale(.82)}
 .replay{display:block;margin:14px auto 0;background:none;border:0;color:var(--desc);font:13px var(--sans);cursor:pointer;padding:6px 10px;border-radius:100px}
 .replay:hover{color:var(--accent)}
 @keyframes latido{50%{opacity:.25}}
 @keyframes parpadeo{50%{opacity:0}}
-@keyframes destello{0%,100%{background:var(--chip);color:inherit}25%,60%{background:var(--accent-soft);color:var(--accent)}}
+@keyframes destello{0%,100%{background:var(--win-side)}25%,60%{background:var(--accent-soft);border-color:var(--accent)}}
 
 /* 2 · seudonimización: los datos reales se transforman en marcadores */
 .diff mark{transition:background .3s ease,color .3s ease}
@@ -298,9 +352,10 @@ button.btn{cursor:pointer}
 @keyframes ida-v{0%{top:0;transform:none;opacity:0}6%,40%{opacity:1}46%,100%{top:100%;transform:translateY(-100%);opacity:0}}
 @keyframes vuelta-v{0%,50%{top:100%;transform:translateY(-100%);opacity:0}56%,90%{opacity:1}96%,100%{top:0;transform:none;opacity:0}}
 
+@media (max-width:1000px){.window{grid-template-columns:minmax(0,1fr) 236px}.w-side{display:none}}
+@media (max-width:760px){.window{grid-template-columns:minmax(0,1fr)}.w-ficha{display:none}.w-chips{-webkit-mask-image:linear-gradient(90deg,#000 80%,transparent);mask-image:linear-gradient(90deg,#000 80%,transparent)}}
 @media (max-width:900px){
   .providers{grid-template-columns:1fr 1fr}
-  .window{grid-template-columns:1fr}.side{display:none}
 }
 @media (max-width:480px){.top nav .nav-gh{display:none}}   /* con el botón de tema, GitHub queda en el pie */
 @media (max-width:700px){
@@ -322,7 +377,7 @@ button.btn{cursor:pointer}
   .card{padding:28px 22px 0}.grid.steps .card{padding:28px 22px}
   .preview{padding:16px 16px 20px}
   .tabs{flex-wrap:wrap;gap:4px}.tabs span{padding:4px 8px}
-  .chat{padding:18px}
+  .w-hilo{padding:16px 14px 10px}.w-cab{padding:10px 14px}.w-caja{margin:0 10px 12px}
   section{padding-top:96px}
   .final .cta{grid-template-columns:1fr}
   .code{flex-wrap:wrap}
@@ -369,34 +424,57 @@ button.btn{cursor:pointer}
     </div>
     <p class="solo-movil nota-movil">Folio se usa en tu computadora (Windows, macOS o Linux). Envíate el enlace y descárgalo allí.</p>
 
-    <div class="window reveal" role="img" aria-label="Vista de Folio: el agente responde sobre el estado de un expediente">
-      <aside class="side">
+    <div class="window reveal" role="img" aria-label="Vista de Folio con datos ficticios: a la izquierda los expedientes y sus conversaciones; al centro el agente responde citando el artículo 350 del Código Procesal Penal, recuerda verificar el plazo y muestra a quién se envió la consulta; a la derecha la ficha del expediente con los cambios que propone el agente para que los revises">
+      <aside class="w-side">
         <div class="dots"><span></span><span></span><span></span></div>
-        <div class="logo"><img class="logo-o" src="img/folio-logo-blanco.webp" alt="Folio" width="62" height="24"><img class="logo-c" src="img/folio-logo.webp" alt="" width="62" height="24"><span class="badge">Beta</span></div>
-        <div class="newbtn">＋ Nuevo expediente</div>
-        <small>Expedientes</small>
-        <div class="exp on">00123-2026 · Etapa intermedia</div>
-        <div class="exp">00987-2025 · Apelación</div>
-        <div class="exp">01544-2026 · Investigación</div>
-        <div class="exp">00311-2026 · Medidas de protección</div>
-      </aside>
-      <div class="main">
-        <div class="bar">Exp. 00123-2026-0-1501-JR-PE-01 <span>Cifrado · local</span></div>
-        <div class="chat">
-          <div class="ask">¿En qué estado está el caso y qué tengo pendiente?</div>
-          <div class="thought">Leyó la memoria del expediente y 3 documentos ›</div>
-          <div class="answer">
-            <p>El proceso de <code>[PERSONA_1]</code> está en <b>etapa intermedia</b>. El último movimiento del CEJ es el traslado del requerimiento acusatorio.</p>
-            <ul>
-              <li>Absolver el traslado: registraste un plazo de 10 días (verifícalo).</li>
-              <li>Ofrecer la pericia contable que anotaste como pendiente.</li>
-              <li>Revisar la declaración de <code>[PERSONA_2]</code> del 14 de agosto.</li>
-            </ul>
-            <p>¿Quieres que prepare un esquema de la absolución?</p>
-          </div>
+        <div class="logo"><img class="logo-o" src="img/folio-logo-blanco.webp" alt="" width="57" height="22"><img class="logo-c" src="img/folio-logo.webp" alt="" width="57" height="22"><span class="badge">Beta</span></div>
+        <div class="w-buscar">Buscar <kbd>Ctrl K</kbd></div>
+        <div class="w-nav">Hoy <i>3</i></div>
+        <div class="w-lbl">Expedientes</div>
+        <div class="w-exp on"><b>00123-2026-0-1501-JR-PE-01</b>Apropiación ilícita</div>
+        <div class="w-convs">
+          <div class="w-conv on">Absolución del traslado</div>
+          <div class="w-conv">Estrategia de defensa</div>
+          <div class="w-conv nueva">+ Nueva conversación</div>
         </div>
-        <div class="composer"><span class="comp-txt">Pregunta sobre este expediente…</span><span class="send"><svg viewBox="0 0 16 16"><path d="M8 13V3m0 0L3.5 7.5M8 3l4.5 4.5" fill="none" stroke="#0B1220" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+        <div class="w-exp"><b>00845-2026</b>Alimentos</div>
+        <div class="w-exp"><b>00987-2025</b>Apelación de sentencia</div>
+        <div class="w-exp"><b>00311-2026</b>Medidas de protección</div>
+      </aside>
+      <div class="w-centro">
+        <div class="w-cab"><small>00123-2026 · Apropiación ilícita</small><b>Absolución del traslado acusatorio</b></div>
+        <div class="w-hilo">
+          <div class="ask">Ya me notificaron el requerimiento acusatorio. ¿Qué observaciones puedo plantear?</div>
+          <div class="thought">Leyó <u>la memoria</u>, <u>2 documentos</u> y <u>1 artículo</u> ▸</div>
+          <div class="answer">
+            <p>Según la memoria, el requerimiento acusatorio contra tu cliente se notificó el <b>14/10/2026</b>. En esta etapa puedes:</p>
+            <ul>
+              <li><b>Observar la acusación por defectos formales</b> <span class="w-cita">Art. 350.1.a CPP <i>✓ vigente</i></span>: la imputación no precisa qué hizo en cada hecho.</li>
+              <li><b>Ofrecer la pericia contable</b> que tienes pendiente.</li>
+              <li><b>Pedir el sobreseimiento</b> si el informe contable no sostiene la apropiación.</li>
+            </ul>
+          </div>
+          <div class="w-verif"><svg viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.2M12 16.8v.1"/></svg><span>Folio no calcula plazos: verifica la fecha en la resolución y en tu casilla antes de anotarlo.</span></div>
+          <div class="w-recibo">Enviado a OpenRouter con tu cuenta · 6 datos reemplazados · <span>Ver lo que se envió</span></div>
+          <div class="w-prop"><span>El agente propone <b>2 cambios</b> en la memoria y <b>1 plazo</b> por confirmar</span><span>Revisar en la ficha →</span></div>
+        </div>
+        <div class="w-caja"><span class="comp-txt">Escribe al agente · @ para citar un documento · / para acciones</span>
+          <div class="w-fila"><span class="w-chips"><span class="w-chip"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Memoria</span><span class="w-chip"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>2 documentos</span><span class="w-chip"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Biblioteca</span></span><span class="w-destino"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>OpenRouter</span><span class="send"><svg viewBox="0 0 16 16"><path d="M8 13V3m0 0L3.5 7.5M8 3l4.5 4.5" fill="none" stroke="var(--on-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+        </div>
       </div>
+      <aside class="w-ficha">
+        <div class="w-tabs"><span class="on">Ficha</span><span>Documentos 4</span><span>Movimientos 4</span></div>
+        <div class="w-b"><small>Estado</small>Etapa intermedia: requerimiento acusatorio notificado el 14/10/2026</div>
+        <div class="w-b"><small>Próximo plazo</small><span class="w-sin">Ningún plazo confirmado<span class="w-hay"> · hay 1 propuesto abajo</span></span></div>
+        <div class="w-pliegue"><div><div class="w-cambios"><b>Cambios propuestos por el agente</b>
+          <div><i>+</i><span><em>Hechos</em>El 14/10/2026 se notificó el requerimiento acusatorio.</span></div>
+          <div><i>+</i><span><em>Pendientes</em>Completar el objeto y el perito de la pericia contable.</span></div>
+          <div class="pz"><i>!</i><span><em>Plazo · por confirmar</em>28/10/2026 · absolver el traslado</span></div>
+          <span class="w-acc"><span>Aplicar 2 cambios</span><span>Descartar</span></span>
+        </div></div></div>
+        <div class="w-b"><small>Partes</small><div class="w-parte"><span>Carlos Mendoza Ríos · imputado, tu cliente</span><span>[PERSONA_1]</span></div><div class="w-parte"><span>María Quispe Rojas · agraviada</span><span>[PERSONA_2]</span></div></div>
+        <div class="w-b"><small>Hechos clave</small>Carlos Mendoza Ríos es acusado de apropiarse de S/ 48 000 de la empresa que administraba (2024). La Fiscalía se basa en un informe contable interno.</div>
+      </aside>
     </div>
     <button class="replay" type="button" hidden>↻ Ver la demo de nuevo</button>
   </div>
@@ -745,12 +823,14 @@ button.btn{cursor:pointer}
 
   if(quieto)return;
 
-  // 1 · demo de la portada: se escribe la pregunta, el agente lee la memoria y la respuesta llega por partes
+  // 1 · demo de la portada: se escribe la pregunta, el agente lee la memoria, responde por partes y propone cambios en la ficha
   var win=document.querySelector('.window');
   if(win){
     var ask=win.querySelector('.ask'),pensar=win.querySelector('.thought'),resp=win.querySelector('.answer'),
-        comp=win.querySelector('.comp-txt'),send=win.querySelector('.send'),otra=document.querySelector('.replay');
-    var pregunta=ask.textContent,vacio=comp.textContent,leido=pensar.textContent,palabras=[],vuelta=0;
+        comp=win.querySelector('.comp-txt'),send=win.querySelector('.send'),otra=document.querySelector('.replay'),
+        luego=[].slice.call(win.querySelectorAll('.w-verif,.w-recibo,.w-prop')),
+        pliegue=win.querySelector('.w-pliegue'),cambios=win.querySelector('.w-cambios'),hay=win.querySelector('.w-hay');
+    var pregunta=ask.textContent,vacio=comp.textContent,leido=pensar.innerHTML,palabras=[],vuelta=0;
     (function partir(n){
       Array.prototype.slice.call(n.childNodes).forEach(function(c){
         if(c.nodeType===3){
@@ -761,7 +841,7 @@ button.btn{cursor:pointer}
             var w=document.createElement('span');w.className='w';w.textContent=t;f.appendChild(w);palabras.push(w);
           });
           c.parentNode.replaceChild(f,c);
-        }else if(c.nodeName==='CODE'){c.classList.add('w');palabras.push(c)}
+        }else if(c.classList&&c.classList.contains('w-cita')){c.classList.add('w');palabras.push(c)}
         else partir(c);
       });
     })(resp);
@@ -769,25 +849,31 @@ button.btn{cursor:pointer}
     var correr=async function(){
       var id=++vuelta,sigue=function(){return id===vuelta};
       otra.hidden=true;
-      ask.classList.remove('on');pensar.classList.remove('on','listo');
+      [ask,pensar,pliegue,cambios,hay].concat(luego).forEach(function(el){el.classList.remove('on','listo','foco')});
       palabras.forEach(function(w){w.classList.remove('on','destello')});
+      pensar.innerHTML=leido;
       comp.textContent='';comp.classList.add('escribe');
       await espera(600);
-      for(var i=1;i<=pregunta.length;i++){if(!sigue())return;comp.textContent=pregunta.slice(0,i);await espera(28)}
+      for(var i=1;i<=pregunta.length;i++){if(!sigue())return;comp.textContent=pregunta.slice(0,i);await espera(26)}
       await espera(400);if(!sigue())return;
       send.classList.add('pulso');await espera(180);send.classList.remove('pulso');
       comp.textContent=vacio;comp.classList.remove('escribe');ask.classList.add('on');
       await espera(550);if(!sigue())return;
       pensar.textContent='Leyendo la memoria del expediente…';pensar.classList.add('on');
       await espera(1400);if(!sigue())return;
-      pensar.textContent=leido;pensar.classList.add('listo');
+      pensar.innerHTML=leido;pensar.classList.add('listo');
       await espera(350);
       for(var j=0;j<palabras.length;j++){
         if(!sigue())return;
         palabras[j].classList.add('on');
-        if(palabras[j].nodeName==='CODE')palabras[j].classList.add('destello');
-        await espera(42);
+        if(palabras[j].classList.contains('w-cita')){palabras[j].classList.add('destello');await espera(160)}
+        await espera(40);
       }
+      for(var k=0;k<luego.length;k++){await espera(k?450:500);if(!sigue())return;luego[k].classList.add('on')}
+      await espera(700);if(!sigue())return;
+      pliegue.classList.add('on');cambios.classList.add('foco');hay.classList.add('on');
+      await espera(1800);if(!sigue())return;
+      cambios.classList.remove('foco');
       otra.hidden=false;
     };
     otra.addEventListener('click',correr);
