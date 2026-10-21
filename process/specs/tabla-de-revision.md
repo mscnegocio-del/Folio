@@ -1,6 +1,6 @@
 # Spec — E12: tabla de revisión del expediente (cronología de resoluciones)
 
-> Estado: **borrador, pendiente de aprobación del usuario** · Épica E12 · Decisiones propuestas D-52 a D-54
+> Estado: **spec y prototipo aprobados por el usuario (2026-10-21)** · Épica E12 · Decisiones D-52 a D-54 · Va en la v0.8.0 (la v0.7.0 sale antes)
 > Prototipo navegable: `process/prototipos/tabla-revision-v0.8.html` (estados con `?estado=elegir|revisando|lista|celda|columna`, `&tema=dark`)
 > Origen: análisis de Harvey (2026-10-21). Harvey Vault tiene *review tables*: una fila por documento, columnas que la IA llena (fecha, moneda, texto literal), plantillas con un clic para tipos comunes (también litigio) y revisión final del abogado. Folio toma la idea, pero **verifica cada cita en el equipo** y no sube nada a una nube propia.
 
@@ -17,6 +17,7 @@ Elegir varios documentos del expediente y obtener **una tabla: una fila por docu
 |---|---|
 | **Cronología de resoluciones** (por defecto) | Fecha · Resolución · Qué ordena (1–2 líneas) · Plazo que menciona · Quién debe actuar |
 | **Medios probatorios** | Documento · Prueba ofrecida · Quién la ofrece · Hecho que busca probar · ¿Admitida? |
+| **Notificaciones** | Fecha de notificación · Acto notificado · Medio (casilla electrónica, domicilio) · Plazo que menciona · Qué debo hacer |
 | **En blanco** | El abogado define sus columnas |
 
 - **Fecha** y **Resolución** salen primero del encabezado leído en el equipo (`leerEncabezado`, E11): sin IA ni costo. La IA solo las completa si el encabezado no las trae.
@@ -75,7 +76,8 @@ exp.tablas = [{ id, titulo, plantilla: 'cronologia'|'pruebas'|'blanco', createdA
 | F3 | Verificación local de citas, Ficha en modo Fuente del documento, edición de celdas, volver a revisar |
 | F4 | Agregar a Movimientos, proponer a la memoria, exportar CSV y copiar; política r3; e2e y capturas → Release v0.8.0 |
 
-## 10. Preguntas para el usuario
-1. ¿Aceptas el **cambio de política** (enviar documentos completos que eliges, con re-aceptación al desbloquear)? Sin él, la tabla solo podría usar fragmentos y perdería precisión.
-2. ¿Las **plantillas iniciales** son cronología y medios probatorios, o prefieres otra (por ejemplo "Notificaciones": fecha de notificación, casilla, plazo)?
-3. ¿**Publicamos la v0.7.0 (E11) antes** y la tabla va en una v0.8.0, o las juntamos en una sola versión?
+## 10. Decisiones del usuario (2026-10-21)
+1. **Sí al cambio de política** (D-54): la sección 4 dirá que, si usas una tabla de revisión, salen los documentos completos que elijas, seudonimizados. Se sube `APP.policyVersion` y se pide aceptar de nuevo al desbloquear.
+2. **Plantillas** (D-52): cronología de resoluciones, medios probatorios, **notificaciones** y en blanco.
+3. **Versiones:** primero se publica la v0.7.0 (E11) y la tabla va en la v0.8.0.
+4. El prototipo está aprobado: se implementa tal cual (con la plantilla de notificaciones agregada).

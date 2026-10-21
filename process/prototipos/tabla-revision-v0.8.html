@@ -198,7 +198,7 @@ body[data-modo="fuente"] .fcab .tab{display:none} body:not([data-modo="fuente"])
 /* ventanas: nueva tabla y nueva columna */
 .velo{display:none}
 body[data-estado="elegir"] #v-elegir,body[data-estado="columna"] #v-columna{display:grid}
-.plantillas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.plantillas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .pl{display:grid;gap:4px;text-align:left;border:1px solid var(--rule-strong);border-radius:12px;padding:12px 14px;cursor:pointer}
 .pl b{font-weight:500;font-size:14px}
 .pl small{color:var(--graphite);font-size:12px}
@@ -329,6 +329,7 @@ body[data-estado="elegir"] #v-elegir,body[data-estado="columna"] #v-columna{disp
         <div class="plantillas">
           <button class="pl on" data-pl><b>Cronología de resoluciones</b><small>Fecha · resolución · qué ordena · plazo que menciona · quién debe actuar</small></button>
           <button class="pl" data-pl><b>Medios probatorios</b><small>Prueba ofrecida · quién la ofrece · hecho que busca probar · ¿admitida?</small></button>
+          <button class="pl" data-pl><b>Notificaciones</b><small>Fecha de notificación · acto notificado · medio · plazo que menciona · qué debo hacer</small></button>
           <button class="pl" data-pl><b>En blanco</b><small>Tú defines las columnas y sus preguntas</small></button>
         </div>
       </div>

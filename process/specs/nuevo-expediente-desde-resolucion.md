@@ -1,6 +1,6 @@
 # Spec — E11: nuevo expediente desde una resolución
 
-> Estado: **prototipo aprobado e implementado (2026-10-21)**; falta calibrar con encabezados reales con datos cambiados · Épica E11 · Decisiones D-48 a D-51
+> Estado: **implementado y publicado en la v0.7.0 (2026-10-21)**. El usuario decidió publicar sin calibrar: aún no tiene documentos oficiales para probar; la calibración con encabezados reales (datos cambiados) queda para una v0.7.x · Épica E11 · Decisiones D-48 a D-51
 > Prototipo navegable: `process/prototipos/nuevo-expediente-v0.7.html` (estados con `?estado=formulario|leyendo|lleno|escaneo|creado`, `&tema=dark`)
 > Origen: idea del usuario (2026-10-21) tras revisar Harvey (Vault, tablas de revisión). Folio no copia su nube: todo se lee en el equipo.
 
