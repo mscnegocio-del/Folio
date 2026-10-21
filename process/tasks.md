@@ -14,6 +14,7 @@ Estados: ✅ hecho · 🔄 en curso · ⏳ pendiente · 💤 en espera (depende 
 - E9 Rediseño UX/UI v0.5.0 "el expediente primero" — ✅ publicada en v0.5.0 (F1–F6) · ✅ sitio (T-411) → process/specs/rediseno-ux-v0.5.md
 - E10 Rediseño v0.6 "el agente al centro": varios chats por expediente, medidor de contexto, memoria "punto medio" — ✅ F0 (dirección aprobada 2026-10-18, D-38 a D-41, prototipo navegable) · ✅ F1 datos · ✅ F2 interfaz de tres zonas · ✅ F3 caja de texto · ✅ F4 contexto y "Seguir en una nueva" · ✅ F5 propuestas de memoria en la Ficha · ✅ F6 celular, accesibilidad, e2e · ✅ Release v0.6.0 publicado (2026-10-18) → process/specs/rediseno-chat-v0.6.md
 - E11 Nuevo expediente desde una resolución (lectura local del encabezado, partes registradas antes de la primera consulta) — ✅ F0–F4 implementadas (2026-10-21) · ⏳ calibrar con encabezados reales con datos cambiados → Release v0.7.0 → process/specs/nuevo-expediente-desde-resolucion.md
+- E12 Tabla de revisión del expediente (idea de Harvey): una fila por documento, columnas con cita verificada en el equipo; primera plantilla "Cronología de resoluciones" — ⏳ F0 spec y prototipo en revisión → process/specs/tabla-de-revision.md
 
 ## E9 · Rediseño UX/UI v0.5.0 (spec aprobado 2026-10-03)
 | # | Tarea | Fase | Estado |
